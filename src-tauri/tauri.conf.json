@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "shelf-tmp",
+  "productName": "Shelf",
   "version": "0.1.0",
-  "identifier": "com.jack.shelf-tmp",
+  "identifier": "com.shelf.app",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
@@ -10,11 +10,20 @@
     "frontendDist": "../build"
   },
   "app": {
+    "macOSPrivateApi": true,
     "windows": [
       {
-        "title": "shelf-tmp",
-        "width": 800,
-        "height": 600
+        "title": "Shelf",
+        "width": 360,
+        "height": 600,
+        "minWidth": 280,
+        "minHeight": 400,
+        "alwaysOnTop": true,
+        "decorations": false,
+        "transparent": true,
+        "resizable": true,
+        "x": 100,
+        "y": 100
       }
     ],
     "security": {
