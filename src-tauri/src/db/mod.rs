@@ -1,4 +1,5 @@
 pub mod todos;
+pub mod events;
 
 use once_cell::sync::OnceCell;
 use rusqlite::{Connection, Result};

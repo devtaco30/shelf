@@ -25,6 +25,9 @@ pub fn run() {
             commands::todo::create_todo,
             commands::todo::toggle_todo,
             commands::todo::delete_todo,
+            commands::event::get_events,
+            commands::event::create_event,
+            commands::event::delete_event,
         ])
         .run(tauri::generate_context!())
         .expect("Tauri 실행 오류");

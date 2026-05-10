@@ -21,7 +21,8 @@
       "Bash(git -C /Users/jack/Private/shelf commit -m \"feat: 반복 일정 드롭 로직 \\(TDD\\)\")",
       "Bash(git -C /Users/jack/Private/shelf commit -m \"feat: Todo CRUD Rust commands\")",
       "Bash(git -C /Users/jack/Private/shelf commit -m \"feat: Todo 탭 UI 구현\")",
-      "Bash(git -C /Users/jack/Private/shelf commit -m \"feat: 우측 책갈피 탭 + 슬라이드오버 동작\")"
+      "Bash(git -C /Users/jack/Private/shelf commit -m \"feat: 우측 책갈피 탭 + 슬라이드오버 동작\")",
+      "Bash(git -C /Users/jack/Private/shelf commit -m \"feat: Calendar 탭 구현\")"
     ]
   }
 }
