@@ -1,6 +1,7 @@
 mod commands;
 mod db;
 mod recurrence;
+mod vault;
 
 use tauri::Manager;
 
