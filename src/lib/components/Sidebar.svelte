@@ -17,6 +17,8 @@
 </script>
 
 <aside class="sidebar" class:collapsed={$collapsed}>
+  <!-- 드래그 핸들: 버튼 위 빈 영역을 잡아 창을 이동 -->
+  <div class="drag-handle" data-tauri-drag-region></div>
   {#each tabs as tab}
     <button
       class="tab-btn"
@@ -38,6 +40,12 @@
     background: #1e1e2e;
     padding: 12px 0;
     gap: 4px;
+    flex-shrink: 0;
+  }
+  .drag-handle {
+    width: 100%;
+    height: 20px;
+    cursor: grab;
     flex-shrink: 0;
   }
   .tab-btn {

@@ -27,7 +27,9 @@
       "Bash(git -C /Users/jack/Private/shelf commit -m \"feat: AuthProvider 추상화 + macOS Keychain 구현\")",
       "Bash(git -C /Users/jack/Private/shelf commit -m \"feat: Vault CRUD + 세션 키 관리 commands\")",
       "Bash(git -C /Users/jack/Private/shelf commit -m \"feat: Vault 탭 UI 구현 \\(암호화 메모 + 잠금/해제\\)\")",
-      "Bash(git -C /Users/jack/Private/shelf commit -m \"feat: Vault 자동 잠금 \\(5분\\) + 자정 반복 일정 체크\")"
+      "Bash(git -C /Users/jack/Private/shelf commit -m \"feat: Vault 자동 잠금 \\(5분\\) + 자정 반복 일정 체크\")",
+      "Bash(PATH=__TRACKED_VAR__/.cargo/bin:__TRACKED_VAR__ cargo test)",
+      "Bash(git -C /Users/jack/Private/shelf commit -m \"fix: 윈도우 드래그 영역 추가 + Touch ID 실제 구현\")"
     ]
   }
 }

@@ -42,19 +42,27 @@ pub fn setup_vault(password: String) -> Result<(), String> {
 }
 
 /// Touch ID 또는 비밀번호로 Vault를 잠금 해제한다.
+/// password가 None이면 Touch ID를 시도하고 Keychain에서 키를 로드한다.
 #[tauri::command]
 pub fn unlock_vault(password: Option<String>) -> Result<(), String> {
     let provider = PlatformAuthProvider;
 
-    // 1. Keychain에서 키 로드 시도
-    if let Ok(key_bytes) = provider.load_key() {
+    if password.is_none() {
+        // Touch ID 인증 후 Keychain에서 키 로드
+        let ok = provider.biometric_auth("Shelf Vault 잠금 해제")?;
+        if !ok {
+            return Err("Touch ID 인증에 실패했습니다".to_string());
+        }
+        let key_bytes = provider
+            .load_key()
+            .map_err(|_| "Keychain에서 키를 찾을 수 없습니다. 비밀번호를 입력해 주세요.".to_string())?;
         let mut guard = session_key_store().lock().unwrap();
         *guard = Some(key_bytes);
         return Ok(());
     }
 
-    // 2. Keychain 실패 시 비밀번호 fallback
-    let pw = password.ok_or("비밀번호가 필요합니다")?;
+    // 비밀번호로 해제
+    let pw = password.unwrap();
     let key_bytes = derive_raw_key(&pw);
 
     // 비밀번호 검증: 아이템이 하나라도 있으면 복호화 테스트
