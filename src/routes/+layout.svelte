@@ -17,6 +17,11 @@
     }, 5 * 60 * 1000);
   }
 
+  async function startDrag(e: MouseEvent) {
+    if (e.button !== 0) return;
+    await getCurrentWindow().startDragging();
+  }
+
   async function closeWindow() {
     await getCurrentWindow().close();
   }
@@ -43,9 +48,12 @@
 </script>
 
 <div class="app" class:collapsed={$collapsed}>
-  <!-- 타이틀바: 전체 너비에 걸친 드래그 영역 -->
-  <div class="titlebar" data-tauri-drag-region>
-    <div class="traffic-lights">
+  <!-- 타이틀바: mousedown으로 startDragging() 호출 -->
+  <!-- svelte-ignore a11y-no-static-element-interactions -->
+  <div class="titlebar" on:mousedown={startDrag} role="presentation">
+    <!-- 버튼 영역은 드래그 전파 차단 -->
+    <!-- svelte-ignore a11y-no-static-element-interactions -->
+    <div class="traffic-lights" on:mousedown|stopPropagation>
       <button class="dot close" on:click={closeWindow} title="닫기"></button>
       <button class="dot minimize" on:click={minimizeWindow} title="최소화"></button>
     </div>

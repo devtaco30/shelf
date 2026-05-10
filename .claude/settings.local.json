@@ -30,7 +30,8 @@
       "Bash(git -C /Users/jack/Private/shelf commit -m \"feat: Vault 자동 잠금 \\(5분\\) + 자정 반복 일정 체크\")",
       "Bash(PATH=__TRACKED_VAR__/.cargo/bin:__TRACKED_VAR__ cargo test)",
       "Bash(git -C /Users/jack/Private/shelf commit -m \"fix: 윈도우 드래그 영역 추가 + Touch ID 실제 구현\")",
-      "Bash(git -C /Users/jack/Private/shelf commit -m \"fix: macOS 타이틀바 드래그 영역 + Vault 초회 안내 개선\")"
+      "Bash(git -C /Users/jack/Private/shelf commit -m \"fix: macOS 타이틀바 드래그 영역 + Vault 초회 안내 개선\")",
+      "Bash(git -C /Users/jack/Private/shelf commit -m \"fix: startDragging\\(\\) API로 창 이동 구현\")"
     ]
   }
 }
