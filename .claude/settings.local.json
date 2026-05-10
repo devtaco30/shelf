@@ -14,7 +14,9 @@
       "Bash(npm run *)",
       "Bash(git add *)",
       "Bash(git commit *)",
-      "Bash(PATH=__TRACKED_VAR__/.cargo/bin:__TRACKED_VAR__ cargo build)"
+      "Bash(PATH=__TRACKED_VAR__/.cargo/bin:__TRACKED_VAR__ cargo build)",
+      "Bash(git -C /Users/jack/Private/shelf add -A)",
+      "Bash(git -C /Users/jack/Private/shelf commit -m \"feat: SQLite DB 초기화 및 스키마 마이그레이션\")"
     ]
   }
 }
