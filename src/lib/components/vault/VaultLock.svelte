@@ -41,7 +41,10 @@
 
 <div class="lock-screen">
   <div class="icon">🔒</div>
-  <h2>{$vaultInitialized ? 'Vault 잠금 해제' : 'Vault 설정'}</h2>
+  <h2>{$vaultInitialized ? 'Vault 잠금 해제' : 'Vault 초기 설정'}</h2>
+  {#if !$vaultInitialized}
+    <p class="hint">처음 한 번만 비밀번호를 설정합니다.<br>이후에는 Touch ID로 잠금 해제할 수 있습니다.</p>
+  {/if}
 
   {#if $vaultInitialized}
     <button class="touchid-btn" on:click={handleTouchId} disabled={loading}>
@@ -85,5 +88,6 @@
   .touchid-btn:hover:not(:disabled) { background: #2e2e4e; }
   .divider { display: flex; align-items: center; gap: 8px; width: 100%; color: #aaa; font-size: 12px; }
   .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: #eee; }
+  .hint { font-size: 11px; color: #888; text-align: center; margin: 0; line-height: 1.5; }
   .error { color: #f55; font-size: 12px; text-align: center; margin: 0; }
 </style>

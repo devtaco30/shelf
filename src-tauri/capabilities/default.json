@@ -10,6 +10,8 @@
     "core:window:allow-outer-position",
     "core:window:allow-outer-size",
     "core:window:allow-available-monitors",
+    "core:window:allow-close",
+    "core:window:allow-minimize",
     "core:event:allow-listen",
     "opener:default"
   ]
