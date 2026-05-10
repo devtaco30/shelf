@@ -1,4 +1,5 @@
 mod db;
+mod recurrence;
 
 use tauri::Manager;
 

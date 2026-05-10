@@ -16,7 +16,9 @@
       "Bash(git commit *)",
       "Bash(PATH=__TRACKED_VAR__/.cargo/bin:__TRACKED_VAR__ cargo build)",
       "Bash(git -C /Users/jack/Private/shelf add -A)",
-      "Bash(git -C /Users/jack/Private/shelf commit -m \"feat: SQLite DB 초기화 및 스키마 마이그레이션\")"
+      "Bash(git -C /Users/jack/Private/shelf commit -m \"feat: SQLite DB 초기화 및 스키마 마이그레이션\")",
+      "Bash(PATH=\"$HOME/.cargo/bin:$PATH\" cargo test *)",
+      "Bash(git -C /Users/jack/Private/shelf commit -m \"feat: 반복 일정 드롭 로직 \\(TDD\\)\")"
     ]
   }
 }
