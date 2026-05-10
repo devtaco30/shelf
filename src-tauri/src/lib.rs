@@ -29,6 +29,15 @@ pub fn run() {
             commands::event::get_events,
             commands::event::create_event,
             commands::event::delete_event,
+            commands::vault::setup_vault,
+            commands::vault::unlock_vault,
+            commands::vault::lock_vault,
+            commands::vault::get_vault_items,
+            commands::vault::create_vault_item,
+            commands::vault::get_vault_content,
+            commands::vault::delete_vault_item,
+            commands::vault::is_vault_unlocked,
+            commands::vault::vault_initialized,
         ])
         .run(tauri::generate_context!())
         .expect("Tauri 실행 오류");
