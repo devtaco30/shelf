@@ -26,7 +26,8 @@
       "Bash(git -C /Users/jack/Private/shelf commit -m \"feat: AES-256-GCM 암호화 구현 \\(TDD\\)\")",
       "Bash(git -C /Users/jack/Private/shelf commit -m \"feat: AuthProvider 추상화 + macOS Keychain 구현\")",
       "Bash(git -C /Users/jack/Private/shelf commit -m \"feat: Vault CRUD + 세션 키 관리 commands\")",
-      "Bash(git -C /Users/jack/Private/shelf commit -m \"feat: Vault 탭 UI 구현 \\(암호화 메모 + 잠금/해제\\)\")"
+      "Bash(git -C /Users/jack/Private/shelf commit -m \"feat: Vault 탭 UI 구현 \\(암호화 메모 + 잠금/해제\\)\")",
+      "Bash(git -C /Users/jack/Private/shelf commit -m \"feat: Vault 자동 잠금 \\(5분\\) + 자정 반복 일정 체크\")"
     ]
   }
 }

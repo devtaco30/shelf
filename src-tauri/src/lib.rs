@@ -19,6 +19,23 @@ pub fn run() {
                 .to_string();
             std::fs::create_dir_all(&app_dir).ok();
             db::init(&app_dir).expect("DB 초기화 실패");
+
+            // 자정마다 반복 일정 체크 (get_todos 호출 시 자동 처리되므로 sleep만 담당)
+            std::thread::spawn(|| {
+                loop {
+                    let now = chrono::Local::now();
+                    let tomorrow = (now + chrono::Duration::days(1))
+                        .date_naive()
+                        .and_hms_opt(0, 0, 0)
+                        .unwrap();
+                    let secs_until_midnight =
+                        (tomorrow - now.naive_local()).num_seconds();
+                    std::thread::sleep(std::time::Duration::from_secs(
+                        secs_until_midnight.max(0) as u64,
+                    ));
+                }
+            });
+
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![

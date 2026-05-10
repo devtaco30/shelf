@@ -6,6 +6,16 @@
 
   let { children } = $props();
 
+  let vaultLockTimer: ReturnType<typeof setTimeout>;
+
+  function resetVaultTimer() {
+    clearTimeout(vaultLockTimer);
+    vaultLockTimer = setTimeout(async () => {
+      const { lockVault } = await import('$lib/stores/vault');
+      await lockVault();
+    }, 5 * 60 * 1000); // 5분 비활성 시 자동 잠금
+  }
+
   onMount(async () => {
     await initWindowListener();
     await goto('/todo');
@@ -16,6 +26,10 @@
         await toggleCollapse();
       }
     });
+
+    window.addEventListener('mousemove', resetVaultTimer);
+    window.addEventListener('keydown', resetVaultTimer);
+    resetVaultTimer();
   });
 </script>
 
