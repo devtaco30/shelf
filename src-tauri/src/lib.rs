@@ -1,3 +1,4 @@
+mod commands;
 mod db;
 mod recurrence;
 
@@ -19,7 +20,12 @@ pub fn run() {
             db::init(&app_dir).expect("DB 초기화 실패");
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![])
+        .invoke_handler(tauri::generate_handler![
+            commands::todo::get_todos,
+            commands::todo::create_todo,
+            commands::todo::toggle_todo,
+            commands::todo::delete_todo,
+        ])
         .run(tauri::generate_context!())
         .expect("Tauri 실행 오류");
 }
