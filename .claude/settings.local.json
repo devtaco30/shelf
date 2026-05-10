@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm --version)",
+      "Bash(cargo --version)",
+      "Bash(rustc --version)",
+      "Bash(export PATH=\"$HOME/.cargo/bin:$PATH\")",
+      "Bash(/Users/jack/.cargo/bin/cargo --version)",
+      "Bash(PATH=\"$HOME/.cargo/bin:$PATH\" npm create *)",
+      "Read(//private/tmp/**)",
+      "Bash(PATH=__TRACKED_VAR__/.cargo/bin:__TRACKED_VAR__ npm create tauri-app@latest shelf-tmp -- --template svelte-ts --manager npm --yes)",
+      "Bash(cp *)",
+      "Bash(npm install *)",
+      "Bash(npm run *)",
+      "Bash(git add *)",
+      "Bash(git commit *)"
+    ]
+  }
+}
