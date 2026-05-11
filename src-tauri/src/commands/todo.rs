@@ -39,8 +39,9 @@ pub fn create_todo(
     recurrence: String,
     category: String,
     priority: i64,
+    project_id: Option<i64>,
 ) -> Result<i64, String> {
-    todos::create(&title, &note, due_date.as_deref(), &recurrence, &category, priority)
+    todos::create(&title, &note, due_date.as_deref(), &recurrence, &category, priority, project_id)
         .map_err(|e| e.to_string())
 }
 

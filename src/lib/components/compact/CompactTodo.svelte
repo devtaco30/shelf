@@ -1,13 +1,12 @@
 <script lang="ts">
   import { slide } from 'svelte/transition';
   import { onMount } from 'svelte';
-  import { todos, loadTodos, toggleTodo, deleteTodo, PRIORITY_COLORS, showAddTodoModal } from '$lib/stores/todos';
+  import { todos, loadTodos, toggleTodo, deleteTodo, PRIORITY_COLORS, showAddTodoModal, editingTodo } from '$lib/stores/todos';
   import type { Todo } from '$lib/stores/todos';
   import { showToast } from '$lib/stores/toast';
   import { events, loadEvents } from '$lib/stores/events';
   import { projects, loadProjects } from '$lib/stores/projects';
   import { CATEGORY_COLORS } from '$lib/stores/projects';
-  import AddTodoModal from '$lib/components/modals/AddTodoModal.svelte';
 
   const todayPrefix = new Date().toISOString().slice(0, 10);
 
@@ -16,7 +15,6 @@
   $: activeProjectCount = $projects.length;
 
   let openId: number | null = null;
-  let editingTodo: Todo | null = null;
 
   let pendingDeleteId: number | null = null;
 
@@ -46,7 +44,7 @@
 
   function handleEdit(e: MouseEvent, todo: Todo): void {
     e.stopPropagation();
-    editingTodo = todo;
+    editingTodo.set(todo);
   }
 
   function handleDelete(e: MouseEvent, todo: Todo): void {
@@ -71,13 +69,6 @@
     await Promise.all([loadTodos(), loadEvents(), loadProjects()]);
   });
 </script>
-
-{#if $showAddTodoModal}
-  <AddTodoModal on:close={() => showAddTodoModal.set(false)} />
-{/if}
-{#if editingTodo}
-  <AddTodoModal todo={editingTodo} on:close={() => (editingTodo = null)} />
-{/if}
 
 <div class="compact-todo">
   <!-- Stats row -->

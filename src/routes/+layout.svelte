@@ -3,7 +3,9 @@
   import { getCurrentWindow } from '@tauri-apps/api/window';
   import { windowState } from '$lib/stores/window';
   import { toast, hideToast } from '$lib/stores/toast';
+  import { showAddTodoModal, editingTodo } from '$lib/stores/todos';
   import Pill from '$lib/components/Pill.svelte';
+  import AddTodoModal from '$lib/components/modals/AddTodoModal.svelte';
   import CompactPanel from '$lib/components/CompactPanel.svelte';
   import ExpandedDashboard from '$lib/components/dashboard/ExpandedDashboard.svelte';
 
@@ -43,6 +45,13 @@
     <div class="panel-wrapper">
       <ExpandedDashboard />
     </div>
+  {/if}
+
+  {#if $showAddTodoModal}
+    <AddTodoModal on:close={() => showAddTodoModal.set(false)} />
+  {/if}
+  {#if $editingTodo}
+    <AddTodoModal todo={$editingTodo} on:close={() => editingTodo.set(null)} />
   {/if}
 
   <!-- 삭제 토스트 (최상위 레이어) -->

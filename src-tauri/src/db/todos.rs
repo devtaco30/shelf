@@ -49,12 +49,13 @@ pub fn create(
     recurrence: &str,
     category: &str,
     priority: i64,
+    project_id: Option<i64>,
 ) -> Result<i64> {
     let conn = DB.get().unwrap().lock().unwrap();
     conn.execute(
-        "INSERT INTO todos (title, note, due_date, recurrence, category, priority)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
-        rusqlite::params![title, note, due_date, recurrence, category, priority],
+        "INSERT INTO todos (title, note, due_date, recurrence, category, priority, project_id)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+        rusqlite::params![title, note, due_date, recurrence, category, priority, project_id],
     )?;
     Ok(conn.last_insert_rowid())
 }

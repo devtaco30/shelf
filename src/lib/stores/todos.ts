@@ -24,6 +24,7 @@ export const PRIORITY_COLORS: Record<number, string | null> = {
 
 export const todos = writable<Todo[]>([]);
 export const showAddTodoModal = writable(false);
+export const editingTodo = writable<Todo | null>(null);
 
 export async function loadTodos(): Promise<void> {
   const result = await invoke<Todo[]>('get_todos');
@@ -37,8 +38,9 @@ export async function createTodo(
   recurrence: string,
   category: string = '작업',
   priority: number = 0,
+  project_id: number | null = null,
 ): Promise<void> {
-  await invoke('create_todo', { title, note, dueDate: due_date, recurrence, category, priority });
+  await invoke('create_todo', { title, note, dueDate: due_date, recurrence, category, priority, projectId: project_id });
   await loadTodos();
 }
 
