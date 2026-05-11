@@ -11,8 +11,9 @@ pub fn create_event(
     start_at: String,
     end_at: Option<String>,
     recurrence: String,
+    category: String,
 ) -> Result<i64, String> {
-    events::create(&title, &start_at, end_at.as_deref(), &recurrence)
+    events::create(&title, &start_at, end_at.as_deref(), &recurrence, &category)
         .map_err(|e| e.to_string())
 }
 

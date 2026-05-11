@@ -37,8 +37,21 @@ pub fn create_todo(
     note: String,
     due_date: Option<String>,
     recurrence: String,
+    category: String,
 ) -> Result<i64, String> {
-    todos::create(&title, &note, due_date.as_deref(), &recurrence)
+    todos::create(&title, &note, due_date.as_deref(), &recurrence, &category)
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn update_todo(
+    id: i64,
+    title: String,
+    note: String,
+    due_date: Option<String>,
+    category: String,
+) -> Result<(), String> {
+    todos::update(id, &title, &note, due_date.as_deref(), &category)
         .map_err(|e| e.to_string())
 }
 
