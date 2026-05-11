@@ -5,6 +5,11 @@ mod vault;
 
 use tauri::Manager;
 
+#[tauri::command]
+fn get_platform() -> String {
+    std::env::consts::OS.to_string()
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -41,6 +46,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             commands::todo::get_todos,
             commands::todo::create_todo,
+            commands::todo::update_todo,
             commands::todo::toggle_todo,
             commands::todo::delete_todo,
             commands::event::get_events,
@@ -51,10 +57,19 @@ pub fn run() {
             commands::vault::lock_vault,
             commands::vault::get_vault_items,
             commands::vault::create_vault_item,
+            commands::vault::update_vault_item,
             commands::vault::get_vault_content,
             commands::vault::delete_vault_item,
             commands::vault::is_vault_unlocked,
             commands::vault::vault_initialized,
+            commands::project::get_projects,
+            commands::project::create_project,
+            commands::project::update_project,
+            commands::project::delete_project,
+            commands::project::archive_project,
+            commands::settings::get_settings,
+            commands::settings::set_setting,
+            get_platform,
         ])
         .run(tauri::generate_context!())
         .expect("Tauri 실행 오류");
