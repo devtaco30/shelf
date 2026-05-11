@@ -50,7 +50,6 @@
   .cp-header {
     display: flex; align-items: center; justify-content: space-between;
     padding: 11px 13px 10px; flex-shrink: 0;
-    border-bottom: 0.5px solid #F0F0F0;
   }
 
   .cp-title { font-size: 13px; font-weight: 600; }
@@ -67,7 +66,7 @@
   .btn-add:hover { background: #E0E0E0; color: #111; }
 
   .btn-expand {
-    padding: 3px 8px; border-radius: 6px;
+    padding: 5px 8px; border-radius: 6px;
     background: #AAED3A; border: none;
     font-size: 10px; font-weight: 600; cursor: pointer; color: #111;
   }

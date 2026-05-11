@@ -41,29 +41,29 @@
 
 <div class="compact-todo">
   <!-- Stats row -->
-  <div class="stats-row">
-    <div class="stat-card">
-      <span class="stat-num">{activeProjectCount}</span>
-      <span class="stat-label">프로젝트</span>
+  <div style="display:flex;gap:5px;padding:0px 13px 0;">
+    <div style="flex:1;background:#F7F7F7;border-radius:7px;padding:6px 7px;text-align:center;">
+      <div style="font-size:16px;font-weight:700;line-height:1.25;">{activeProjectCount}</div>
+      <div style="font-size:9px;color:#aaa;margin-top:1px;line-height:1.25;">프로젝트</div>
     </div>
-    <div class="stat-card">
-      <span class="stat-num">{doneTodayCount}</span>
-      <span class="stat-label">완료</span>
+    <div style="flex:1;background:#F7F7F7;border-radius:7px;padding:6px 7px;text-align:center;">
+      <div style="font-size:16px;font-weight:700;line-height:1.25;">{doneTodayCount}</div>
+      <div style="font-size:9px;color:#aaa;margin-top:1px;line-height:1.25;">완료</div>
     </div>
-    <div class="stat-card">
-      <span class="stat-num">{nextEventTime ?? '없음'}</span>
-      <span class="stat-label">다음 일정</span>
+    <div style="flex:1;background:#F7F7F7;border-radius:7px;padding:6px 7px;text-align:center;">
+      <div style="font-size:16px;font-weight:700;line-height:1.25;">{nextEventTime ?? '없음'}</div>
+      <div style="font-size:9px;color:#aaa;margin-top:1px;line-height:1.25;">다음 일정</div>
     </div>
   </div>
 
-  <div class="sec">오늘 할 일</div>
+  <div style="font-size:10px;font-weight:600;color:#aaa;margin:2px 13px 2px;letter-spacing:0.3px;">오늘 할 일</div>
 
   <!-- Task list -->
   <ul style="list-style:none;padding:0 12px 13px;margin:0;line-height:1.2;">
     {#each todayTodos as todo, i (todo.id)}
       {@const dotColor = PRIORITY_COLORS[todo.priority]}
       <!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
-      <li style="display:flex;align-items:center;gap:6px;padding:8px 0;border-bottom:{i < todayTodos.length - 1 ? '0.5px solid #F0F0F0' : 'none'};">
+      <li style="display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:{i < todayTodos.length - 1 ? '0.5px solid #F0F0F0' : 'none'};">
         <span style="width:6px;height:6px;border-radius:50%;flex-shrink:0;background:{dotColor ?? 'transparent'};"></span>
         <div
           on:click={() => toggleTodo(todo.id, !todo.done)}

@@ -48,14 +48,15 @@ pub fn unlock_vault(password: Option<String>) -> Result<(), String> {
     let provider = PlatformAuthProvider;
 
     if password.is_none() {
-        // Touch ID 인증 후 Keychain에서 키 로드
-        let ok = provider.biometric_auth("Shelf Vault 잠금 해제")?;
+        let ok = provider
+            .biometric_auth("Shelf Vault 잠금 해제")
+            .map_err(|e| format!("[biometric_auth 오류] {e}"))?;
         if !ok {
-            return Err("Touch ID 인증에 실패했습니다".to_string());
+            return Err("[biometric_auth] success=false 반환됨".to_string());
         }
         let key_bytes = provider
             .load_key()
-            .map_err(|_| "Keychain에서 키를 찾을 수 없습니다. 비밀번호를 입력해 주세요.".to_string())?;
+            .map_err(|e| format!("[load_key 오류] {e}"))?;
         let mut guard = session_key_store().lock().unwrap();
         *guard = Some(key_bytes);
         return Ok(());
@@ -79,7 +80,10 @@ pub fn unlock_vault(password: Option<String>) -> Result<(), String> {
     }
 
     let mut guard = session_key_store().lock().unwrap();
-    *guard = Some(key_bytes);
+    *guard = Some(key_bytes.clone());
+    drop(guard);
+    // 비밀번호 인증 성공 시 키체인 아이템을 unrestricted ACL로 재생성 (다이얼로그 제거 마이그레이션)
+    let _ = provider.store_key(&key_bytes);
     Ok(())
 }
 
@@ -109,6 +113,13 @@ pub fn get_vault_content(id: i64) -> Result<String, String> {
     let encrypted = vault::get_content(id).map_err(|e| e.to_string())?;
     let decrypted = decrypt(&key, &encrypted)?;
     String::from_utf8(decrypted).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn update_vault_item(id: i64, title: String, content: String) -> Result<(), String> {
+    let key = get_session_key()?;
+    let encrypted = encrypt(&key, content.as_bytes())?;
+    vault::update(id, &title, &encrypted).map_err(|e| e.to_string())
 }
 
 #[tauri::command]

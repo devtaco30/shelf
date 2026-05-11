@@ -10,9 +10,9 @@
     error = '';
     loading = true;
     try {
-      await unlockVault(); // 비밀번호 없이 → Touch ID 시도
+      await unlockVault();
     } catch (e) {
-      error = 'Touch ID 인증에 실패했습니다. 비밀번호를 입력해 주세요.';
+      error = String(e);
     } finally {
       loading = false;
     }
