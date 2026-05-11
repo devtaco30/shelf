@@ -79,5 +79,12 @@ fn run_migrations(conn: &Connection) -> Result<()> {
         ")?;
     }
 
+    if version < 3 {
+        conn.execute_batch("
+            ALTER TABLE todos ADD COLUMN priority INTEGER NOT NULL DEFAULT 0;
+            PRAGMA user_version = 3;
+        ")?;
+    }
+
     Ok(())
 }

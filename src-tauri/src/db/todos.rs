@@ -13,6 +13,7 @@ pub struct Todo {
     pub recurrence_next: Option<String>,
     pub project_id: Option<i64>,
     pub category: String,
+    pub priority: i64,
     pub created_at: String,
 }
 
@@ -20,7 +21,7 @@ pub fn get_all() -> Result<Vec<Todo>> {
     let conn = DB.get().unwrap().lock().unwrap();
     let mut stmt = conn.prepare(
         "SELECT id, title, note, done, due_date, recurrence, recurrence_next,
-                project_id, category, created_at
+                project_id, category, priority, created_at
          FROM todos ORDER BY created_at DESC",
     )?;
     let todos = stmt.query_map([], |row| {
@@ -34,18 +35,26 @@ pub fn get_all() -> Result<Vec<Todo>> {
             recurrence_next:  row.get(6)?,
             project_id:       row.get(7)?,
             category:         row.get(8)?,
-            created_at:       row.get(9)?,
+            priority:         row.get(9)?,
+            created_at:       row.get(10)?,
         })
     })?.collect::<Result<Vec<_>>>()?;
     Ok(todos)
 }
 
-pub fn create(title: &str, note: &str, due_date: Option<&str>, recurrence: &str, category: &str) -> Result<i64> {
+pub fn create(
+    title: &str,
+    note: &str,
+    due_date: Option<&str>,
+    recurrence: &str,
+    category: &str,
+    priority: i64,
+) -> Result<i64> {
     let conn = DB.get().unwrap().lock().unwrap();
     conn.execute(
-        "INSERT INTO todos (title, note, due_date, recurrence, category)
-         VALUES (?1, ?2, ?3, ?4, ?5)",
-        rusqlite::params![title, note, due_date, recurrence, category],
+        "INSERT INTO todos (title, note, due_date, recurrence, category, priority)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+        rusqlite::params![title, note, due_date, recurrence, category, priority],
     )?;
     Ok(conn.last_insert_rowid())
 }
@@ -65,11 +74,18 @@ pub fn delete(id: i64) -> Result<()> {
     Ok(())
 }
 
-pub fn update(id: i64, title: &str, note: &str, due_date: Option<&str>, category: &str) -> Result<()> {
+pub fn update(
+    id: i64,
+    title: &str,
+    note: &str,
+    due_date: Option<&str>,
+    category: &str,
+    priority: i64,
+) -> Result<()> {
     let conn = DB.get().unwrap().lock().unwrap();
     conn.execute(
-        "UPDATE todos SET title=?1, note=?2, due_date=?3, category=?4 WHERE id=?5",
-        rusqlite::params![title, note, due_date, category, id],
+        "UPDATE todos SET title=?1, note=?2, due_date=?3, category=?4, priority=?5 WHERE id=?6",
+        rusqlite::params![title, note, due_date, category, priority, id],
     )?;
     Ok(())
 }
