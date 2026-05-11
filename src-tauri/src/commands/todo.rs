@@ -38,8 +38,9 @@ pub fn create_todo(
     due_date: Option<String>,
     recurrence: String,
     category: String,
+    priority: i64,
 ) -> Result<i64, String> {
-    todos::create(&title, &note, due_date.as_deref(), &recurrence, &category)
+    todos::create(&title, &note, due_date.as_deref(), &recurrence, &category, priority)
         .map_err(|e| e.to_string())
 }
 
@@ -50,8 +51,9 @@ pub fn update_todo(
     note: String,
     due_date: Option<String>,
     category: String,
+    priority: i64,
 ) -> Result<(), String> {
-    todos::update(id, &title, &note, due_date.as_deref(), &category)
+    todos::update(id, &title, &note, due_date.as_deref(), &category, priority)
         .map_err(|e| e.to_string())
 }
 
