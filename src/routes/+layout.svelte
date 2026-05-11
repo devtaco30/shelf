@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import Sidebar from '$lib/components/Sidebar.svelte';
-  import { initWindowListener, collapsed } from '$lib/stores/window';
+  import { openTab, windowState } from '$lib/stores/window';
   import { goto } from '$app/navigation';
   import { getCurrentWindow } from '@tauri-apps/api/window';
 
@@ -31,13 +31,11 @@
   }
 
   onMount(async () => {
-    await initWindowListener();
     await goto('/todo');
 
     window.addEventListener('keydown', async (e) => {
       if (e.metaKey && e.shiftKey && e.key === 'S') {
-        const { toggleCollapse } = await import('$lib/stores/window');
-        await toggleCollapse();
+        await openTab('todo');
       }
     });
 
@@ -47,7 +45,7 @@
   });
 </script>
 
-<div class="app" class:collapsed={$collapsed}>
+<div class="app">
   <!-- 타이틀바: mousedown으로 startDragging() 호출 -->
   <!-- svelte-ignore a11y-no-static-element-interactions -->
   <div class="titlebar" on:mousedown={startDrag} role="presentation">
@@ -60,15 +58,13 @@
   </div>
 
   <div class="body">
-    {#if !$collapsed}
-      <main>{@render children()}</main>
-    {/if}
+    <main>{@render children()}</main>
     <Sidebar />
   </div>
 </div>
 
 <style>
-  :global(body) { margin: 0; font-family: -apple-system, sans-serif; background: transparent; }
+  :global(html), :global(body) { margin: 0; font-family: -apple-system, sans-serif; background: transparent; }
 
   .app {
     display: flex;
@@ -104,11 +100,27 @@
     border: none;
     cursor: pointer;
     padding: 0;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .dot.close { background: #ff5f57; }
   .dot.minimize { background: #febc2e; }
-  .dot:hover { filter: brightness(0.85); }
+
+  .dot::after {
+    content: '';
+    position: absolute;
+    font-size: 8px;
+    font-weight: 900;
+    color: rgba(0,0,0,0.45);
+    opacity: 0;
+    line-height: 1;
+  }
+  .dot.close::after { content: '✕'; }
+  .dot.minimize::after { content: '−'; }
+  .traffic-lights:hover .dot::after { opacity: 1; }
 
   .body {
     display: flex;
@@ -116,5 +128,5 @@
     overflow: hidden;
   }
 
-  main { flex: 1; overflow: hidden; }
+  main { flex: 1; overflow: hidden; min-width: 0; }
 </style>

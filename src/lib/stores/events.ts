@@ -7,7 +7,9 @@ export interface CalEvent {
   start_at: string;
   end_at: string | null;
   recurrence: string;
+  recurrence_next: string | null;
   todo_id: number | null;
+  category: string;
   created_at: string;
 }
 
@@ -22,9 +24,10 @@ export async function createEvent(
   title: string,
   start_at: string,
   end_at: string | null,
-  recurrence: string
+  recurrence: string,
+  category: string = '작업',
 ): Promise<void> {
-  await invoke('create_event', { title, start_at, end_at, recurrence });
+  await invoke('create_event', { title, startAt: start_at, endAt: end_at, recurrence, category });
   await loadEvents();
 }
 
