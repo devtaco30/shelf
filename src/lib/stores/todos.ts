@@ -11,8 +11,16 @@ export interface Todo {
   recurrence_next: string | null;
   project_id: number | null;
   category: string;
+  priority: number;
   created_at: string;
 }
+
+export const PRIORITY_COLORS: Record<number, string | null> = {
+  0: null,
+  1: '#4A9EFF',
+  2: '#F59E0B',
+  3: '#EF4444',
+};
 
 export const todos = writable<Todo[]>([]);
 
@@ -27,8 +35,9 @@ export async function createTodo(
   due_date: string | null,
   recurrence: string,
   category: string = '작업',
+  priority: number = 0,
 ): Promise<void> {
-  await invoke('create_todo', { title, note, dueDate: due_date, recurrence, category });
+  await invoke('create_todo', { title, note, dueDate: due_date, recurrence, category, priority });
   await loadTodos();
 }
 
@@ -38,8 +47,9 @@ export async function updateTodo(
   note: string,
   due_date: string | null,
   category: string = '작업',
+  priority: number = 0,
 ): Promise<void> {
-  await invoke('update_todo', { id, title, note, dueDate: due_date, category });
+  await invoke('update_todo', { id, title, note, dueDate: due_date, category, priority });
   await loadTodos();
 }
 
