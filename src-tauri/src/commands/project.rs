@@ -1,12 +1,11 @@
 use crate::db::projects;
-use tauri::command;
 
-#[command]
+#[tauri::command]
 pub fn get_projects() -> Result<Vec<projects::Project>, String> {
     projects::get_all().map_err(|e| e.to_string())
 }
 
-#[command]
+#[tauri::command]
 pub fn create_project(
     name: String,
     color: String,
@@ -18,7 +17,7 @@ pub fn create_project(
         .map_err(|e| e.to_string())
 }
 
-#[command]
+#[tauri::command]
 pub fn update_project(
     id: i64,
     name: String,
@@ -31,12 +30,12 @@ pub fn update_project(
         .map_err(|e| e.to_string())
 }
 
-#[command]
+#[tauri::command]
 pub fn delete_project(id: i64) -> Result<(), String> {
     projects::delete(id).map_err(|e| e.to_string())
 }
 
-#[command]
+#[tauri::command]
 pub fn archive_project(id: i64) -> Result<(), String> {
     projects::archive(id).map_err(|e| e.to_string())
 }
