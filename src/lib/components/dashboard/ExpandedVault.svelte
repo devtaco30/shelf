@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { vaultUnlocked, vaultInitialized, checkVaultState } from '$lib/stores/vault';
+  import { vaultUnlocked, checkVaultState } from '$lib/stores/vault';
   import VaultLock from '$lib/components/vault/VaultLock.svelte';
   import VaultList from '$lib/components/vault/VaultList.svelte';
   import { onMount } from 'svelte';

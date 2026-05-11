@@ -1,8 +1,6 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
-  import { createTodo } from '$lib/stores/todos';
-  import { projects } from '$lib/stores/projects';
-  import { PRIORITY_COLORS } from '$lib/stores/todos';
+  import { createTodo, PRIORITY_COLORS } from '$lib/stores/todos';
 
   const dispatch = createEventDispatcher<{ close: void }>();
 
@@ -12,12 +10,7 @@
   let category    = '작업';
   let priority    = 0;
   let dueDate     = new Date().toISOString().slice(0, 10);
-  let projectId: number | null = null;
   let loading     = false;
-
-  function selectProject(id: number): void {
-    projectId = projectId === id ? null : id;
-  }
 
   async function handleSubmit(): Promise<void> {
     if (!title.trim()) return;
@@ -51,23 +44,6 @@
       autofocus
       on:keydown={(e) => e.key === 'Enter' && handleSubmit()}
     />
-
-    <!-- Project chips -->
-    {#if $projects.length > 0}
-      <div class="section-label">프로젝트</div>
-      <div class="project-chips">
-        {#each $projects as proj (proj.id)}
-          <button
-            class="proj-chip"
-            class:selected={projectId === proj.id}
-            style="--color:{proj.color}"
-            on:click={() => selectProject(proj.id)}
-          >
-            {proj.name}
-          </button>
-        {/each}
-      </div>
-    {/if}
 
     <!-- Priority -->
     <div class="section-label">우선순위</div>
@@ -138,15 +114,6 @@
   .title-input:focus { border-color: #AAED3A; }
 
   .section-label { font-size: 10px; font-weight: 600; color: #aaa; margin-bottom: -4px; }
-
-  .project-chips { display: flex; flex-wrap: wrap; gap: 6px; }
-  .proj-chip {
-    padding: 4px 10px; border-radius: 20px;
-    border: 1.5px solid var(--color); color: var(--color);
-    background: transparent; cursor: pointer; font-size: 11px; font-weight: 500;
-    transition: background 0.1s;
-  }
-  .proj-chip.selected { background: var(--color); color: #fff; }
 
   .priority-row { display: flex; gap: 8px; }
   .prio-btn {
