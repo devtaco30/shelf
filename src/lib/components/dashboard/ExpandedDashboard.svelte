@@ -3,29 +3,30 @@
   import { loadTodos } from '$lib/stores/todos';
   import { loadEvents } from '$lib/stores/events';
   import { loadProjects } from '$lib/stores/projects';
-  import DashboardHeader from './DashboardHeader.svelte';
-  import TodayTasks from './TodayTasks.svelte';
-  import CalendarView from '$lib/components/cal/CalendarView.svelte';
+  import { checkVaultState } from '$lib/stores/vault';
+  import { activeTab } from '$lib/stores/window';
+  import DashboardHeader  from './DashboardHeader.svelte';
+  import ExpandedTodo     from './ExpandedTodo.svelte';
+  import ExpandedCalendar from './ExpandedCalendar.svelte';
+  import ExpandedVault    from './ExpandedVault.svelte';
 
   onMount(async () => {
-    await Promise.all([loadTodos(), loadEvents(), loadProjects()]);
+    await Promise.all([loadTodos(), loadEvents(), loadProjects(), checkVaultState()]);
   });
 </script>
 
 <div class="expanded">
   <DashboardHeader />
 
-  <div class="ex-body">
-    <div class="ex-left">
-      <CalendarView />
-    </div>
-    <div class="ex-right">
-      <!-- TodaySchedule — Phase 2에서 구현 -->
-      <p class="placeholder">오늘 일정<br><span>Phase 2에서 추가됩니다</span></p>
-    </div>
+  <div class="ex-content">
+    {#if $activeTab === 'todo'}
+      <ExpandedTodo />
+    {:else if $activeTab === 'cal'}
+      <ExpandedCalendar />
+    {:else}
+      <ExpandedVault />
+    {/if}
   </div>
-
-  <TodayTasks />
 </div>
 
 <style>
@@ -33,12 +34,7 @@
     width: 560px; height: 100vh; background: #fff;
     display: flex; flex-direction: column; overflow: hidden;
   }
-  .ex-body {
-    display: grid; grid-template-columns: 1fr 200px;
-    flex: 1; overflow: hidden; border-bottom: 0.5px solid #F0F0F0;
+  .ex-content {
+    flex: 1; overflow: hidden; display: flex; flex-direction: column;
   }
-  .ex-left { padding: 14px; border-right: 0.5px solid #F0F0F0; overflow-y: auto; }
-  .ex-right { padding: 14px; overflow-y: auto; }
-  .placeholder { font-size: 11px; color: #aaa; text-align: center; padding-top: 40px; line-height: 2; }
-  .placeholder span { font-size: 10px; color: #ccc; }
 </style>
