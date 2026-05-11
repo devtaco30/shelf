@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { getCurrentWindow } from '@tauri-apps/api/window';
   import { windowState } from '$lib/stores/window';
+  import { toast, hideToast } from '$lib/stores/toast';
   import Pill from '$lib/components/Pill.svelte';
   import CompactPanel from '$lib/components/CompactPanel.svelte';
   import ExpandedDashboard from '$lib/components/dashboard/ExpandedDashboard.svelte';
@@ -43,6 +44,24 @@
       <ExpandedDashboard />
     </div>
   {/if}
+
+  <!-- 삭제 토스트 (최상위 레이어) -->
+  {#if $toast}
+    <!-- svelte-ignore a11y-no-static-element-interactions -->
+    <div
+      onmousedown={(e) => e.stopPropagation()}
+      style="position:absolute;bottom:20px;left:50%;transform:translateX(-50%);background:#1E1E2E;color:#fff;padding:9px 16px;border-radius:10px;font-size:12px;display:flex;align-items:center;gap:10px;white-space:nowrap;z-index:200;"
+    >
+      <span>{$toast.msg}</span>
+      {#if $toast.onUndo}
+        <!-- svelte-ignore a11y-click-events-have-key-events -->
+        <div
+          onclick={() => { $toast?.onUndo?.(); hideToast(); }}
+          style="background:#AAED3A;color:#111;border-radius:6px;padding:3px 9px;font-size:11px;font-weight:700;cursor:pointer;"
+        >되돌리기</div>
+      {/if}
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -67,4 +86,5 @@
     top: 50%;
     transform: translateY(-50%);
   }
+
 </style>

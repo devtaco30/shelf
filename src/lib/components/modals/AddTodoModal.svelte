@@ -1,22 +1,31 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
-  import { createTodo, PRIORITY_COLORS } from '$lib/stores/todos';
+  import { createTodo, updateTodo, PRIORITY_COLORS } from '$lib/stores/todos';
+  import type { Todo } from '$lib/stores/todos';
+
+  export let todo: Todo | null = null;
 
   const dispatch = createEventDispatcher<{ close: void }>();
+  const isEdit = todo !== null;
 
   const CATEGORIES = ['작업', '클라이언트', '개인', 'work', '사일'];
 
-  let title       = '';
-  let category    = '작업';
-  let priority    = 0;
-  let dueDate     = new Date().toISOString().slice(0, 10);
+  let title       = todo?.title    ?? '';
+  let note        = todo?.note     ?? '';
+  let category    = todo?.category ?? '작업';
+  let priority    = todo?.priority ?? 0;
+  let dueDate     = todo?.due_date ?? new Date().toISOString().slice(0, 10);
   let loading     = false;
 
   async function handleSubmit(): Promise<void> {
     if (!title.trim()) return;
     loading = true;
     try {
-      await createTodo(title.trim(), '', dueDate || null, 'none', category, priority);
+      if (isEdit && todo) {
+        await updateTodo(todo.id, title.trim(), note, dueDate || null, category, priority);
+      } else {
+        await createTodo(title.trim(), note, dueDate || null, 'none', category, priority);
+      }
       dispatch('close');
     } finally {
       loading = false;
@@ -34,9 +43,8 @@
 <div class="overlay" on:click={() => dispatch('close')}>
   <!-- svelte-ignore a11y-no-static-element-interactions -->
   <div class="modal" on:click|stopPropagation>
-    <h3 class="modal-title">할 일 추가</h3>
+    <h3 class="modal-title">{isEdit ? '할 일 수정' : '할 일 추가'}</h3>
 
-    <!-- Title -->
     <input
       class="title-input"
       bind:value={title}
@@ -45,7 +53,9 @@
       on:keydown={(e) => e.key === 'Enter' && handleSubmit()}
     />
 
-    <!-- Priority -->
+    <div class="section-label">메모</div>
+    <textarea class="note-input" bind:value={note} placeholder="메모 (선택)" rows="2"></textarea>
+
     <div class="section-label">우선순위</div>
     <div class="priority-row">
       {#each [0, 1, 2, 3] as p}
@@ -64,7 +74,6 @@
       {/each}
     </div>
 
-    <!-- Category -->
     <div class="section-label">카테고리</div>
     <div class="cat-row">
       {#each CATEGORIES as cat}
@@ -75,15 +84,13 @@
       {/each}
     </div>
 
-    <!-- Due date -->
     <div class="section-label">기한</div>
     <input type="date" class="date-input" bind:value={dueDate} />
 
-    <!-- Actions -->
     <div class="actions">
       <button class="btn-cancel" on:click={() => dispatch('close')}>취소</button>
       <button class="btn-submit" on:click={handleSubmit} disabled={loading || !title.trim()}>
-        {loading ? '추가 중...' : '추가'}
+        {loading ? (isEdit ? '수정 중...' : '추가 중...') : (isEdit ? '수정' : '추가')}
       </button>
     </div>
   </div>
@@ -110,8 +117,17 @@
     width: 100%; box-sizing: border-box;
     border: 1px solid #eee; border-radius: 8px;
     padding: 10px 12px; font-size: 14px; outline: none;
+    font-family: inherit;
   }
   .title-input:focus { border-color: #AAED3A; }
+
+  .note-input {
+    width: 100%; box-sizing: border-box;
+    border: 1px solid #eee; border-radius: 8px;
+    padding: 8px 12px; font-size: 12px; outline: none;
+    font-family: inherit; resize: none; color: #333;
+  }
+  .note-input:focus { border-color: #AAED3A; }
 
   .section-label { font-size: 10px; font-weight: 600; color: #aaa; margin-bottom: -4px; }
 
