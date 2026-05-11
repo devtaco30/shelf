@@ -49,6 +49,7 @@
       <button
         class="tab-btn"
         class:active={$windowState !== 'pill' && $activeTab === tab.id}
+        on:mousedown|stopPropagation
         on:click={() => handleTabClick(tab.id)}
         title={tab.label}
       >
@@ -62,7 +63,7 @@
 
   <div class="divider"></div>
 
-  <button class="fold-ico" on:click={handleFold} title="패널 열기/닫기">
+  <button class="fold-ico" on:mousedown|stopPropagation on:click={handleFold} title="패널 열기/닫기">
     <div class="fold-arrow" class:open={$windowState === 'pill'} class:closed={$windowState !== 'pill'}>
       <span></span>
       <span></span>

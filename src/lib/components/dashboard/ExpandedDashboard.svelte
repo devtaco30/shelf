@@ -18,7 +18,8 @@
 <div class="expanded">
   <DashboardHeader />
 
-  <div class="ex-content">
+  <!-- svelte-ignore a11y-no-static-element-interactions -->
+  <div class="ex-content" on:mousedown|stopPropagation>
     {#if $activeTab === 'todo'}
       <ExpandedTodo />
     {:else if $activeTab === 'cal'}

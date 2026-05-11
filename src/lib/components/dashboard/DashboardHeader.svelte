@@ -43,8 +43,8 @@
   <span class="date">{dateLabel}</span>
 
   <div class="actions">
-    <button class="btn-compact" on:click={() => setState('panel')}>▼ 컴팩트</button>
-    <button class="btn-close"   on:click={() => setState('pill')}>×</button>
+    <button class="btn-compact" on:mousedown|stopPropagation on:click={() => setState('panel')}>▼ 컴팩트</button>
+    <button class="btn-close"   on:mousedown|stopPropagation on:click={() => setState('pill')}>×</button>
   </div>
 </header>
 

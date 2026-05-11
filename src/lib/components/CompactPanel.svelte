@@ -17,12 +17,13 @@
   <header class="cp-header">
     <span class="cp-title">{TAB_TITLES[$activeTab]}</span>
     <div class="cp-actions">
-      <button class="btn-expand" on:click={handleExpand}>확장</button>
-      <button class="btn-close"  on:click={handleClose}>«</button>
+      <button class="btn-expand" on:mousedown|stopPropagation on:click={handleExpand}>확장</button>
+      <button class="btn-close"  on:mousedown|stopPropagation on:click={handleClose}>«</button>
     </div>
   </header>
 
-  <div class="cp-body">
+  <!-- svelte-ignore a11y-no-static-element-interactions -->
+  <div class="cp-body" on:mousedown|stopPropagation>
     {#if $activeTab === 'todo'}
       <CompactTodo />
     {:else if $activeTab === 'cal'}

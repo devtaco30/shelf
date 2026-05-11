@@ -35,13 +35,11 @@
   <Pill />
 
   {#if $windowState === 'panel'}
-    <!-- svelte-ignore a11y-no-static-element-interactions -->
-    <div class="panel-wrapper" onmousedown={(e) => e.stopPropagation()}>
+    <div class="panel-wrapper">
       <CompactPanel />
     </div>
   {:else if $windowState === 'expanded'}
-    <!-- svelte-ignore a11y-no-static-element-interactions -->
-    <div class="panel-wrapper" onmousedown={(e) => e.stopPropagation()}>
+    <div class="panel-wrapper">
       <ExpandedDashboard />
     </div>
   {/if}

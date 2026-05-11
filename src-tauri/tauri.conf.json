@@ -17,7 +17,7 @@
         "width": 52,
         "height": 600,
         "minWidth": 52,
-        "minHeight": 250,
+        "minHeight": 600,
         "alwaysOnTop": true,
         "decorations": false,
         "transparent": true,
