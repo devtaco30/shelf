@@ -35,8 +35,10 @@
 
 <style>
   .compact-panel {
-    width: 280px; height: 100vh;
+    width: 280px;
+    max-height: 460px;
     background: #fff;
+    border-radius: 16px;
     display: flex; flex-direction: column; overflow: hidden;
   }
 

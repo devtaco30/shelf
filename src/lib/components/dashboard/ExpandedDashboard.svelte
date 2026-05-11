@@ -31,7 +31,10 @@
 
 <style>
   .expanded {
-    width: 560px; height: 100vh; background: #fff;
+    width: 560px;
+    max-height: 500px;
+    background: #fff;
+    border-radius: 18px;
     display: flex; flex-direction: column; overflow: hidden;
   }
   .ex-content {

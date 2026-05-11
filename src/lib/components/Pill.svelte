@@ -2,7 +2,6 @@
   import { onMount } from 'svelte';
   import { invoke } from '@tauri-apps/api/core';
   import { getCurrentWindow } from '@tauri-apps/api/window';
-  import { goto } from '$app/navigation';
   import { windowState, activeTab, openTab, setState } from '$lib/stores/window';
   import type { Tab } from '$lib/stores/window';
 
@@ -14,13 +13,20 @@
 
   let platform = 'macos';
 
-  async function handleTabClick(tab: Tab) {
+  async function handleTabClick(tab: Tab): Promise<void> {
     await openTab(tab);
-    if ($windowState === 'panel') await goto(`/${tab}`);
   }
 
-  async function closeWindow()    { await getCurrentWindow().close(); }
-  async function minimizeWindow() { await getCurrentWindow().minimize(); }
+  async function handleFold(): Promise<void> {
+    if ($windowState === 'pill') {
+      await setState('panel');
+    } else {
+      await setState('pill');
+    }
+  }
+
+  async function closeWindow():    Promise<void> { await getCurrentWindow().close(); }
+  async function minimizeWindow(): Promise<void> { await getCurrentWindow().minimize(); }
 
   onMount(async () => {
     platform = await invoke('get_platform');
@@ -42,12 +48,12 @@
     {#each tabs as tab}
       <button
         class="tab-btn"
-        class:active={$windowState === 'panel' && $activeTab === tab.id}
+        class:active={$windowState !== 'pill' && $activeTab === tab.id}
         on:click={() => handleTabClick(tab.id)}
         title={tab.label}
       >
         {tab.icon}
-        {#if $windowState === 'panel' && $activeTab === tab.id}
+        {#if $windowState !== 'pill' && $activeTab === tab.id}
           <span class="indicator"></span>
         {/if}
       </button>
@@ -56,27 +62,35 @@
 
   <div class="divider"></div>
 
-  <button class="expand-btn" on:click={() => setState('expanded')} title="확장">⬜</button>
+  <button class="fold-ico" on:click={handleFold} title="패널 열기/닫기">
+    <div class="fold-arrow" class:open={$windowState === 'pill'} class:closed={$windowState !== 'pill'}>
+      <span></span>
+      <span></span>
+    </div>
+  </button>
 </aside>
 
 <style>
   .pill {
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
     width: 52px;
     background: #1E1E2E;
+    border-radius: 26px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 10px 0 12px;
-    gap: 4px;
-    flex-shrink: 0;
-    height: 100vh;
+    padding: 12px 0;
+    gap: 16px;
+    border: 0.5px solid rgba(255,255,255,0.08);
   }
 
   .traffic-lights {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     gap: 5px;
-    margin-bottom: 8px;
     padding-top: 2px;
   }
 
@@ -90,12 +104,12 @@
   .win-close {
     background: none; border: none;
     color: rgba(255,255,255,0.6); cursor: pointer;
-    font-size: 14px; margin-bottom: 8px;
+    font-size: 14px;
   }
 
   .tabs {
     display: flex; flex-direction: column;
-    align-items: center; gap: 4px; flex: 1;
+    align-items: center; gap: 4px;
   }
 
   .tab-btn {
@@ -115,16 +129,32 @@
 
   .divider {
     width: 28px; height: 0.5px;
-    background: rgba(255,255,255,0.08); margin: 4px 0;
+    background: rgba(255,255,255,0.08);
   }
 
-  .expand-btn {
-    width: 28px; height: 28px;
-    border: none; border-radius: 7px;
-    background: rgba(255,255,255,0.06); cursor: pointer;
-    font-size: 13px; color: rgba(255,255,255,0.5);
+  .fold-ico {
+    width: 30px; height: 20px;
+    background: rgba(255,255,255,0.06); border-radius: 6px;
+    border: none; cursor: pointer;
+    color: rgba(255,255,255,0.5);
     display: flex; align-items: center; justify-content: center;
     transition: background 0.15s;
   }
-  .expand-btn:hover { background: rgba(255,255,255,0.12); color: #fff; }
+  .fold-ico:hover { background: rgba(255,255,255,0.12); color: rgba(255,255,255,0.8); }
+
+  .fold-arrow {
+    display: flex; flex-direction: column; gap: 3px;
+    align-items: center; justify-content: center;
+  }
+  .fold-arrow span {
+    display: block; width: 10px; height: 1.5px;
+    background: currentColor; border-radius: 1px; transition: transform 0.2s;
+  }
+
+  /* panel/expanded open → ‹ pointing left */
+  .fold-arrow.closed span:first-child { transform: rotate(35deg) translateY(1px); }
+  .fold-arrow.closed span:last-child  { transform: rotate(-35deg) translateY(-1px); }
+  /* pill only → › pointing right */
+  .fold-arrow.open span:first-child { transform: rotate(-35deg) translateY(1px); }
+  .fold-arrow.open span:last-child  { transform: rotate(35deg) translateY(-1px); }
 </style>

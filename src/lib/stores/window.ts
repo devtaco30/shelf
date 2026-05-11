@@ -4,19 +4,18 @@ import { getCurrentWindow, LogicalSize } from '@tauri-apps/api/window';
 export type WindowState = 'pill' | 'panel' | 'expanded';
 export type Tab = 'todo' | 'cal' | 'vault';
 
-const PILL_W     = 52;
-const PANEL_W    = 332;  // 52 + 280
-const EXPANDED_W = 612;  // 52 + 560
-const HEIGHT     = 600;
+const SIZES: Record<WindowState, { w: number; h: number }> = {
+  pill:     { w: 52,  h: 250 },
+  panel:    { w: 342, h: 480 },  // 52px pill + 10px gap + 280px panel
+  expanded: { w: 622, h: 520 },  // 52px pill + 10px gap + 560px expanded
+};
 
 export const windowState = writable<WindowState>('pill');
 export const activeTab   = writable<Tab>('todo');
 
 export async function setState(next: WindowState): Promise<void> {
-  const widths: Record<WindowState, number> = {
-    pill: PILL_W, panel: PANEL_W, expanded: EXPANDED_W,
-  };
-  await getCurrentWindow().setSize(new LogicalSize(widths[next], HEIGHT));
+  const { w, h } = SIZES[next];
+  await getCurrentWindow().setSize(new LogicalSize(w, h));
   windowState.set(next);
 }
 

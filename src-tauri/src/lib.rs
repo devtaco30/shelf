@@ -25,6 +25,12 @@ pub fn run() {
             std::fs::create_dir_all(&app_dir).ok();
             db::init(&app_dir).expect("DB 초기화 실패");
 
+            // macOS 창 그림자 제거 (transparent window에서 외곽 테두리 방지)
+            #[cfg(target_os = "macos")]
+            if let Some(window) = app.get_webview_window("main") {
+                window.set_shadow(false).ok();
+            }
+
             // 자정마다 반복 일정 체크 (get_todos 호출 시 자동 처리되므로 sleep만 담당)
             std::thread::spawn(|| {
                 loop {

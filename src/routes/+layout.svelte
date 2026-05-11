@@ -36,12 +36,12 @@
 
   {#if $windowState === 'panel'}
     <!-- svelte-ignore a11y-no-static-element-interactions -->
-    <div onmousedown={(e) => e.stopPropagation()}>
+    <div class="panel-wrapper" onmousedown={(e) => e.stopPropagation()}>
       <CompactPanel />
     </div>
   {:else if $windowState === 'expanded'}
     <!-- svelte-ignore a11y-no-static-element-interactions -->
-    <div onmousedown={(e) => e.stopPropagation()}>
+    <div class="panel-wrapper" onmousedown={(e) => e.stopPropagation()}>
       <ExpandedDashboard />
     </div>
   {/if}
@@ -50,16 +50,23 @@
 <style>
   :global(html), :global(body) {
     margin: 0;
+    overflow: hidden;
     font-family: -apple-system, 'Apple SD Gothic Neo', sans-serif;
     background: transparent;
   }
 
   .app {
-    display: flex;
-    flex-direction: row;
+    position: relative;
+    width: 100%;
     height: 100vh;
-    border-radius: 12px;
+    background: transparent;
     overflow: hidden;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+  }
+
+  .panel-wrapper {
+    position: absolute;
+    left: 62px;
+    top: 50%;
+    transform: translateY(-50%);
   }
 </style>
