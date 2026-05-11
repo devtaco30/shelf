@@ -1,25 +1,35 @@
 <script lang="ts">
   import { activeTab, setState } from '$lib/stores/window';
+  import type { Tab } from '$lib/stores/window';
+  import CompactTodo  from './compact/CompactTodo.svelte';
+  import CompactCal   from './compact/CompactCal.svelte';
+  import CompactVault from './compact/CompactVault.svelte';
 
-  const TAB_TITLES: Record<string, string> = {
+  const TAB_TITLES: Record<Tab, string> = {
     todo: '할 일', cal: '캘린더', vault: 'Vault',
   };
 
-  async function handleExpand() { await setState('expanded'); }
-  async function handleClose()  { await setState('pill'); }
+  async function handleExpand(): Promise<void> { await setState('expanded'); }
+  async function handleClose(): Promise<void>  { await setState('pill'); }
 </script>
 
 <div class="compact-panel">
   <header class="cp-header">
-    <span class="cp-title">{TAB_TITLES[$activeTab] ?? '할 일'}</span>
+    <span class="cp-title">{TAB_TITLES[$activeTab]}</span>
     <div class="cp-actions">
-      <button class="btn-expand" on:click={handleExpand}>⬜ 확장</button>
-      <button class="btn-close"  on:click={handleClose}>×</button>
+      <button class="btn-expand" on:click={handleExpand}>확장</button>
+      <button class="btn-close"  on:click={handleClose}>«</button>
     </div>
   </header>
 
   <div class="cp-body">
-    <slot />
+    {#if $activeTab === 'todo'}
+      <CompactTodo />
+    {:else if $activeTab === 'cal'}
+      <CompactCal />
+    {:else}
+      <CompactVault />
+    {/if}
   </div>
 </div>
 
@@ -32,7 +42,8 @@
 
   .cp-header {
     display: flex; align-items: center; justify-content: space-between;
-    padding: 11px 13px 0; flex-shrink: 0;
+    padding: 11px 13px 10px; flex-shrink: 0;
+    border-bottom: 0.5px solid #F0F0F0;
   }
 
   .cp-title { font-size: 13px; font-weight: 600; }
@@ -44,14 +55,15 @@
     background: #AAED3A; border: none;
     font-size: 10px; font-weight: 600; cursor: pointer; color: #111;
   }
+  .btn-expand:hover { background: #9bde2a; }
 
   .btn-close {
     background: none; border: none; cursor: pointer;
-    color: #bbb; font-size: 15px; line-height: 1;
+    color: #bbb; font-size: 13px; line-height: 1;
   }
   .btn-close:hover { color: #333; }
 
   .cp-body {
-    flex: 1; overflow-y: auto; padding: 10px 13px 13px;
+    flex: 1; overflow-y: auto;
   }
 </style>

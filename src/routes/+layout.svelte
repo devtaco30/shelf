@@ -1,7 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { getCurrentWindow } from '@tauri-apps/api/window';
-  import { goto } from '$app/navigation';
   import { windowState } from '$lib/stores/window';
   import Pill from '$lib/components/Pill.svelte';
   import CompactPanel from '$lib/components/CompactPanel.svelte';
@@ -25,7 +24,6 @@
   }
 
   onMount(async () => {
-    await goto('/todo');
     window.addEventListener('mousemove', resetVaultTimer);
     window.addEventListener('keydown', resetVaultTimer);
     resetVaultTimer();
@@ -39,9 +37,7 @@
   {#if $windowState === 'panel'}
     <!-- svelte-ignore a11y-no-static-element-interactions -->
     <div onmousedown={(e) => e.stopPropagation()}>
-      <CompactPanel>
-        {@render children()}
-      </CompactPanel>
+      <CompactPanel />
     </div>
   {:else if $windowState === 'expanded'}
     <!-- svelte-ignore a11y-no-static-element-interactions -->
