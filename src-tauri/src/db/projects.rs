@@ -59,23 +59,32 @@ fn update_with(
     start_date: Option<&str>,
     end_date: Option<&str>,
 ) -> Result<()> {
-    conn.execute(
+    let affected = conn.execute(
         "UPDATE projects SET name=?1, color=?2, category=?3, start_date=?4, end_date=?5 WHERE id=?6",
         rusqlite::params![name, color, category, start_date, end_date, id],
     )?;
+    if affected == 0 {
+        return Err(rusqlite::Error::QueryReturnedNoRows);
+    }
     Ok(())
 }
 
 fn delete_with(conn: &Connection, id: i64) -> Result<()> {
-    conn.execute("DELETE FROM projects WHERE id = ?1", rusqlite::params![id])?;
+    let affected = conn.execute("DELETE FROM projects WHERE id = ?1", rusqlite::params![id])?;
+    if affected == 0 {
+        return Err(rusqlite::Error::QueryReturnedNoRows);
+    }
     Ok(())
 }
 
 fn archive_with(conn: &Connection, id: i64) -> Result<()> {
-    conn.execute(
+    let affected = conn.execute(
         "UPDATE projects SET archived = 1 WHERE id = ?1",
         rusqlite::params![id],
     )?;
+    if affected == 0 {
+        return Err(rusqlite::Error::QueryReturnedNoRows);
+    }
     Ok(())
 }
 
