@@ -23,6 +23,7 @@ export const PRIORITY_COLORS: Record<number, string | null> = {
 };
 
 export const todos = writable<Todo[]>([]);
+export const showAddTodoModal = writable(false);
 
 export async function loadTodos(): Promise<void> {
   const result = await invoke<Todo[]>('get_todos');

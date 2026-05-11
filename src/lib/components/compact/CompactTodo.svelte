@@ -1,14 +1,12 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { todos, loadTodos, toggleTodo, PRIORITY_COLORS } from '$lib/stores/todos';
+  import { todos, loadTodos, toggleTodo, PRIORITY_COLORS, showAddTodoModal } from '$lib/stores/todos';
   import { events, loadEvents } from '$lib/stores/events';
   import { projects, loadProjects } from '$lib/stores/projects';
   import { CATEGORY_COLORS } from '$lib/stores/projects';
   import AddTodoModal from '$lib/components/modals/AddTodoModal.svelte';
 
   const todayPrefix = new Date().toISOString().slice(0, 10);
-
-  let showAddModal = false;
 
   $: todayTodos = $todos.filter(t => t.due_date?.startsWith(todayPrefix));
   $: doneTodayCount = todayTodos.filter(t => t.done).length;
@@ -37,8 +35,8 @@
   });
 </script>
 
-{#if showAddModal}
-  <AddTodoModal on:close={() => (showAddModal = false)} />
+{#if $showAddTodoModal}
+  <AddTodoModal on:close={() => showAddTodoModal.set(false)} />
 {/if}
 
 <div class="compact-todo">
@@ -58,69 +56,47 @@
     </div>
   </div>
 
-  <!-- Section header -->
-  <div class="section-header">
-    <span class="section-title">오늘 할 일</span>
-    <button class="btn-add-task" on:click={() => (showAddModal = true)}>+</button>
-  </div>
+  <div class="sec">오늘 할 일</div>
 
   <!-- Task list -->
-  <ul class="task-list">
-    {#each todayTodos as todo (todo.id)}
+  <ul style="list-style:none;padding:0 12px 13px;margin:0;line-height:1.2;">
+    {#each todayTodos as todo, i (todo.id)}
       {@const dotColor = PRIORITY_COLORS[todo.priority]}
-      <li class="task-item">
-        {#if dotColor}
-          <span class="priority-dot" style="background:{dotColor}"></span>
-        {:else}
-          <span class="priority-dot empty"></span>
-        {/if}
-        <button
-          class="checkbox" class:done={todo.done}
+      <!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
+      <li style="display:flex;align-items:center;gap:6px;padding:8px 0;border-bottom:{i < todayTodos.length - 1 ? '0.5px solid #F0F0F0' : 'none'};">
+        <span style="width:6px;height:6px;border-radius:50%;flex-shrink:0;background:{dotColor ?? 'transparent'};"></span>
+        <div
           on:click={() => toggleTodo(todo.id, !todo.done)}
-          aria-label={todo.done ? '완료 취소' : '완료'}
-        ></button>
-        <span class="task-title" class:done={todo.done}>{todo.title}</span>
-        <span class="badge" style={badgeStyle(todo.category)}>{todo.category}</span>
+          style="width:14px;height:14px;min-width:14px;min-height:14px;border-radius:3px;border:1.5px solid {todo.done ? '#AAED3A' : '#ddd'};background:{todo.done ? '#AAED3A' : 'transparent'};cursor:pointer;flex-shrink:0;transition:0.15s;"
+        ></div>
+        <span style="flex:1;font-size:12px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;{todo.done ? 'text-decoration:line-through;color:#bbb;' : ''}">{todo.title}</span>
+        <span style="{badgeStyle(todo.category)};padding:2px 7px;border-radius:20px;font-size:9px;font-weight:600;white-space:nowrap;flex-shrink:0;">{todo.category}</span>
       </li>
     {:else}
-      <li class="empty">오늘 할 일이 없어요</li>
+      <li style="font-size:12px;color:#ccc;text-align:center;padding:20px 0;">오늘 할 일이 없어요</li>
     {/each}
   </ul>
 </div>
 
 <style>
-  .compact-todo { display: flex; flex-direction: column; height: 100%; }
+  .compact-todo { display: flex; flex-direction: column; }
 
   .stats-row {
-    display: grid; grid-template-columns: 1fr 1fr 1fr;
-    gap: 6px; padding: 10px 12px; background: #FAFAFA;
-    border-bottom: 0.5px solid #F0F0F0;
+    display: flex; gap: 5px; padding: 10px 13px 0; margin-bottom: 0;
   }
   .stat-card {
-    display: flex; flex-direction: column; align-items: center;
-    padding: 6px 4px; background: #fff; border-radius: 8px;
-    border: 0.5px solid #EFEFEF;
+    flex: 1; display: flex; flex-direction: column; align-items: center;
+    padding: 6px 7px; background: #F7F7F7; border-radius: 7px;
   }
   .stat-num   { font-size: 16px; font-weight: 700; line-height: 1; }
   .stat-label { font-size: 9px; color: #aaa; margin-top: 2px; }
 
-  .section-header {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 10px 12px 6px;
-  }
-  .section-title { font-size: 11px; font-weight: 600; color: #888; }
-  .btn-add-task {
-    width: 20px; height: 20px; border-radius: 50%;
-    background: #AAED3A; border: none; font-size: 14px; line-height: 1;
-    cursor: pointer; display: flex; align-items: center; justify-content: center;
-    font-weight: 700; color: #111;
-  }
-  .btn-add-task:hover { background: #9bde2a; }
+  .sec { font-size: 10px; font-weight: 600; color: #aaa; margin: 8px 0 5px; letter-spacing: 0.3px; }
 
-  .task-list { list-style: none; padding: 0 12px; margin: 0; flex: 1; overflow-y: auto; }
+  .task-list { list-style: none; padding: 0 12px; margin: 0; overflow-y: visible; }
   .task-item {
-    display: flex; align-items: center; gap: 5px;
-    padding: 6px 0; border-bottom: 0.5px solid #F5F5F5;
+    display: flex; align-items: center; gap: 6px;
+    padding: 5px 0; border-bottom: 0.5px solid #F0F0F0;
   }
   .task-item:last-child { border: none; }
 
@@ -129,18 +105,17 @@
   }
   .priority-dot.empty { background: transparent; }
 
-  .checkbox {
+  .chk {
     width: 14px; height: 14px; border-radius: 3px;
-    border: 1.5px solid #ddd; background: transparent;
-    cursor: pointer; flex-shrink: 0; padding: 0; transition: 0.15s;
+    border: 1.5px solid #ddd; cursor: pointer; flex-shrink: 0; transition: 0.15s;
   }
-  .checkbox.done { background: #AAED3A; border-color: #AAED3A; }
+  .chk.done { background: #AAED3A; border-color: #AAED3A; }
 
   .task-title      { flex: 1; font-size: 12px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .task-title.done { text-decoration: line-through; color: #bbb; }
 
   .badge {
-    padding: 2px 6px; border-radius: 20px;
+    padding: 2px 7px; border-radius: 20px;
     font-size: 9px; font-weight: 600; white-space: nowrap; flex-shrink: 0;
   }
 

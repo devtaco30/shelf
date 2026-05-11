@@ -1,6 +1,6 @@
 [package]
 name = "shelf"
-version = "0.2.0"
+version = "0.2.1"
 description = "Shelf - macOS floating todo + calendar + vault app"
 authors = ["devtaco30"]
 edition = "2021"
