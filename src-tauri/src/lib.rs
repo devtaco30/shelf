@@ -53,6 +53,7 @@ pub fn run() {
             commands::todo::get_todos,
             commands::todo::create_todo,
             commands::todo::update_todo,
+            commands::todo::set_todo_project,
             commands::todo::toggle_todo,
             commands::todo::delete_todo,
             commands::event::get_events,

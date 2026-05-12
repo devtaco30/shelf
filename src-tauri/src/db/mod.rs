@@ -86,5 +86,19 @@ fn run_migrations(conn: &Connection) -> Result<()> {
         ")?;
     }
 
+    if version < 4 {
+        conn.execute_batch("
+            ALTER TABLE todos ADD COLUMN completed_at TEXT;
+            PRAGMA user_version = 4;
+        ")?;
+    }
+
+    if version < 5 {
+        conn.execute_batch("
+            ALTER TABLE vault_items ADD COLUMN item_type TEXT NOT NULL DEFAULT 'memo';
+            PRAGMA user_version = 5;
+        ")?;
+    }
+
     Ok(())
 }

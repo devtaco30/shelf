@@ -5,7 +5,7 @@ pub fn get_projects() -> Result<Vec<projects::Project>, String> {
     projects::get_all().map_err(|e| e.to_string())
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub fn create_project(
     name: String,
     color: String,
@@ -17,7 +17,7 @@ pub fn create_project(
         .map_err(|e| e.to_string())
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub fn update_project(
     id: i64,
     name: String,

@@ -8,7 +8,8 @@ use security_framework::passwords::get_generic_password;
 use std::sync::{Arc, Mutex};
 
 const SERVICE: &str = "com.shelf.app";
-const ACCOUNT: &str = "vault-key";
+const KEY_ACCOUNT: &str = "vault-key";
+const SALT_ACCOUNT: &str = "vault-salt";
 
 pub struct MacOSAuthProvider;
 
@@ -18,18 +19,24 @@ impl AuthProvider for MacOSAuthProvider {
     }
 
     fn store_key(&self, key: &[u8]) -> Result<(), String> {
-        // SecAccessCreate(NULL trusted list) 방식으로 저장 → load 시 다이얼로그 없음
-        unsafe { store_key_unrestricted(key) }
+        unsafe { store_unrestricted(KEY_ACCOUNT, key) }
     }
 
     fn load_key(&self) -> Result<Vec<u8>, String> {
-        get_generic_password(SERVICE, ACCOUNT).map_err(|e| e.to_string())
+        get_generic_password(SERVICE, KEY_ACCOUNT).map_err(|e| e.to_string())
+    }
+
+    fn store_salt(&self, salt: &[u8]) -> Result<(), String> {
+        unsafe { store_unrestricted(SALT_ACCOUNT, salt) }
+    }
+
+    fn load_salt(&self) -> Result<Vec<u8>, String> {
+        get_generic_password(SERVICE, SALT_ACCOUNT).map_err(|e| e.to_string())
     }
 }
 
 /// 키체인 아이템을 "모든 앱 허용, 확인 없음" ACL로 저장한다.
-/// SecAccessCreate에 NULL trusted list를 넘기면 어느 앱이든 다이얼로그 없이 접근 가능.
-unsafe fn store_key_unrestricted(key: &[u8]) -> Result<(), String> {
+unsafe fn store_unrestricted(account: &str, data: &[u8]) -> Result<(), String> {
     use std::{ffi::c_void, ptr};
 
     type Cf = *const c_void;
@@ -78,10 +85,9 @@ unsafe fn store_key_unrestricted(key: &[u8]) -> Result<(), String> {
     };
 
     let cf_service = make_cfstr(SERVICE.as_bytes());
-    let cf_account = make_cfstr(ACCOUNT.as_bytes());
-    let cf_desc = make_cfstr(b"Shelf Vault Key");
+    let cf_account = make_cfstr(account.as_bytes());
+    let cf_desc = make_cfstr(b"Shelf Vault");
 
-    // NULL trusted_list → 확인 없이 모든 앱 허용
     let mut access: Cf = ptr::null();
     let status = SecAccessCreate(cf_desc, ptr::null(), &mut access);
     CFRelease(cf_desc);
@@ -94,7 +100,7 @@ unsafe fn store_key_unrestricted(key: &[u8]) -> Result<(), String> {
     let kcb = &kCFTypeDictionaryKeyCallBacks as *const _ as *const c_void;
     let vcb = &kCFTypeDictionaryValueCallBacks as *const _ as *const c_void;
 
-    // 기존 아이템 삭제 (없으면 무시)
+    // 기존 아이템 삭제
     {
         let keys = [kSecClass, kSecAttrService, kSecAttrAccount];
         let vals = [kSecClassGenericPassword, cf_service, cf_account];
@@ -103,8 +109,7 @@ unsafe fn store_key_unrestricted(key: &[u8]) -> Result<(), String> {
         CFRelease(query);
     }
 
-    // unrestricted access 포함해서 새로 저장
-    let cf_data = CFDataCreate(ptr::null(), key.as_ptr(), key.len() as isize);
+    let cf_data = CFDataCreate(ptr::null(), data.as_ptr(), data.len() as isize);
     let keys = [kSecClass, kSecAttrService, kSecAttrAccount, kSecValueData, kSecAttrAccess];
     let vals = [kSecClassGenericPassword, cf_service, cf_account, cf_data, access];
     let attrs = CFDictionaryCreate(ptr::null(), keys.as_ptr(), vals.as_ptr(), 5, kcb, vcb);
@@ -132,8 +137,7 @@ fn authenticate_touch_id(reason: &str) -> Result<bool, String> {
         let context: *mut Object = msg_send![class!(LAContext), new];
         let mut error_ptr: *mut Object = std::ptr::null_mut();
 
-        // LAPolicyDeviceOwnerAuthenticationWithBiometrics = 1
-        let policy: i64 = 1;
+        let policy: i64 = 1; // LAPolicyDeviceOwnerAuthenticationWithBiometrics
 
         let can_auth: bool =
             msg_send![context, canEvaluatePolicy:policy error:&mut error_ptr];
