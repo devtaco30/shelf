@@ -214,6 +214,9 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
 .proj-card-del:hover{opacity:1;background:#FFF0F0}
 .ex-proj-add{display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:9px;cursor:pointer;color:#bbb;font-size:11px;margin-top:4px;border:.5px dashed #eee}
 .ex-proj-add:hover{background:#F7F7F7;color:#888}
+/* 확장 메모 사이드바 — 기본 .ex-proj-add(#bbb)는 배경과 대비 부족 */
+.ex-proj-add.ex-memo-new-btn{color:#444;border-color:#ddd}
+.ex-proj-add.ex-memo-new-btn:hover{background:#F3F0FF;color:#5B21B6;border-color:#C4B5FD}
 .ex-task-panel{flex:1;padding:12px 12px 24px;overflow-y:auto;display:flex;flex-direction:column;min-height:0}
 .ex-task-hdr{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-shrink:0}
 .ex-task-title{font-size:13px;font-weight:600;flex:1}
@@ -322,6 +325,8 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
 .type-toggle{display:flex;background:#F5F5F5;border-radius:8px;padding:3px;gap:3px}
 .type-btn{flex:1;padding:5px;border:none;border-radius:6px;font-size:11px;font-weight:500;cursor:pointer;background:none;color:#888;transition:.15s}
 .type-btn.sel{background:#fff;color:#111;box-shadow:0 1px 4px rgba(0,0,0,.1)}
+.todo-completion-toggle .type-btn{font-size:9px;padding:4px 2px}
+.ex-todo-completion-toggle .type-btn{font-size:10px;padding:5px 4px}
 .modal-footer{display:flex;gap:7px;margin-top:16px}
 .btn-cancel{flex:1;padding:8px;border-radius:8px;border:1px solid #eee;background:#fafafa;font-size:12px;font-weight:500;cursor:pointer;color:#666}
 .btn-cancel:hover{background:#f0f0f0}
@@ -357,8 +362,15 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
 .dp-day.sun{color:#E53935}
 .dp-day.sel.sun{color:#fff}
 
-/* 토스트 */
-.del-toast{position:fixed;top:0;left:0;transform:translateX(-50%) translateY(-6px);background:#1E1E2E;color:#fff;padding:9px 16px;border-radius:10px;font-size:12px;display:flex;align-items:center;gap:10px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:200;white-space:nowrap}
+/* 토스트 — #app 밖에 두어 패널 overflow·창 하단 클립 방지 */
+.del-toast{
+  position:fixed;top:0;left:0;transform:translateX(-50%) translateY(-6px);
+  background:#1E1E2E;color:#fff;padding:9px 16px;border-radius:10px;font-size:12px;
+  display:flex;align-items:center;gap:10px;opacity:0;pointer-events:none;
+  transition:opacity .2s,transform .2s;z-index:9999;
+  max-width:min(92vw,360px);white-space:normal;word-break:break-word;text-align:left;
+  box-sizing:border-box;
+}
 .del-toast.show{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:all}
 .del-toast-undo{background:#AAED3A;color:#111;border:none;border-radius:6px;padding:3px 9px;font-size:11px;font-weight:700;cursor:pointer}
 
@@ -382,6 +394,47 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
 }
 .cp-resize-handle svg{opacity:.25;transition:opacity .15s}
 .cp-resize-handle:hover svg{opacity:.6}
+
+/* 메모 탭 — SQLite 목록 + 검색 + 편집 */
+.cp-memo-root{display:flex;flex-direction:column;min-height:0;flex:1;overflow:hidden}
+.memo-search{
+  width:100%;border:.5px solid #eee;border-radius:8px;padding:7px 9px;font-size:12px;margin-bottom:8px;
+  outline:none;background:#fff;box-sizing:border-box;flex-shrink:0;
+}
+.memo-list{display:flex;flex-direction:column;gap:4px;overflow-y:auto;min-height:0;flex:1}
+.memo-row{
+  padding:8px 9px;border-radius:8px;background:#F7F7F7;cursor:pointer;border:none;text-align:left;width:100%;
+  font:inherit;box-sizing:border-box;
+}
+.memo-row:hover{background:#EFEFEF}
+.memo-row.sel{background:#F3F0FF;border:.5px solid #C4B5FD}
+.memo-row-title{font-size:12px;font-weight:600;color:#111;display:block}
+.memo-row-preview{font-size:10px;color:#888;margin-top:3px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.ex-memo-layout{display:flex;position:absolute;top:0;left:0;right:0;bottom:0;overflow:hidden;min-height:0}
+.ex-memo-sidebar{width:200px;border-right:.5px solid #F0F0F0;padding:10px;display:flex;flex-direction:column;min-height:0}
+.ex-memo-main{flex:1;padding:12px;display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.memo-title-input{width:100%;border:.5px solid #eee;border-radius:8px;padding:8px 10px;font-size:13px;font-weight:600;margin-bottom:8px;box-sizing:border-box;outline:none}
+.memo-body-input{
+  flex:1;width:100%;min-height:120px;border:.5px solid #eee;border-radius:8px;padding:10px;font-size:13px;line-height:1.5;
+  resize:none;font-family:inherit;outline:none;background:#FAFAFA;box-sizing:border-box;
+}
+.memo-body-input:focus{background:#fff;border-color:#ddd}
+
+/* 컴팩트·메모 탭: cp-body 전체 스크롤 끄고 목록(#cp-memo-list)만 스크롤 → '+ 새 메모' 항상 보임 */
+#cpanel.cp-shell-memo-list .cp-body{
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+}
+#cpanel.cp-shell-memo-list .cp-memo-root{
+  flex:1;
+  min-height:0;
+}
+#cpanel.cp-shell-memo-list #cp-memo-list-view{
+  flex:1;
+  min-height:0;
+  min-width:0;
+}
 </style>
 </head>
 <body>
@@ -397,6 +450,7 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
     </div>
     <button class="pico" id="ico-todo" onclick="openCompact('todo')" title="할 일">📋</button>
     <button class="pico" id="ico-cal"  onclick="openCompact('cal')"  title="캘린더">📅</button>
+    <button class="pico" id="ico-memo" onclick="openCompact('memo')" title="메모">📝</button>
     <button class="pico" id="ico-vault" onclick="openCompact('vault')" title="Vault">🔒</button>
     <div class="pill-divider"></div>
     <button class="fold-ico" id="ico-fold" onclick="toggleFold()" title="접기/펴기">
@@ -424,6 +478,11 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
           <div class="sm-s"><div class="n" id="cp-next-time">-</div><div class="l">다음 일정</div></div>
         </div>
         <div class="sec">오늘 할 일</div>
+        <div class="type-toggle todo-completion-toggle" id="cp-todo-completion-filter" aria-label="오늘 할 일 표시 범위">
+          <button type="button" class="type-btn sel" data-completion-filter="open" onclick="setCpTodoCompletionFilter('open')">미완료</button>
+          <button type="button" class="type-btn" data-completion-filter="done" onclick="setCpTodoCompletionFilter('done')">완료</button>
+          <button type="button" class="type-btn" data-completion-filter="all" onclick="setCpTodoCompletionFilter('all')">전체</button>
+        </div>
         <div id="tlist"><div class="loading">불러오는 중...</div></div>
       </div>
 
@@ -478,6 +537,27 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
         </div>
       </div>
 
+      <!-- 메모 -->
+      <div id="cp-memo" class="cp-memo-root" style="display:none">
+        <div id="cp-memo-list-view" style="display:flex;flex-direction:column;min-height:0;flex:1;overflow:hidden">
+          <input type="search" class="memo-search" id="cp-memo-search" placeholder="제목·내용 검색…" autocomplete="off" oninput="shelfMemoOnSearchInput('cp-memo-search')">
+          <div class="memo-list" id="cp-memo-list"></div>
+          <button type="button" class="vbtn vb" style="margin-top:8px;flex-shrink:0" onclick="shelfMemoStartNew('cp')">＋ 새 메모</button>
+        </div>
+        <div id="cp-memo-detail-view" style="display:none;flex-direction:column;min-height:0;flex:1;overflow:hidden">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-shrink:0">
+            <button type="button" style="background:none;border:none;color:#bbb;font-size:16px;cursor:pointer;padding:0" onclick="shelfMemoCompactBack()" title="목록">‹</button>
+            <span style="font-size:11px;color:#888">메모 편집</span>
+          </div>
+          <input type="text" class="memo-title-input" id="cp-memo-title" placeholder="제목" autocomplete="off">
+          <textarea class="memo-body-input" id="cp-memo-body" placeholder="내용" spellcheck="false" autocomplete="off"></textarea>
+          <div style="display:flex;gap:8px;margin-top:8px;flex-shrink:0">
+            <button type="button" class="vbtn vp" id="cp-memo-save-btn" style="flex:1;margin:0">저장</button>
+            <button type="button" class="vbtn vb" id="cp-memo-delete-btn" style="flex:1;margin:0">삭제</button>
+          </div>
+        </div>
+      </div>
+
     </div>
     <div class="cp-resize-handle" id="cp-resize-handle" aria-hidden="true">
       <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
@@ -507,6 +587,9 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
       <div id="ex-stats-vault" class="ex-stats" style="display:none" data-tauri-drag-region>
         <div class="ex-stat" data-tauri-drag-region><div class="n" id="ex-vault-count" data-tauri-drag-region>-</div><div class="l" data-tauri-drag-region>보안 항목</div></div>
       </div>
+      <div id="ex-stats-memo" class="ex-stats" style="display:none" data-tauri-drag-region>
+        <div class="ex-stat" data-tauri-drag-region><div class="n" id="ex-memo-count" data-tauri-drag-region>0</div><div class="l" data-tauri-drag-region>메모</div></div>
+      </div>
       <span class="ex-date" id="ex-date" data-tauri-drag-region></span>
       <div style="display:flex;gap:6px;align-items:center">
         <button class="ex-compact" onclick="setState('panel')">▼ 컴팩트</button>
@@ -525,6 +608,11 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
         <div class="ex-task-panel">
           <div class="ex-task-hdr">
             <span class="ex-task-title" id="ex-proj-title" style="color:#666">프로젝트를 선택하세요</span>
+          </div>
+          <div class="type-toggle ex-todo-completion-toggle" id="ex-todo-completion-filter" style="display:none;margin-bottom:8px" aria-label="프로젝트 태스크 표시 범위">
+            <button type="button" class="type-btn" data-completion-filter="open" onclick="setExTodoCompletionFilter('open')">미완료</button>
+            <button type="button" class="type-btn" data-completion-filter="done" onclick="setExTodoCompletionFilter('done')">완료</button>
+            <button type="button" class="type-btn sel" data-completion-filter="all" onclick="setExTodoCompletionFilter('all')">전체</button>
           </div>
           <div id="ex-tasklist"><div class="loading">프로젝트를 선택하면 태스크가 표시됩니다</div></div>
           <div style="margin-top:6px;flex-shrink:0">
@@ -577,6 +665,25 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
         <input class="vinput" id="ex-vault-pw" type="password" placeholder="••••••••" style="width:200px;text-align:center;letter-spacing:3px">
         <button class="vbtn vp" onclick="unlockVaultEx()" style="width:200px">잠금 해제</button>
         <button class="vbtn vb" onclick="unlockVaultBiometricEx()" style="width:200px">👆 Touch ID</button>
+      </div>
+    </div>
+
+    <!-- 확장 메모 -->
+    <div class="ex-sub" id="ex-sub-memo">
+      <div class="ex-memo-layout">
+        <div class="ex-memo-sidebar">
+          <input type="search" class="memo-search" id="ex-memo-search" placeholder="제목·내용 검색…" autocomplete="off" oninput="shelfMemoOnSearchInput('ex-memo-search')">
+          <div class="memo-list" id="ex-memo-list"></div>
+          <button type="button" class="ex-proj-add ex-memo-new-btn" style="margin-top:6px;flex-shrink:0" onclick="shelfMemoStartNew('ex')">＋ 새 메모</button>
+        </div>
+        <div class="ex-memo-main">
+          <input type="text" class="memo-title-input" id="ex-memo-title" placeholder="제목" autocomplete="off">
+          <textarea class="memo-body-input" id="ex-memo-body" placeholder="내용" spellcheck="false" autocomplete="off"></textarea>
+          <div style="display:flex;gap:8px;margin-top:8px;flex-shrink:0">
+            <button type="button" id="ex-memo-save-btn" style="flex:1;padding:7px;border-radius:8px;border:none;background:#111;color:#fff;font-size:11px;font-weight:600;cursor:pointer">저장</button>
+            <button type="button" id="ex-memo-delete-btn" style="flex:1;padding:7px;border-radius:8px;border:.5px solid #eee;background:#FAFAFA;color:#EF4444;font-size:11px;font-weight:600;cursor:pointer">삭제</button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -788,13 +895,13 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
     </div>
   </div>
 
-  <!-- 삭제 토스트 -->
+</div><!-- /app -->
+
+  <!-- 삭제·일반 토스트 (#app 밖 — 창 경계·패널 클립 회피) -->
   <div class="del-toast" id="del-toast">
     <span id="del-toast-msg">삭제됨</span>
     <button class="del-toast-undo" onclick="undoDelete()">되돌리기</button>
   </div>
-
-</div><!-- /app -->
 
 <script>
 function dbg(){} // 디버그 종료 — no-op
@@ -891,12 +998,15 @@ const SHELL_DIMS = {
   compactTodoDefaultLogicalHeight:   280,
   compactCalDefaultLogicalHeight:     540,
   compactVaultDefaultLogicalHeight:   300,
+  compactMemoDefaultLogicalHeight:    320,
   /** 확장 창 논리 높이 — expanel 실제 높이는 shell 여백 만큼 빼야 함 */
   expandedDefaultLogicalHeight: 620,
   /** 컴팩트 창 논리 높이 — 리사이즈 핸들로만 변경, 하한·상한 */
   compactShellMinLogicalHeight: 260,
   compactShellMaxLogicalHeight: 1000,
 };
+/** 필 레일 탭 id — DOM id 접두 ico- / cp- / ex-sub- 와 일치 */
+const SHELF_SHELL_TAB_IDS=['todo','cal','vault','memo'];
 /** 레일 우측 패널 공통: top 10px + #app 하단 10px ↔ max-height calc(100% - 20px) */
 const SHELL_SIDE_PANEL_VERTICAL_GAP_PX = 20;
 function sidePanelInnerHeightFromShellWindowHeight(shellWindowLogicalHeightPx){
@@ -908,11 +1018,13 @@ const SIZES = {
     todo:  { w:342, h:SHELL_DIMS.compactTodoDefaultLogicalHeight },
     cal:   { w:342, h:SHELL_DIMS.compactCalDefaultLogicalHeight },
     vault: { w:342, h:SHELL_DIMS.compactVaultDefaultLogicalHeight },
+    memo:  { w:342, h:SHELL_DIMS.compactMemoDefaultLogicalHeight },
   },
   expanded: {
     todo:  { w:622, h:SHELL_DIMS.expandedDefaultLogicalHeight },
     cal:   { w:622, h:SHELL_DIMS.expandedDefaultLogicalHeight },
     vault: { w:622, h:SHELL_DIMS.expandedDefaultLogicalHeight },
+    memo:  { w:622, h:SHELL_DIMS.expandedDefaultLogicalHeight },
   },
 };
 // 현재 탭의 컴팩트 크기 참조 (컴팩트 리사이즈 핸들이 이 객체 w/h를 갱신)
@@ -974,7 +1086,8 @@ async function setState(s){
   const fa=document.getElementById('fold-arrow');
   if(s==='pill'){
     cp.classList.remove('open'); ex.classList.remove('open');
-    ['todo','cal','vault'].forEach(k=>document.getElementById('ico-'+k).classList.remove('active'));
+    cp.classList.remove('cp-shell-memo-list','cp-body-scroll-capped');
+    SHELF_SHELL_TAB_IDS.forEach(k=>document.getElementById('ico-'+k).classList.remove('active'));
     curTab=null;
     fa.classList.remove('closed'); fa.classList.add('open');
   } else if(s==='panel'){
@@ -999,13 +1112,13 @@ async function setState(s){
 async function showExpandSub(ctx){
   const prevTab=curTab;
   curTab=ctx;
-  ['todo','cal','vault'].forEach(k=>{
+  SHELF_SHELL_TAB_IDS.forEach(k=>{
     document.getElementById('ex-sub-'+k).classList.toggle('active',k===ctx);
     document.getElementById('ico-'+k).classList.toggle('active',k===ctx);
   });
-  const titles={todo:'프로젝트 관리',cal:'캘린더',vault:'🔐 Vault'};
+  const titles={todo:'프로젝트 관리',cal:'캘린더',vault:'🔐 Vault',memo:'메모'};
   document.getElementById('ex-header-title').textContent=titles[ctx];
-  ['todo','cal','vault'].forEach(k=>{
+  SHELF_SHELL_TAB_IDS.forEach(k=>{
     document.getElementById('ex-stats-'+k).style.display=k===ctx?'flex':'none';
   });
   if(prevTab!==ctx) resizeWindow('expanded', ctx);
@@ -1034,22 +1147,271 @@ async function showExpandSub(ctx){
     // 컴팩트 상세에서 보던 아이템이 있으면 확장 뷰에서도 바로 열기
     if(cpVaultCurrentId) await showVaultDetail(cpVaultCurrentId);
   }
+
+  if(ctx==='memo') void shelfMemoExpandedEnter();
 }
 
 // 컴팩트 패널 탭
-const CP_TITLES={todo:'📋 할 일',cal:'📅 캘린더',vault:'🔐 Vault'};
+const CP_TITLES={todo:'📋 할 일',cal:'📅 캘린더',vault:'🔐 Vault',memo:'메모'};
+
+/** 메모: SQLite 다건 + 검색(제목·본문) — 목록은 제목·미리보기 */
+let memoSummaries=[], memoSelectedId=null, memoSearchDebounceTimer=null;
+
+async function shelfMemoMigrateFromLocalStorageOnce(){
+  try{
+    const raw=localStorage.getItem('shelf.memo.body');
+    if(!raw||!String(raw).trim()) return;
+    const cnt=await invoke('get_memo_count');
+    if(cnt>0){ localStorage.removeItem('shelf.memo.body'); return; }
+    await invoke('create_memo',{title:'메모',body:String(raw)});
+    localStorage.removeItem('shelf.memo.body');
+  }catch(_){}
+}
+
+async function shelfMemoUpdateHeaderCount(){
+  const n=document.getElementById('ex-memo-count');
+  if(!n) return;
+  try{ n.textContent=String(await invoke('get_memo_count')||0); }
+  catch(_){ n.textContent='-'; }
+}
+
+function shelfMemoSyncSearchFromActive(srcId){
+  const el=document.getElementById(srcId);
+  if(!el) return;
+  const v=el.value;
+  const otherId=srcId==='cp-memo-search'?'ex-memo-search':'cp-memo-search';
+  const o=document.getElementById(otherId);
+  if(o&&o.value!==v) o.value=v;
+}
+
+function shelfMemoOnSearchInput(srcId){
+  shelfMemoSyncSearchFromActive(srcId);
+  clearTimeout(memoSearchDebounceTimer);
+  memoSearchDebounceTimer=setTimeout(()=>{ void shelfMemoLoadSummaries(); },220);
+}
+
+async function shelfMemoLoadSummaries(){
+  const app=document.getElementById('app');
+  const inEx=app&&app.classList.contains('shell-expanded');
+  const inp=document.getElementById(inEx?'ex-memo-search':'cp-memo-search')||document.getElementById('cp-memo-search');
+  const qStr=(inp&&inp.value||'').trim();
+  try{
+    memoSummaries=await invoke('get_memos',{query:qStr||null})||[];
+  }catch(e){ memoSummaries=[]; dbg(e); }
+  shelfMemoRenderLists();
+}
+
+function shelfMemoRenderOneList(hostId, clickFn){
+  const host=document.getElementById(hostId);
+  if(!host) return;
+  if(memoSummaries.length===0){
+    host.innerHTML='<div style="text-align:center;color:#bbb;font-size:11px;padding:14px 4px">메모가 없어요<br><span style="font-size:10px">＋ 새 메모로 추가</span></div>';
+    return;
+  }
+  host.innerHTML=memoSummaries.map(m=>{
+    const sel=memoSelectedId!=null&&Number(memoSelectedId)===Number(m.id)?' sel':'';
+    const prev=(m.preview||'').trim()?escHtml(m.preview):'<span style="color:#ccc;font-size:10px">내용 없음</span>';
+    return `<button type="button" class="memo-row${sel}" onclick="void shelfMemo${clickFn}(${m.id})"><span class="memo-row-title">${escHtml(m.title||'제목 없음')}</span><span class="memo-row-preview">${prev}</span></button>`;
+  }).join('');
+}
+
+function shelfMemoRenderLists(){
+  shelfMemoRenderOneList('cp-memo-list','RowClickCp');
+  shelfMemoRenderOneList('ex-memo-list','RowClickEx');
+}
+
+async function shelfMemoFillEditorsFromId(id){
+  try{
+    const m=await invoke('get_memo',{id});
+    ['cp','ex'].forEach(prefix=>{
+      const t=document.getElementById(prefix+'-memo-title');
+      const b=document.getElementById(prefix+'-memo-body');
+      if(t) t.value=m.title||'';
+      if(b) b.value=m.body||'';
+    });
+  }catch(e){ dbg('get_memo',e); }
+}
+
+async function shelfMemoSelect(id, opts){
+  memoSelectedId=id;
+  await shelfMemoFillEditorsFromId(id);
+  if(opts&&opts.openCpDetail){
+    const lv=document.getElementById('cp-memo-list-view');
+    const dv=document.getElementById('cp-memo-detail-view');
+    if(lv) lv.style.display='none';
+    if(dv) dv.style.display='flex';
+  }
+  shelfMemoRenderLists();
+}
+
+async function shelfMemoRowClickCp(id){ await shelfMemoSelect(id,{openCpDetail:true}); }
+async function shelfMemoRowClickEx(id){ await shelfMemoSelect(id,{openCpDetail:false}); }
+
+async function shelfMemoStartNew(zone){
+  memoSelectedId=null;
+  ['cp','ex'].forEach(prefix=>{
+    const t=document.getElementById(prefix+'-memo-title');
+    const b=document.getElementById(prefix+'-memo-body');
+    if(t) t.value='';
+    if(b) b.value='';
+  });
+  shelfMemoRenderLists();
+  if(zone==='cp'){
+    const lv=document.getElementById('cp-memo-list-view');
+    const dv=document.getElementById('cp-memo-detail-view');
+    if(lv) lv.style.display='none';
+    if(dv) dv.style.display='flex';
+  }
+}
+
+function shelfMemoCompactBack(){
+  const lv=document.getElementById('cp-memo-list-view');
+  const dv=document.getElementById('cp-memo-detail-view');
+  if(lv) lv.style.display='flex';
+  if(dv) dv.style.display='none';
+  void shelfMemoLoadSummaries();
+}
+
+async function shelfMemoEnterCompactMemoTab(){
+  const cps=document.getElementById('cp-memo-search');
+  const exs=document.getElementById('ex-memo-search');
+  if(cps&&exs){
+    if(!cps.value&&exs.value) cps.value=exs.value;
+    else if(!exs.value&&cps.value) exs.value=cps.value;
+  }
+  shelfMemoCompactBack();
+  await shelfMemoLoadSummaries();
+  await shelfMemoUpdateHeaderCount();
+}
+
+async function shelfMemoExpandedEnter(){
+  const cps=document.getElementById('cp-memo-search');
+  const exs=document.getElementById('ex-memo-search');
+  if(cps&&exs){
+    if(!exs.value&&cps.value) exs.value=cps.value;
+    else if(!cps.value&&exs.value) cps.value=exs.value;
+  }
+  await shelfMemoLoadSummaries();
+  await shelfMemoUpdateHeaderCount();
+  if(memoSummaries.length===0){
+    await shelfMemoStartNew('ex');
+    return;
+  }
+  const keep=memoSelectedId!=null&&memoSummaries.some(m=>Number(m.id)===Number(memoSelectedId));
+  const pickId=keep?memoSelectedId:memoSummaries[0].id;
+  await shelfMemoSelect(pickId,{openCpDetail:false});
+}
+
+function shelfMemoNormalizeCreatedId(raw){
+  if(raw==null||raw==='') return null;
+  if(typeof raw==='bigint') return Number(raw);
+  const n=Number(raw);
+  return Number.isFinite(n)?n:null;
+}
+
+async function shelfMemoSave(zone){
+  if(!window.__TAURI__?.core?.invoke){
+    showToast('앱 연결이 없어 저장할 수 없어요');
+    return;
+  }
+  const t=document.getElementById(zone+'-memo-title');
+  const b=document.getElementById(zone+'-memo-body');
+  if(!t||!b){
+    showToast('편집 영역을 찾을 수 없어요');
+    return;
+  }
+  const title=(t.value||'').trim()||'제목 없음';
+  const body=b.value||'';
+  try{
+    if(memoSelectedId!=null){
+      await invoke('update_memo',{id:memoSelectedId,title,body});
+    } else {
+      const rawId=await invoke('create_memo',{title,body});
+      const nid=shelfMemoNormalizeCreatedId(rawId);
+      if(nid==null){
+        console.error('create_memo unexpected return',rawId);
+        showToast('저장 응답이 비정상이에요. 콘솔을 확인해 주세요');
+        return;
+      }
+      memoSelectedId=nid;
+    }
+    const mirror=zone==='cp'?'ex':'cp';
+    const tm=document.getElementById(mirror+'-memo-title');
+    const bm=document.getElementById(mirror+'-memo-body');
+    if(tm) tm.value=title;
+    if(bm) bm.value=body;
+    await shelfMemoLoadSummaries();
+    await shelfMemoUpdateHeaderCount();
+    showToast('메모를 저장했어요');
+    if(zone==='cp') shelfMemoCompactBack();
+  }catch(e){
+    console.error('memo save',e);
+    showToast('저장 실패: '+(e&&e.message?e.message:String(e)));
+  }
+}
+
+async function shelfMemoDelete(zone){
+  if(!window.__TAURI__?.core?.invoke){
+    showToast('앱 연결이 없어 삭제할 수 없어요');
+    return;
+  }
+  if(memoSelectedId==null){
+    await shelfMemoStartNew(zone);
+    return;
+  }
+  if(!confirm('이 메모를 삭제할까요?')) return;
+  try{
+    await invoke('delete_memo',{id:memoSelectedId});
+    memoSelectedId=null;
+    ['cp','ex'].forEach(prefix=>{
+      const t=document.getElementById(prefix+'-memo-title');
+      const b=document.getElementById(prefix+'-memo-body');
+      if(t) t.value='';
+      if(b) b.value='';
+    });
+    if(zone==='cp') shelfMemoCompactBack();
+    await shelfMemoLoadSummaries();
+    await shelfMemoUpdateHeaderCount();
+    if(zone==='ex'){
+      if(memoSummaries.length>0) await shelfMemoSelect(memoSummaries[0].id,{openCpDetail:false});
+      else await shelfMemoStartNew('ex');
+    }
+    showToast('메모를 삭제했어요');
+  }catch(e){
+    console.error('memo del',e);
+    showToast('삭제 실패: '+(e&&e.message?e.message:String(e)));
+  }
+}
+
+function shelfMemoBindToolbar(){
+  [
+    ['cp-memo-save-btn',()=>{ void shelfMemoSave('cp'); }],
+    ['cp-memo-delete-btn',()=>{ void shelfMemoDelete('cp'); }],
+    ['ex-memo-save-btn',()=>{ void shelfMemoSave('ex'); }],
+    ['ex-memo-delete-btn',()=>{ void shelfMemoDelete('ex'); }],
+  ].forEach(([id,fn])=>{
+    const el=document.getElementById(id);
+    if(!el||el.dataset.memoToolbarWired==='1') return;
+    el.dataset.memoToolbarWired='1';
+    el.addEventListener('click',fn);
+  });
+}
+
 /** 아이콘·cp-* 표시·제목만 전환 (expand→panel 시에도 동일 탭 유지에 사용) */
 function shelfApplyCompactTab(id){
   curTab=id;
-  ['todo','cal','vault'].forEach(k=>{
+  SHELF_SHELL_TAB_IDS.forEach(k=>{
+    const cpEl=document.getElementById('cp-'+k);
+    cpEl.style.display=k===id?(k==='memo'?'flex':'block'):'none';
     document.getElementById('ico-'+k).classList.toggle('active',k===id);
-    document.getElementById('cp-'+k).style.display=k===id?'block':'none';
   });
   document.getElementById('cp-title').textContent=CP_TITLES[id];
   document.getElementById('cp-add-btn').style.display=id==='todo'?'flex':'none';
+  document.getElementById('cpanel').classList.toggle('cp-shell-memo-list', id==='memo');
   document.getElementById('cpanel').classList.toggle('cp-body-scroll-capped', id==='todo');
   if(id==='cal') renderCpCal();
   if(id==='vault') renderVaultCompact();
+  if(id==='memo') void shelfMemoEnterCompactMemoTab();
 }
 function openCompact(id){
   const ex=document.getElementById('expanel');
@@ -1087,6 +1449,26 @@ let cpOpenTodoId=null;
 // selectedProjId: null=프로젝트 미선택, -1=미분류(project_id=null인 태스크), 양수=프로젝트ID
 let selectedProjId=null;
 
+/** 컴팩트·확장 할 일 목록: 미완료만 / 완료만 / 전체 */
+let cpTodoCompletionFilter='open';
+let exTodoCompletionFilter='all';
+
+function shelfTodoMatchesCompletionFilter(todo,filter){
+  if(filter==='all') return true;
+  if(filter==='open') return !todo.done;
+  return todo.done;
+}
+function setCpTodoCompletionFilter(mode){
+  if(cpTodoCompletionFilter===mode) return;
+  cpTodoCompletionFilter=mode;
+  renderCpTodos();
+}
+function setExTodoCompletionFilter(mode){
+  if(exTodoCompletionFilter===mode) return;
+  exTodoCompletionFilter=mode;
+  renderExTasks();
+}
+
 // 지연 삭제 패턴: UI에서 즉시 제거 → 5초 뒤 DB 삭제, 그 사이 undo 가능
 let deletedTask=null, deleteTimer=null;
 
@@ -1109,8 +1491,11 @@ async function init(){
   document.getElementById('ex-date').textContent=
     `${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,'0')}.${String(now.getDate()).padStart(2,'0')} ${['일','월','화','수','목','금','토'][now.getDay()]}`;
   await Promise.all([ loadProjects(), loadTodos(), loadEvents() ]);
+  await shelfMemoMigrateFromLocalStorageOnce();
+  await shelfMemoUpdateHeaderCount();
   renderCpTodos();
   shelfRefreshCalendars();
+  shelfMemoBindToolbar();
 }
 
 async function loadTodos(){
@@ -1136,18 +1521,23 @@ const PRIO_DOTS=['🟢','🟡','🔴'];
 function renderCpTodos(){
   const today=new Date();
   const todayStr=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
-  // 표시 기준:
-  // - due_date 있음 → 해당 날짜에만 표시
-  // - due_date 없음 → created_at 기준, 만든 날 표시
-  // - 완료된 건 컴팩트에서 즉시 제거 (확장 패널에서 취소선으로 확인)
-  const todayTodos=todos.filter(t=>{
-    if(t.done) return false;
+  // 오늘 풀: due_date 있으면 그 날짜, 없으면 created_at 만든 날
+  const todayPool=todos.filter(t=>{
     if(t.due_date) return t.due_date.startsWith(todayStr);
-    return t.created_at.startsWith(todayStr); // 날짜 미지정 → 만든 날
-  }).slice(0,10);
+    return t.created_at.startsWith(todayStr);
+  });
+  const todayTodos=todayPool.filter(t=>shelfTodoMatchesCompletionFilter(t,cpTodoCompletionFilter)).slice(0,10);
   const list=document.getElementById('tlist');
+  document.querySelectorAll('#cp-todo-completion-filter .type-btn').forEach(b=>{
+    b.classList.toggle('sel',b.dataset.completionFilter===cpTodoCompletionFilter);
+  });
   if(todayTodos.length===0){
-    list.innerHTML='<div style="text-align:center;color:#bbb;font-size:11px;padding:16px 0">오늘 할 일이 없어요 🎉</div>';
+    let msg='오늘 마감·등록된 할 일이 없어요';
+    if(todayPool.length>0){
+      if(cpTodoCompletionFilter==='open') msg='오늘 남은 할 일이 없어요 🎉';
+      else if(cpTodoCompletionFilter==='done') msg='오늘 완료한 할 일이 없어요';
+    }
+    list.innerHTML=`<div style="text-align:center;color:#bbb;font-size:11px;padding:16px 0">${msg}</div>`;
     return;
   }
   list.innerHTML=todayTodos.map(t=>{
@@ -1213,6 +1603,7 @@ async function cpToggleTodo(e,el,id){
     el.classList.toggle('done',newDone);
     el.nextElementSibling.classList.toggle('done',newDone);
     renderCpStats();
+    renderCpTodos();
     shelfRefreshCalendars();
   }catch(err){ console.error(err); }
 }
@@ -1271,25 +1662,40 @@ function selectProject(id,name,color){
 
 function renderExTasks(){
   const list=document.getElementById('ex-tasklist');
+  const filterBar=document.getElementById('ex-todo-completion-filter');
   if(selectedProjId===null){
+    if(filterBar) filterBar.style.display='none';
     list.innerHTML='<div class="loading">프로젝트를 선택하면 태스크가 표시됩니다</div>';
     return;
   }
-  const projTodos=selectedProjId===-1
+  if(filterBar){
+    filterBar.style.display='flex';
+    filterBar.querySelectorAll('.type-btn').forEach(b=>{
+      b.classList.toggle('sel',b.dataset.completionFilter===exTodoCompletionFilter);
+    });
+  }
+  const allProjTodos=selectedProjId===-1
     ? todos.filter(t=>!t.project_id)
     : todos.filter(t=>t.project_id===selectedProjId);
-  if(projTodos.length===0){
+  const doneInProject=allProjTodos.filter(t=>t.done).length;
+  document.getElementById('ex-todo-done').textContent=doneInProject;
+  if(allProjTodos.length===0){
     list.innerHTML='<div style="color:#bbb;font-size:11px;text-align:center;padding:16px 0">태스크가 없어요. 추가해보세요!</div>';
     return;
   }
-  list.innerHTML=projTodos.map(t=>`
+  const visibleTodos=allProjTodos.filter(t=>shelfTodoMatchesCompletionFilter(t,exTodoCompletionFilter));
+  if(visibleTodos.length===0){
+    const hint=exTodoCompletionFilter==='open'?'미완료 태스크가 없어요':exTodoCompletionFilter==='done'?'완료된 태스크가 없어요':'표시할 태스크가 없어요';
+    list.innerHTML=`<div style="color:#bbb;font-size:11px;text-align:center;padding:16px 0">${hint}</div>`;
+    return;
+  }
+  list.innerHTML=visibleTodos.map(t=>`
     <div class="task-item" onclick="openTaskDetailModal(${t.id})">
       <div class="prio-dot" style="background:${PRIO_COLORS[t.priority]??PRIO_COLORS[1]}"></div>
       <div class="task-chk${t.done?' done':''}" onclick="exToggleTodo(event,this,${t.id})"></div>
       <span class="task-name${t.done?' done':''}">${escHtml(t.title)}</span>
       ${t.due_date?`<span class="task-due">${t.due_date.slice(5,10)}</span>`:''}
     </div>`).join('');
-  document.getElementById('ex-todo-done').textContent=projTodos.filter(t=>t.done).length;
 }
 
 async function exToggleTodo(e,el,id){
@@ -2342,13 +2748,32 @@ function showToast(msg, {undo=false}={}){
   const t=document.getElementById('del-toast');
   document.getElementById('del-toast-msg').textContent=msg;
   document.querySelector('.del-toast-undo').style.display=undo?'':'none';
-  // 현재 열린 패널 바로 아래에 토스트 위치
   const ex=document.getElementById('expanel'), cp=document.getElementById('cpanel');
   const panel=ex.classList.contains('open')?ex:cp;
   const r=panel.getBoundingClientRect();
-  t.style.top=(r.bottom+8)+'px';
-  t.style.left=(r.left+r.width/2)+'px';
+  const pad=12;
+  const gap=18;
+  const anchorX=Math.round(r.left+r.width/2);
+  t.style.left=anchorX+'px';
+  t.style.top='0px';
   t.classList.add('show');
+  const placeToast=()=>{
+    const th=t.offsetHeight||44;
+    const tw=t.offsetWidth||200;
+    let top=Math.round(r.bottom+gap);
+    if(top+th>window.innerHeight-pad){
+      top=Math.round(r.top-th-gap);
+      if(top<pad||top+th>window.innerHeight-pad){
+        top=Math.max(pad,Math.round(window.innerHeight-th-pad));
+      }
+    }
+    t.style.top=top+'px';
+    const half=tw/2;
+    let cx=anchorX;
+    cx=Math.max(Math.round(half+pad),Math.min(cx,Math.round(window.innerWidth-half-pad)));
+    t.style.left=cx+'px';
+  };
+  requestAnimationFrame(()=>{ requestAnimationFrame(placeToast); });
   deleteTimer=setTimeout(async()=>{
     t.classList.remove('show');
     if(deletedTask){
