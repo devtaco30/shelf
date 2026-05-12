@@ -16,9 +16,9 @@
       {
         "title": "Shelf",
         "width": 52,
-        "height": 600,
+        "height": 420,
         "minWidth": 52,
-        "minHeight": 600,
+        "minHeight": 300,
         "alwaysOnTop": true,
         "decorations": false,
         "transparent": true,
