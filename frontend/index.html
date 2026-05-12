@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" data-theme="dark">
 <head>
 <meta charset="UTF-8">
 <title>Shelf</title>
@@ -7,6 +7,51 @@
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{width:100%;height:100%;overflow:hidden;background:transparent}
 body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
+
+/* ── Shelf UI palette (data-theme: dark | soft) ── */
+:root,[data-theme="dark"]{
+  --shelf-pill-fixed-height:320px;
+  --panel-bg:#16161F;
+  --panel-border:rgba(255,255,255,0.08);
+  --panel-text:#F0F0F0;
+  --panel-text-sub:rgba(255,255,255,0.45);
+  --panel-item-hover:rgba(255,255,255,0.06);
+  --panel-item-sel:rgba(170,237,58,0.15);
+  --accent:#AAED3A;
+  --accent-fg:#111;
+  --input-bg:rgba(255,255,255,0.07);
+  --input-border:rgba(255,255,255,0.12);
+  --divider:rgba(255,255,255,0.07);
+  --panel-elev:rgba(255,255,255,0.06);
+  --modal-shadow:0 2px 24px rgba(0,0,0,.45),0 0 0 1px rgba(255,255,255,.06);
+  --picker-bg:#1E1E28;
+}
+[data-theme="soft"]{
+  --shelf-pill-fixed-height:320px;
+  --panel-bg:#FFFFFF;
+  --panel-border:#EBEBEB;
+  --panel-text:#111111;
+  --panel-text-sub:#888888;
+  --panel-item-hover:#F5F5FF;
+  --panel-item-sel:#EDE9FF;
+  --accent:#6C63FF;
+  --accent-fg:#FFFFFF;
+  --input-bg:#F7F7F7;
+  --input-border:#E0E0E0;
+  --divider:#F0F0F0;
+  --panel-elev:#FAFAFA;
+  --modal-shadow:0 2px 24px rgba(0,0,0,.14),0 0 0 1px rgba(0,0,0,.07);
+  --picker-bg:#fff;
+}
+.shelf-settings-theme-cards{display:flex;flex-direction:column;gap:8px;margin-bottom:4px}
+.shelf-theme-card{
+  display:block;width:100%;text-align:left;padding:10px 12px;border-radius:10px;border:1.5px solid var(--input-border);
+  background:var(--input-bg);cursor:pointer;font:inherit;color:var(--panel-text);box-sizing:border-box;
+}
+.shelf-theme-card:hover{border-color:var(--accent);background:var(--panel-item-hover)}
+.shelf-theme-card.sel{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.shelf-theme-card .shelf-theme-card-title{font-size:12px;font-weight:700}
+.shelf-theme-card .shelf-theme-card-sub{font-size:10px;color:var(--panel-text-sub);margin-top:3px;line-height:1.35}
 
 /* 초기값은 폴드 기준 — 실행 후 resizeWindow가 상태별로 덮어씀 */
 #app{position:relative;width:52px;height:420px}
@@ -27,12 +72,34 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
   pointer-events:none;
 }
 
-/* ── 필 ── */
+/* ── 필: 논리 높이 고정 — 창/패널 높이와 무관 (JS 최소 shell 높이와 동기) */
 .pill{
   position:absolute;left:0;top:50%;transform:translateY(-50%);
-  width:52px;background:#1E1E2E;border-radius:26px;
-  padding:12px 0;display:flex;flex-direction:column;align-items:center;gap:16px;
+  width:52px;
+  height:var(--shelf-pill-fixed-height);
+  min-height:var(--shelf-pill-fixed-height);
+  max-height:var(--shelf-pill-fixed-height);
+  box-sizing:border-box;
+  background:#1E1E2E;border-radius:26px;
+  padding:12px 0;display:flex;flex-direction:column;align-items:center;
   border:.5px solid rgba(255,255,255,.08);z-index:20;
+}
+.pill-body{
+  flex:1 1 0;
+  min-height:0;
+  overflow-x:hidden;
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:16px;
+  width:100%;
+  -webkit-overflow-scrolling:touch;
+}
+.pill-theme-cap{
+  flex-shrink:0;width:28px;height:3px;border-radius:2px;margin-top:4px;
+  background:linear-gradient(90deg,var(--accent),rgba(255,255,255,.35));
 }
 /* 폴드·컴팩트·확장: 레일 상단 앵커 — 창만 커져도 필 위치가 세로 중앙으로 튀지 않음 */
 #app.shell-fold .pill,
@@ -48,7 +115,7 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
 .pico{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer;transition:.15s;position:relative;border:none;background:transparent}
 .pico:hover{background:rgba(255,255,255,.1)}
 .pico.active{background:rgba(255,255,255,.15)}
-.pico.active::before{content:'';position:absolute;right:-10px;top:50%;transform:translateY(-50%);width:3px;height:20px;border-radius:2px;background:#AAED3A}
+.pico.active::before{content:'';position:absolute;right:-10px;top:50%;transform:translateY(-50%);width:3px;height:20px;border-radius:2px;background:var(--accent)}
 .pill-divider{width:28px;height:.5px;background:rgba(255,255,255,.08)}
 .fold-ico{width:30px;height:20px;background:rgba(255,255,255,.06);border-radius:6px;color:rgba(255,255,255,.5);display:flex;align-items:center;justify-content:center;border:none;cursor:pointer;transition:.15s}
 .fold-ico:hover{background:rgba(255,255,255,.12);color:#fff}
@@ -66,51 +133,51 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
   position:absolute;left:62px;top:10px;
   transform:scaleX(0);transform-origin:left top;
   width:280px;max-height:calc(100% - 20px);
-  background:#fff;border-radius:16px;
+  background:var(--panel-bg);color:var(--panel-text);border:.5px solid var(--panel-border);border-radius:16px;
   overflow:hidden;transition:transform .25s cubic-bezier(.4,0,.2,1),opacity .2s;opacity:0;z-index:15;
   display:flex;flex-direction:column;min-height:0;
 }
 .cpanel.open{transform:scaleX(1);opacity:1}
 .cp-header{padding:11px 13px 0;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
-.cp-title{font-size:13px;font-weight:600}
+.cp-title{font-size:13px;font-weight:600;color:var(--panel-text)}
 .cp-actions{display:flex;align-items:center;gap:6px}
-.cp-expand{padding:3px 8px;border-radius:6px;background:#AAED3A;border:none;font-size:10px;font-weight:600;cursor:pointer}
-.cp-close{background:none;border:none;cursor:pointer;color:#bbb;font-size:15px;line-height:1}
+.cp-expand{padding:3px 8px;border-radius:6px;background:var(--accent);color:var(--accent-fg);border:none;font-size:10px;font-weight:600;cursor:pointer}
+.cp-close{background:none;border:none;cursor:pointer;color:var(--panel-text-sub);font-size:15px;line-height:1}
 /* 본문: 패널 높이까지 flex로 채움. 할 일 탭만 아래 cp-body-scroll-capped 에서 목록 상한 440px */
 .cp-body{padding:10px 13px 13px;flex:1;min-height:0;overflow-y:auto}
 .cpanel.cp-body-scroll-capped .cp-body{max-height:440px}
-.sec{font-size:10px;font-weight:600;color:#aaa;margin:8px 0 5px;letter-spacing:.3px}
+.sec{font-size:10px;font-weight:600;color:var(--panel-text-sub);margin:8px 0 5px;letter-spacing:.3px}
 
 /* stats */
 .sm-stats{display:flex;gap:5px;margin-bottom:8px}
-.sm-s{flex:1;background:#F7F7F7;border-radius:7px;padding:6px 7px;text-align:center}
-.sm-s .n{font-size:16px;font-weight:700}
-.sm-s .l{font-size:9px;color:#aaa;margin-top:1px}
+.sm-s{flex:1;background:var(--input-bg);border-radius:7px;padding:6px 7px;text-align:center;border:.5px solid var(--input-border)}
+.sm-s .n{font-size:16px;font-weight:700;color:var(--panel-text)}
+.sm-s .l{font-size:9px;color:var(--panel-text-sub);margin-top:1px}
 
 /* 컴팩트 태스크 */
-.ti{border-bottom:.5px solid #F0F0F0;cursor:pointer}
+.ti{border-bottom:.5px solid var(--divider);cursor:pointer}
 .ti:last-child{border:none}
 .ti-row{display:flex;align-items:center;gap:6px;padding:5px 0}
 .ti-detail{display:none;padding:0 0 8px 20px;animation:slideDown .15s ease}
 .ti-detail.open{display:block}
 @keyframes slideDown{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
-.ti-memo{font-size:11px;color:#888;margin-bottom:7px;line-height:1.5;white-space:pre-wrap}
+.ti-memo{font-size:11px;color:var(--panel-text-sub);margin-bottom:7px;line-height:1.5;white-space:pre-wrap}
 .ti-actions{display:flex;gap:5px}
 .ti-btn{padding:3px 10px;border-radius:6px;font-size:11px;font-weight:500;cursor:pointer;border:none}
-.ti-btn-edit{background:#F5F5F5;color:#555}
-.ti-btn-edit:hover{background:#EAEAEA}
+.ti-btn-edit{background:var(--input-bg);color:var(--panel-text);border:.5px solid var(--input-border)}
+.ti-btn-edit:hover{background:var(--panel-item-hover)}
 .ti-btn-del{background:#FFF0F0;color:#EF4444}
 .ti-btn-del:hover{background:#FFE0E0}
-.chk{width:14px;height:14px;border-radius:3px;border:1.5px solid #ddd;cursor:pointer;flex-shrink:0;transition:.15s}
-.chk.done{background:#AAED3A;border-color:#AAED3A}
-.tn{flex:1;font-size:12px}
-.tn.done{text-decoration:line-through;color:#bbb}
+.chk{width:14px;height:14px;border-radius:3px;border:1.5px solid var(--input-border);cursor:pointer;flex-shrink:0;transition:.15s}
+.chk.done{background:var(--accent);border-color:var(--accent)}
+.tn{flex:1;font-size:12px;color:var(--panel-text)}
+.tn.done{text-decoration:line-through;color:var(--panel-text-sub)}
 .bdg{padding:2px 7px;border-radius:20px;font-size:9px;font-weight:600}
 
 /* 컴팩트 캘린더 */
 .cal-hdr{display:flex;align-items:center;gap:5px;margin-bottom:7px}
-.cal-hdr .m{font-size:12px;font-weight:600;flex:1}
-.cn{font-size:11px;background:none;border:none;cursor:pointer;color:#bbb}
+.cal-hdr .m{font-size:12px;font-weight:600;flex:1;color:var(--panel-text)}
+.cn{font-size:11px;background:none;border:none;cursor:pointer;color:var(--panel-text-sub)}
 /* 월 뷰: 요일 행 + 주 블록(프로젝트 기간 띠 + 일자 행) */
 .cgrid-root{display:flex;flex-direction:column;gap:3px;font-size:10px}
 .cgrid-row{display:grid;grid-template-columns:repeat(7,1fr);gap:1px}
@@ -123,242 +190,242 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
   height:3px;border-radius:2px;opacity:.88;box-sizing:border-box;min-width:0;
 }
 .ex-left .cal-proj-span,.exgrid-root .cal-proj-span{height:4px;opacity:.9}
-.cdow{text-align:center;color:#bbb;padding:2px 0}
+.cdow{text-align:center;color:var(--panel-text-sub);padding:2px 0}
 .cdow:first-child{color:#E53935}
 /* 일자 셀: 숫자 행 높이 고정 → 오늘(원)·일반일 모두 하단 막대 시작선 일치 */
 .cdd{
   display:flex;flex-direction:column;align-items:center;padding:3px 1px;border-radius:4px;cursor:pointer;min-height:24px;
 }
-.cdd:hover{background:#F5F5F5}
+.cdd:hover{background:var(--panel-item-hover)}
 .cdd .cdn{
-  flex-shrink:0;min-height:18px;display:flex;align-items:center;justify-content:center;line-height:1;width:100%;
+  flex-shrink:0;min-height:18px;display:flex;align-items:center;justify-content:center;line-height:1;width:100%;color:var(--panel-text);
 }
 .cdd.today .cdn{
-  background:#AAED3A;border-radius:50%;width:18px;height:18px;min-height:18px;margin:0 auto;font-weight:700;
+  background:var(--accent);color:var(--accent-fg);border-radius:50%;width:18px;height:18px;min-height:18px;margin:0 auto;font-weight:700;
 }
 .cdd.cal-selected{background:rgba(124,58,237,.1)}
 .cdd.cal-selected .cdn{box-shadow:0 0 0 2px #7C3AED;border-radius:50%}
 .cdd.today.cal-selected .cdn{box-shadow:0 0 0 2px #5B21B6}
 .cdd.sun .cdn{color:#E53935}
-.cdd.other .cdn{color:#ddd}
+.cdd.other .cdn{color:var(--panel-text-sub)}
 .pbar{flex-shrink:0;height:3px;border-radius:2px;margin:2px 2px 0;width:calc(100% - 4px);max-width:100%}
 /* 월 그리드: 하루 막대 최대 개수 초과 시 — 숫자만 (+N), 높이 무한 증식 방지 */
 .cal-day-more{
-  flex-shrink:0;font-size:8px;font-weight:700;line-height:1;color:#888;text-align:center;margin:1px 0 0;padding:0 2px;letter-spacing:-0.02em;
+  flex-shrink:0;font-size:8px;font-weight:700;line-height:1;color:var(--panel-text-sub);text-align:center;margin:1px 0 0;padding:0 2px;letter-spacing:-0.02em;
 }
 .cal-sched-by-project{display:flex;flex-direction:column;gap:12px}
 .cal-sched-group{display:flex;flex-direction:column;min-width:0}
 .cal-sched-group-hdr{display:flex;align-items:center;gap:10px;margin:0 0 6px}
-.cal-sched-group-line{flex:1;height:1px;background:#D8D8D8;min-width:8px}
-.cal-sched-group-title{flex-shrink:0;font-size:11px;font-weight:700;max-width:88%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.cal-sched-list{display:flex;flex-direction:column;border-radius:10px;overflow:hidden;border:.5px solid #EEE;background:#FAFAFA}
-.cp-sch-item{display:flex;align-items:center;gap:7px;padding:8px 10px;border-bottom:.5px solid #E8E8E8;background:#fff}
+.cal-sched-group-line{flex:1;height:1px;background:var(--divider);min-width:8px}
+.cal-sched-group-title{flex-shrink:0;font-size:11px;font-weight:700;max-width:88%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--panel-text)}
+.cal-sched-list{display:flex;flex-direction:column;border-radius:10px;overflow:hidden;border:.5px solid var(--input-border);background:var(--panel-elev)}
+.cp-sch-item{display:flex;align-items:center;gap:7px;padding:8px 10px;border-bottom:.5px solid var(--divider);background:var(--panel-bg)}
 .cp-sch-item:last-child{border-bottom:none}
 .cp-sch-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
-.cp-sch-time{font-size:10px;color:#aaa;white-space:nowrap;min-width:34px}
-.cp-sch-title{font-size:11px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.cp-sch-item-done .cp-sch-title{text-decoration:line-through;color:#bbb}
-.cp-sch-item-done .cp-sch-time{color:#ccc}
+.cp-sch-time{font-size:10px;color:var(--panel-text-sub);white-space:nowrap;min-width:34px}
+.cp-sch-title{font-size:11px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--panel-text)}
+.cp-sch-item-done .cp-sch-title{text-decoration:line-through;color:var(--panel-text-sub)}
+.cp-sch-item-done .cp-sch-time{color:var(--panel-text-sub)}
 
 /* Vault 컴팩트 */
 .vlocked{text-align:center;padding:14px 8px}
 .vlocked .vico{font-size:30px;margin-bottom:6px}
-.vlocked p{font-size:11px;color:#aaa;margin-bottom:10px;line-height:1.5}
+.vlocked p{font-size:11px;color:var(--panel-text-sub);margin-bottom:10px;line-height:1.5}
 .vbtn{width:100%;padding:8px;border-radius:8px;border:none;cursor:pointer;font-size:12px;font-weight:600;margin-bottom:5px}
-.vbtn.vp{background:#111;color:#fff}
-.vbtn.vb{background:#F5F5F5;color:#333;border:.5px solid #eee}
-.vinput{width:100%;border:.5px solid #eee;border-radius:8px;padding:7px 10px;font-size:12px;outline:none;text-align:center;letter-spacing:3px;margin-bottom:7px}
-.vitem{display:flex;align-items:center;gap:7px;padding:6px 8px;background:#F7F7F7;border-radius:8px;margin-bottom:4px;cursor:pointer}
-.vitem:hover{background:#EFEFEF}
-.vitem.sel{background:#F3F0FF;border:.5px solid #C4B5FD}
+.vbtn.vp{background:var(--accent-fg);color:var(--panel-bg)}
+.vbtn.vb{background:var(--input-bg);color:var(--panel-text);border:.5px solid var(--input-border)}
+.vinput{width:100%;border:.5px solid var(--input-border);border-radius:8px;padding:7px 10px;font-size:12px;outline:none;text-align:center;letter-spacing:3px;margin-bottom:7px;background:var(--input-bg);color:var(--panel-text)}
+.vitem{display:flex;align-items:center;gap:7px;padding:6px 8px;background:var(--input-bg);border-radius:8px;margin-bottom:4px;cursor:pointer;border:.5px solid var(--input-border)}
+.vitem:hover{background:var(--panel-item-hover)}
+.vitem.sel{background:var(--panel-item-sel);border:.5px solid var(--accent)}
 
 /* ── 확장 패널 — 상단 = 레일 필 상단(컴팩트와 동일), 높이는 resizeWindow 인라인 */
 .expanel{
   position:absolute;left:62px;top:10px;
   transform:scale(0);transform-origin:left top;
-  width:560px;background:#fff;border-radius:18px;
+  width:560px;background:var(--panel-bg);color:var(--panel-text);border:.5px solid var(--panel-border);border-radius:18px;
   overflow:hidden;transition:transform .3s cubic-bezier(.34,1.2,.64,1),opacity .25s;opacity:0;z-index:15;
   display:flex;flex-direction:column;
   max-height:calc(100% - 20px);
 }
 .expanel.open{transform:scale(1);opacity:1}
-.ex-header{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:.5px solid #F0F0F0;flex-shrink:0}
+.ex-header{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:.5px solid var(--divider);flex-shrink:0}
 .ex-profile{display:flex;align-items:center;gap:8px;flex:1}
-.ex-avatar{width:32px;height:32px;border-radius:50%;background:#111;color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600}
+.ex-avatar{width:32px;height:32px;border-radius:50%;background:var(--accent-fg);color:var(--panel-bg);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600}
 .ex-stats{display:flex;gap:12px}
-.ex-stat .n{font-size:18px;font-weight:700;line-height:1}
-.ex-stat .l{font-size:9px;color:#aaa}
-.ex-date{font-size:11px;color:#aaa;white-space:nowrap}
-.ex-compact{padding:4px 10px;border-radius:6px;background:#F5F5F5;border:.5px solid #eee;font-size:10px;cursor:pointer}
-.ex-close{background:none;border:none;cursor:pointer;color:#bbb;font-size:16px}
+.ex-stat .n{font-size:18px;font-weight:700;line-height:1;color:var(--panel-text)}
+.ex-stat .l{font-size:9px;color:var(--panel-text-sub)}
+.ex-date{font-size:11px;color:var(--panel-text-sub);white-space:nowrap}
+.ex-compact{padding:4px 10px;border-radius:6px;background:var(--input-bg);border:.5px solid var(--input-border);font-size:10px;cursor:pointer;color:var(--panel-text)}
+.ex-close{background:none;border:none;cursor:pointer;color:var(--panel-text-sub);font-size:16px}
 .ex-sub{display:none;flex:1;overflow:hidden;min-height:0}
 .ex-sub.active{display:flex;flex-direction:column;min-height:0;position:relative}
 
 /* 확장 TODO */
 .ex-todo-layout{display:flex;position:absolute;top:0;left:0;right:0;bottom:0;overflow:hidden}
-.ex-proj-panel{width:200px;border-right:.5px solid #F0F0F0;padding:10px;overflow-y:auto;display:flex;flex-direction:column;gap:2px;min-height:0}
-.ex-proj-hdr{font-size:9px;font-weight:700;color:#aaa;letter-spacing:.5px;text-transform:uppercase;padding:0 4px;margin-bottom:4px}
+.ex-proj-panel{width:200px;border-right:.5px solid var(--divider);padding:10px;overflow-y:auto;display:flex;flex-direction:column;gap:2px;min-height:0}
+.ex-proj-hdr{font-size:9px;font-weight:700;color:var(--panel-text-sub);letter-spacing:.5px;text-transform:uppercase;padding:0 4px;margin-bottom:4px}
 .proj-card{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:9px;cursor:pointer;transition:.15s}
-.proj-card:hover{background:#F7F7F7}
-.proj-card.sel{background:#F3F0FF}
+.proj-card:hover{background:var(--panel-item-hover)}
+.proj-card.sel{background:var(--panel-item-sel)}
 .proj-card-bar{width:3px;border-radius:2px;flex-shrink:0;align-self:stretch;min-height:28px}
 .proj-card-info{flex:1;min-width:0}
-.proj-card-name{font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.proj-card-sub{font-size:9px;color:#aaa;margin-top:1px}
-.proj-card-cnt{font-size:9px;background:#F0F0F0;border-radius:10px;padding:1px 6px;color:#666;flex-shrink:0}
+.proj-card-name{font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--panel-text)}
+.proj-card-sub{font-size:9px;color:var(--panel-text-sub);margin-top:1px}
+.proj-card-cnt{font-size:9px;background:var(--input-bg);border-radius:10px;padding:1px 6px;color:var(--panel-text-sub);flex-shrink:0;border:.5px solid var(--input-border)}
 .proj-card-edit{background:none;border:none;cursor:pointer;font-size:13px;padding:2px 5px;line-height:1;opacity:.38;border-radius:6px;flex-shrink:0}
 .proj-card:hover .proj-card-edit{opacity:.58}
-.proj-card-edit:hover{opacity:1;background:rgba(0,0,0,.06)}
+.proj-card-edit:hover{opacity:1;background:var(--panel-item-hover)}
 .proj-card-del{background:none;border:none;cursor:pointer;font-size:12px;padding:2px 5px;line-height:1;opacity:.35;border-radius:6px;flex-shrink:0}
 .proj-card:hover .proj-card-del{opacity:.55}
 .proj-card-del:hover{opacity:1;background:#FFF0F0}
-.ex-proj-add{display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:9px;cursor:pointer;color:#bbb;font-size:11px;margin-top:4px;border:.5px dashed #eee}
-.ex-proj-add:hover{background:#F7F7F7;color:#888}
+.ex-proj-add{display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:9px;cursor:pointer;color:var(--panel-text-sub);font-size:11px;margin-top:4px;border:.5px dashed var(--input-border)}
+.ex-proj-add:hover{background:var(--panel-item-hover);color:var(--panel-text)}
 /* 확장 메모 사이드바 — 기본 .ex-proj-add(#bbb)는 배경과 대비 부족 */
-.ex-proj-add.ex-memo-new-btn{color:#444;border-color:#ddd}
-.ex-proj-add.ex-memo-new-btn:hover{background:#F3F0FF;color:#5B21B6;border-color:#C4B5FD}
+.ex-proj-add.ex-memo-new-btn{color:var(--panel-text);border-color:var(--input-border)}
+.ex-proj-add.ex-memo-new-btn:hover{background:var(--panel-item-sel);color:var(--accent);border-color:var(--accent)}
 .ex-task-panel{flex:1;padding:12px 12px 24px;overflow-y:auto;display:flex;flex-direction:column;min-height:0}
 .ex-task-hdr{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-shrink:0}
-.ex-task-title{font-size:13px;font-weight:600;flex:1}
-.ex-task-sort{font-size:10px;color:#aaa;background:#F7F7F7;border:none;border-radius:6px;padding:3px 8px;cursor:pointer}
-.task-item{display:flex;align-items:center;gap:8px;padding:9px 11px;background:#FAFAFA;border-radius:9px;margin-bottom:5px;cursor:pointer;transition:.15s;border:.5px solid transparent}
-.task-item:hover{background:#F3F0FF;border-color:#E9D5FF;transform:translateX(2px)}
+.ex-task-title{font-size:13px;font-weight:600;flex:1;color:var(--panel-text)}
+.ex-task-sort{font-size:10px;color:var(--panel-text-sub);background:var(--input-bg);border:.5px solid var(--input-border);border-radius:6px;padding:3px 8px;cursor:pointer}
+.task-item{display:flex;align-items:center;gap:8px;padding:9px 11px;background:var(--panel-elev);border-radius:9px;margin-bottom:5px;cursor:pointer;transition:.15s;border:.5px solid var(--input-border)}
+.task-item:hover{background:var(--panel-item-sel);border-color:var(--accent);transform:translateX(2px)}
 .prio-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
-.task-chk{width:14px;height:14px;border-radius:3px;border:1.5px solid #ddd;cursor:pointer;flex-shrink:0;transition:.15s}
-.task-chk.done{background:#AAED3A;border-color:#AAED3A}
-.task-name{flex:1;font-size:12px}
-.task-name.done{text-decoration:line-through;color:#bbb}
+.task-chk{width:14px;height:14px;border-radius:3px;border:1.5px solid var(--input-border);cursor:pointer;flex-shrink:0;transition:.15s}
+.task-chk.done{background:var(--accent);border-color:var(--accent)}
+.task-name{flex:1;font-size:12px;color:var(--panel-text)}
+.task-name.done{text-decoration:line-through;color:var(--panel-text-sub)}
 .task-tag{padding:2px 7px;border-radius:20px;font-size:9px;font-weight:600}
-.task-sub-prog{font-size:10px;color:#bbb;background:#F0F0F0;padding:1px 6px;border-radius:8px;flex-shrink:0}
+.task-sub-prog{font-size:10px;color:var(--panel-text-sub);background:var(--input-bg);padding:1px 6px;border-radius:8px;flex-shrink:0;border:.5px solid var(--input-border)}
 .task-due{font-size:9px;color:#64748B;flex-shrink:0}
-.hdr-add-btn{width:22px;height:22px;border-radius:6px;background:#F0F0F0;border:none;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#666;transition:.15s}
-.hdr-add-btn:hover{background:#E0E0E0;color:#111}
+.hdr-add-btn{width:22px;height:22px;border-radius:6px;background:var(--input-bg);border:.5px solid var(--input-border);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--panel-text);transition:.15s}
+.hdr-add-btn:hover{background:var(--panel-item-hover);color:var(--panel-text)}
 
 /* 확장 캘린더 */
 .ex-cal-layout{display:flex;position:absolute;top:0;left:0;right:0;bottom:0;overflow:hidden}
-.ex-left{padding:14px 14px 24px;border-right:.5px solid #F0F0F0;flex:1;overflow-y:auto;min-height:0}
+.ex-left{padding:14px 14px 24px;border-right:.5px solid var(--divider);flex:1;overflow-y:auto;min-height:0}
 .ex-right{padding:14px 14px 24px;width:190px;overflow-y:auto;min-height:0}
 /* 확장 캘린더 우측: 날짜 제목과「완료 포함」을 세로로 나눠 한글 이상 줄바꿈 방지 */
 .ex-cal-detail-hdr{display:flex;flex-direction:column;align-items:stretch;gap:5px;margin-bottom:7px;min-width:0}
-.ex-cal-detail-lbl-txt{font-size:10px;font-weight:600;color:#aaa;line-height:1.35;word-break:keep-all}
-.ex-cal-done-toggle{font-size:10px;color:#888;display:flex;align-items:center;gap:5px;cursor:pointer;user-select:none;white-space:nowrap;align-self:flex-end}
+.ex-cal-detail-lbl-txt{font-size:10px;font-weight:600;color:var(--panel-text-sub);line-height:1.35;word-break:keep-all}
+.ex-cal-done-toggle{font-size:10px;color:var(--panel-text-sub);display:flex;align-items:center;gap:5px;cursor:pointer;user-select:none;white-space:nowrap;align-self:flex-end}
 .exgrid-root{display:flex;flex-direction:column;gap:3px;font-size:10px}
-.exdow{text-align:center;color:#bbb;padding:3px 0;font-size:9px}
+.exdow{text-align:center;color:var(--panel-text-sub);padding:3px 0;font-size:9px}
 .exdow:first-child{color:#E53935}
 .exdd{
   display:flex;flex-direction:column;align-items:center;padding:3px 1px;border-radius:5px;cursor:pointer;min-height:30px;
 }
 .exdd .exdn{
-  flex-shrink:0;min-height:18px;display:flex;align-items:center;justify-content:center;line-height:1;width:100%;
+  flex-shrink:0;min-height:18px;display:flex;align-items:center;justify-content:center;line-height:1;width:100%;color:var(--panel-text);
 }
-.exdd.today .exdn{background:#AAED3A;border-radius:50%;width:18px;height:18px;min-height:18px;margin:0 auto;font-weight:700}
+.exdd.today .exdn{background:var(--accent);color:var(--accent-fg);border-radius:50%;width:18px;height:18px;min-height:18px;margin:0 auto;font-weight:700}
 .exdd.cal-selected{background:rgba(124,58,237,.1)}
 .exdd.cal-selected .exdn{box-shadow:0 0 0 2px #7C3AED;border-radius:50%}
 .exdd.today.cal-selected .exdn{box-shadow:0 0 0 2px #5B21B6}
 .exdd.sun .exdn{color:#E53935}
-.exdd.other .exdn{color:#ddd}
+.exdd.other .exdn{color:var(--panel-text-sub)}
 .expbar{flex-shrink:0;height:4px;border-radius:2px;margin:2px 2px 0;width:calc(100% - 4px);max-width:100%}
 .exdd .cal-day-more{font-size:9px}
-.ex-chips{display:flex;flex-wrap:wrap;gap:3px;margin-top:8px;padding-top:8px;border-top:.5px solid #F0F0F0}
-.exchip{display:flex;align-items:center;gap:3px;padding:2px 7px;border-radius:20px;font-size:9px;border:.5px solid #eee;background:#fafafa}
+.ex-chips{display:flex;flex-wrap:wrap;gap:3px;margin-top:8px;padding-top:8px;border-top:.5px solid var(--divider)}
+.exchip{display:flex;align-items:center;gap:3px;padding:2px 7px;border-radius:20px;font-size:9px;border:.5px solid var(--input-border);background:var(--panel-elev);color:var(--panel-text)}
 .excdot{width:6px;height:6px;border-radius:50%}
-.ex-sch-item{display:flex;align-items:center;gap:7px;padding:5px 7px;border-radius:7px;background:#F7F7F7;margin-bottom:4px}
-.ex-sch-time{font-size:10px;color:#aaa;white-space:nowrap;min-width:32px}
+.ex-sch-item{display:flex;align-items:center;gap:7px;padding:5px 7px;border-radius:7px;background:var(--input-bg);margin-bottom:4px;border:.5px solid var(--input-border)}
+.ex-sch-time{font-size:10px;color:var(--panel-text-sub);white-space:nowrap;min-width:32px}
 .ex-sch-bar{width:3px;height:26px;border-radius:2px;flex-shrink:0}
-.ex-sch-title{flex:1;font-size:11px}
+.ex-sch-title{flex:1;font-size:11px;color:var(--panel-text)}
 
 /* 확장 Vault */
 .ex-vault-layout{display:flex;position:absolute;top:0;left:0;right:0;bottom:0;overflow:hidden}
-.ex-vault-list{width:190px;border-right:.5px solid #F0F0F0;padding:10px;overflow-y:auto;min-height:0}
+.ex-vault-list{width:190px;border-right:.5px solid var(--divider);padding:10px;overflow-y:auto;min-height:0}
 .ex-vault-detail{flex:1;padding:16px 16px 24px;overflow-y:auto;min-height:0}
 .ex-vault-locked{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;text-align:center;gap:10px}
 .ex-vault-locked .vico{font-size:36px}
-.ex-vault-locked p{font-size:11px;color:#aaa;line-height:1.6}
+.ex-vault-locked p{font-size:11px;color:var(--panel-text-sub);line-height:1.6}
 .vd-field{margin-bottom:12px}
-.vd-label{font-size:9px;color:#aaa;font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px}
-.vd-val{font-size:12px;background:#F7F7F7;border-radius:8px;padding:8px 11px;display:flex;align-items:center;justify-content:space-between;gap:8px}
-.vd-masked{font-family:monospace;letter-spacing:2px;color:#333;flex:1}
-.vd-toggle{background:none;border:.5px solid #ddd;border-radius:5px;padding:2px 7px;font-size:10px;cursor:pointer;color:#888;white-space:nowrap}
-.vd-copy{background:#111;color:#fff;border:none;border-radius:6px;padding:5px 11px;font-size:11px;cursor:pointer;margin-top:6px;width:100%}
+.vd-label{font-size:9px;color:var(--panel-text-sub);font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px}
+.vd-val{font-size:12px;background:var(--input-bg);border-radius:8px;padding:8px 11px;display:flex;align-items:center;justify-content:space-between;gap:8px;border:.5px solid var(--input-border)}
+.vd-masked{font-family:monospace;letter-spacing:2px;color:var(--panel-text);flex:1}
+.vd-toggle{background:none;border:.5px solid var(--input-border);border-radius:5px;padding:2px 7px;font-size:10px;cursor:pointer;color:var(--panel-text-sub);white-space:nowrap}
+.vd-copy{background:var(--accent-fg);color:var(--panel-bg);border:none;border-radius:6px;padding:5px 11px;font-size:11px;cursor:pointer;margin-top:6px;width:100%}
 .vd-delete{background:#FFF0F0;color:#EF4444;border:none;border-radius:6px;padding:5px 11px;font-size:11px;cursor:pointer;margin-top:4px;width:100%}
 .vd-delete:hover{background:#FFE0E0}
-.vd-copy-field{background:none;border:.5px solid #ddd;border-radius:5px;padding:2px 7px;font-size:10px;cursor:pointer;color:#888;white-space:nowrap}
-.vd-copy-field:hover{background:#F0F0F0}
+.vd-copy-field{background:none;border:.5px solid var(--input-border);border-radius:5px;padding:2px 7px;font-size:10px;cursor:pointer;color:var(--panel-text-sub);white-space:nowrap}
+.vd-copy-field:hover{background:var(--panel-item-hover)}
 .vd-type-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:600;margin-bottom:12px}
-.vd-val-text{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.vd-val-mono{flex:1;font-family:monospace;font-size:11px;word-break:break-all;white-space:pre-wrap;overflow:hidden}
+.vd-val-text{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--panel-text)}
+.vd-val-mono{flex:1;font-family:monospace;font-size:11px;word-break:break-all;white-space:pre-wrap;overflow:hidden;color:var(--panel-text)}
 /* vault form field styles */
 .vf-pw-wrap{position:relative;display:flex;align-items:center}
 .vf-pw-wrap .modal-input{flex:1;padding-right:52px}
-.vf-pw-toggle{position:absolute;right:8px;background:none;border:.5px solid #ddd;border-radius:5px;padding:2px 8px;font-size:10px;cursor:pointer;color:#888;white-space:nowrap}
+.vf-pw-toggle{position:absolute;right:8px;background:none;border:.5px solid var(--input-border);border-radius:5px;padding:2px 8px;font-size:10px;cursor:pointer;color:var(--panel-text-sub);white-space:nowrap}
 .vf-row{display:flex;gap:8px}
 .vf-row .modal-field{flex:1}
 /* compact vault detail fields */
-.cpvdf{background:#F7F7F7;border-radius:9px;padding:8px 11px;margin-bottom:8px}
-.cpvdf-label{font-size:9px;color:#aaa;font-weight:700;text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px}
-.cpvdf-val{font-size:11px;font-family:monospace;word-break:break-all;white-space:pre-wrap;color:#333;cursor:pointer;transition:filter .15s}
+.cpvdf{background:var(--input-bg);border-radius:9px;padding:8px 11px;margin-bottom:8px;border:.5px solid var(--input-border)}
+.cpvdf-label{font-size:9px;color:var(--panel-text-sub);font-weight:700;text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px}
+.cpvdf-val{font-size:11px;font-family:monospace;word-break:break-all;white-space:pre-wrap;color:var(--panel-text);cursor:pointer;transition:filter .15s}
 .cpvdf-actions{display:flex;justify-content:space-between;align-items:center;margin-top:5px}
-.cpvdf-hint{font-size:9px;color:#bbb}
-.cpvdf-copy{background:none;border:.5px solid #ddd;border-radius:5px;padding:2px 8px;font-size:10px;cursor:pointer;color:#888}
+.cpvdf-hint{font-size:9px;color:var(--panel-text-sub)}
+.cpvdf-copy{background:none;border:.5px solid var(--input-border);border-radius:5px;padding:2px 8px;font-size:10px;cursor:pointer;color:var(--panel-text-sub)}
 
 /* 모달 */
 .modal-overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:100;opacity:0;pointer-events:none;transition:opacity .15s}
 .modal-overlay.show{opacity:1;pointer-events:all}
-.modal{background:#fff;border-radius:16px;padding:20px;width:300px;box-shadow:0 2px 24px rgba(0,0,0,.14),0 0 0 1px rgba(0,0,0,.07);max-height:92%;overflow-y:auto}
-.modal-title{font-size:14px;font-weight:700;margin-bottom:16px}
+.modal{background:var(--panel-bg);color:var(--panel-text);border-radius:16px;padding:20px;width:300px;box-shadow:var(--modal-shadow);border:.5px solid var(--panel-border);max-height:92%;overflow-y:auto}
+.modal-title{font-size:14px;font-weight:700;margin-bottom:16px;color:var(--panel-text)}
 .modal-field{margin-bottom:13px}
-.modal-label{font-size:10px;font-weight:600;color:#aaa;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px}
-.modal-input{width:100%;border:1px solid #eee;border-radius:8px;padding:8px 11px;font-size:13px;outline:none;background:#FAFAFA;font-family:inherit;transition:.15s}
-.modal-input:focus{border-color:#7C3AED;background:#fff}
+.modal-label{font-size:10px;font-weight:600;color:var(--panel-text-sub);text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px}
+.modal-input{width:100%;border:1px solid var(--input-border);border-radius:8px;padding:8px 11px;font-size:13px;outline:none;background:var(--input-bg);color:var(--panel-text);font-family:inherit;transition:.15s}
+.modal-input:focus{border-color:var(--accent);background:var(--panel-bg)}
 .proj-chips{display:flex;flex-wrap:wrap;gap:5px}
-.proj-chip{display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:500;cursor:pointer;border:1.5px solid transparent;background:#F5F5F5;transition:.15s}
+.proj-chip{display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:500;cursor:pointer;border:1.5px solid transparent;background:var(--input-bg);transition:.15s;color:var(--panel-text)}
 .proj-chip:hover{filter:brightness(.95)}
 .proj-chip.sel{border-color:currentColor}
 .proj-chip-dot{width:7px;height:7px;border-radius:50%}
-.proj-chip-new{background:#F5F5F5;color:#888;border:1.5px dashed #ddd}
+.proj-chip-new{background:var(--input-bg);color:var(--panel-text-sub);border:1.5px dashed var(--input-border)}
 .prio-btns{display:flex;gap:6px}
-.prio-btn{flex:1;padding:6px;border-radius:8px;border:1.5px solid #eee;background:#fafafa;font-size:11px;font-weight:600;cursor:pointer;text-align:center;transition:.15s}
+.prio-btn{flex:1;padding:6px;border-radius:8px;border:1.5px solid var(--input-border);background:var(--panel-elev);font-size:11px;font-weight:600;cursor:pointer;text-align:center;transition:.15s;color:var(--panel-text)}
 .prio-btn.sel{border-width:2px}
 .color-swatches{display:flex;gap:6px}
 .swatch{width:24px;height:24px;border-radius:50%;cursor:pointer;border:2.5px solid transparent;transition:.15s}
-.swatch.sel{border-color:#fff;box-shadow:0 0 0 2.5px currentColor}
-.type-toggle{display:flex;background:#F5F5F5;border-radius:8px;padding:3px;gap:3px}
-.type-btn{flex:1;padding:5px;border:none;border-radius:6px;font-size:11px;font-weight:500;cursor:pointer;background:none;color:#888;transition:.15s}
-.type-btn.sel{background:#fff;color:#111;box-shadow:0 1px 4px rgba(0,0,0,.1)}
+.swatch.sel{border-color:var(--panel-bg);box-shadow:0 0 0 2.5px currentColor}
+.type-toggle{display:flex;background:var(--input-bg);border-radius:8px;padding:3px;gap:3px;border:.5px solid var(--input-border)}
+.type-btn{flex:1;padding:5px;border:none;border-radius:6px;font-size:11px;font-weight:500;cursor:pointer;background:none;color:var(--panel-text-sub);transition:.15s}
+.type-btn.sel{background:var(--panel-bg);color:var(--panel-text);box-shadow:0 1px 4px rgba(0,0,0,.12)}
 .todo-completion-toggle .type-btn{font-size:9px;padding:4px 2px}
 .ex-todo-completion-toggle .type-btn{font-size:10px;padding:5px 4px}
 .modal-footer{display:flex;gap:7px;margin-top:16px}
-.btn-cancel{flex:1;padding:8px;border-radius:8px;border:1px solid #eee;background:#fafafa;font-size:12px;font-weight:500;cursor:pointer;color:#666}
-.btn-cancel:hover{background:#f0f0f0}
-.btn-submit{flex:2;padding:8px;border-radius:8px;border:none;background:#111;color:#fff;font-size:12px;font-weight:600;cursor:pointer}
-.btn-submit:hover{background:#333}
+.btn-cancel{flex:1;padding:8px;border-radius:8px;border:1px solid var(--input-border);background:var(--input-bg);font-size:12px;font-weight:500;cursor:pointer;color:var(--panel-text)}
+.btn-cancel:hover{background:var(--panel-item-hover)}
+.btn-submit{flex:2;padding:8px;border-radius:8px;border:none;background:var(--accent);color:var(--accent-fg);font-size:12px;font-weight:600;cursor:pointer}
+.btn-submit:hover{filter:brightness(1.06)}
 
 /* 커스텀 날짜/시간 피커 */
 .date-picker-wrap{position:relative}
-.date-display{width:100%;border:1px solid #eee;border-radius:8px;padding:8px 11px;font-size:12px;background:#FAFAFA;cursor:pointer;display:flex;align-items:center;justify-content:space-between;user-select:none}
-.date-display:hover{border-color:#ccc}
-.date-picker-pop{position:fixed;background:#fff;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.18);padding:10px;width:220px;z-index:400;display:none}
+.date-display{width:100%;border:1px solid var(--input-border);border-radius:8px;padding:8px 11px;font-size:12px;background:var(--input-bg);color:var(--panel-text);cursor:pointer;display:flex;align-items:center;justify-content:space-between;user-select:none}
+.date-display:hover{border-color:var(--accent)}
+.date-picker-pop{position:fixed;background:var(--picker-bg);color:var(--panel-text);border:.5px solid var(--panel-border);border-radius:12px;box-shadow:var(--modal-shadow);padding:10px;width:220px;z-index:400;display:none}
 .date-picker-pop.open{display:block}
-.time-picker-pop{position:fixed;background:#fff;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.18);padding:10px;width:160px;z-index:400;display:none}
+.time-picker-pop{position:fixed;background:var(--picker-bg);color:var(--panel-text);border:.5px solid var(--panel-border);border-radius:12px;box-shadow:var(--modal-shadow);padding:10px;width:160px;z-index:400;display:none}
 .time-picker-pop.open{display:flex;gap:4px}
 .tp-col{flex:1;display:flex;flex-direction:column;gap:1px;max-height:180px;overflow-y:auto;scrollbar-width:none}
 .tp-col::-webkit-scrollbar{display:none}
-.tp-col-lbl{font-size:9px;color:#bbb;text-align:center;padding-bottom:4px;font-weight:600;letter-spacing:.3px;position:sticky;top:0;background:#fff}
-.tp-item{text-align:center;padding:5px 4px;border-radius:6px;cursor:pointer;font-size:11px;color:#333}
-.tp-item:hover{background:#F3F0FF;color:#7C3AED}
-.tp-item.sel{background:#7C3AED;color:#fff}
+.tp-col-lbl{font-size:9px;color:var(--panel-text-sub);text-align:center;padding-bottom:4px;font-weight:600;letter-spacing:.3px;position:sticky;top:0;background:var(--picker-bg)}
+.tp-item{text-align:center;padding:5px 4px;border-radius:6px;cursor:pointer;font-size:11px;color:var(--panel-text)}
+.tp-item:hover{background:var(--panel-item-sel);color:var(--accent)}
+.tp-item.sel{background:var(--accent);color:var(--accent-fg)}
 .dp-hdr{display:flex;align-items:center;gap:4px;margin-bottom:8px}
-.dp-hdr .m{flex:1;font-size:12px;font-weight:600;text-align:center}
-.dp-nav{background:none;border:none;cursor:pointer;color:#bbb;font-size:12px;padding:2px 5px;border-radius:4px}
-.dp-nav:hover{background:#F5F5F5;color:#333}
+.dp-hdr .m{flex:1;font-size:12px;font-weight:600;text-align:center;color:var(--panel-text)}
+.dp-nav{background:none;border:none;cursor:pointer;color:var(--panel-text-sub);font-size:12px;padding:2px 5px;border-radius:4px}
+.dp-nav:hover{background:var(--panel-item-hover);color:var(--panel-text)}
 .dp-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;font-size:10px}
-.dp-dow{text-align:center;color:#bbb;padding:2px 0;font-size:9px}
+.dp-dow{text-align:center;color:var(--panel-text-sub);padding:2px 0;font-size:9px}
 .dp-dow:first-child{color:#E53935}
-.dp-day{text-align:center;padding:4px 2px;border-radius:4px;cursor:pointer;font-size:10px}
-.dp-day:hover{background:#F3F0FF}
+.dp-day{text-align:center;padding:4px 2px;border-radius:4px;cursor:pointer;font-size:10px;color:var(--panel-text)}
+.dp-day:hover{background:var(--panel-item-sel)}
 .dp-day.today{font-weight:700}
 .dp-day.sel{background:#7C3AED;color:#fff;border-radius:50%}
-.dp-day.other{color:#ddd}
+.dp-day.other{color:var(--panel-text-sub)}
 .dp-day.sun{color:#E53935}
 .dp-day.sel.sun{color:#fff}
 
@@ -372,10 +439,10 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
   box-sizing:border-box;
 }
 .del-toast.show{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:all}
-.del-toast-undo{background:#AAED3A;color:#111;border:none;border-radius:6px;padding:3px 9px;font-size:11px;font-weight:700;cursor:pointer}
+.del-toast-undo{background:var(--accent);color:var(--accent-fg);border:none;border-radius:6px;padding:3px 9px;font-size:11px;font-weight:700;cursor:pointer}
 
 /* 로딩 */
-.loading{display:flex;align-items:center;justify-content:center;height:80px;color:#bbb;font-size:12px}
+.loading{display:flex;align-items:center;justify-content:center;height:80px;color:var(--panel-text-sub);font-size:12px}
 
 /* 리사이즈 핸들 */
 .resize-handle{
@@ -386,7 +453,7 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
 .resize-handle svg{opacity:.25;transition:opacity .15s}
 .resize-handle:hover svg{opacity:.6}
 
-/* 컴팩트 패널 — 높이만 조절 (창·패널 논리 높이 = cpSize().h, 탭별 SIZES.panel) */
+/* 컴팩트 패널 — 높이만 조절 (SIZES.panel[*].h = .cpanel 카드 논리 높이; 창 높이는 JS에서 별도 산출) */
 .cp-resize-handle{
   position:absolute;right:0;bottom:0;width:18px;height:18px;cursor:ns-resize;z-index:40;
   display:flex;align-items:flex-end;justify-content:flex-end;padding:4px;
@@ -398,27 +465,27 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
 /* 메모 탭 — SQLite 목록 + 검색 + 편집 */
 .cp-memo-root{display:flex;flex-direction:column;min-height:0;flex:1;overflow:hidden}
 .memo-search{
-  width:100%;border:.5px solid #eee;border-radius:8px;padding:7px 9px;font-size:12px;margin-bottom:8px;
-  outline:none;background:#fff;box-sizing:border-box;flex-shrink:0;
+  width:100%;border:.5px solid var(--input-border);border-radius:8px;padding:7px 9px;font-size:12px;margin-bottom:8px;
+  outline:none;background:var(--input-bg);color:var(--panel-text);box-sizing:border-box;flex-shrink:0;
 }
 .memo-list{display:flex;flex-direction:column;gap:4px;overflow-y:auto;min-height:0;flex:1}
 .memo-row{
-  padding:8px 9px;border-radius:8px;background:#F7F7F7;cursor:pointer;border:none;text-align:left;width:100%;
+  padding:8px 9px;border-radius:8px;background:var(--input-bg);cursor:pointer;border:.5px solid var(--input-border);text-align:left;width:100%;
   font:inherit;box-sizing:border-box;
 }
-.memo-row:hover{background:#EFEFEF}
-.memo-row.sel{background:#F3F0FF;border:.5px solid #C4B5FD}
-.memo-row-title{font-size:12px;font-weight:600;color:#111;display:block}
-.memo-row-preview{font-size:10px;color:#888;margin-top:3px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.memo-row:hover{background:var(--panel-item-hover)}
+.memo-row.sel{background:var(--panel-item-sel);border-color:var(--accent)}
+.memo-row-title{font-size:12px;font-weight:600;color:var(--panel-text);display:block}
+.memo-row-preview{font-size:10px;color:var(--panel-text-sub);margin-top:3px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .ex-memo-layout{display:flex;position:absolute;top:0;left:0;right:0;bottom:0;overflow:hidden;min-height:0}
-.ex-memo-sidebar{width:200px;border-right:.5px solid #F0F0F0;padding:10px;display:flex;flex-direction:column;min-height:0}
-.ex-memo-main{flex:1;padding:12px;display:flex;flex-direction:column;min-height:0;overflow:hidden}
-.memo-title-input{width:100%;border:.5px solid #eee;border-radius:8px;padding:8px 10px;font-size:13px;font-weight:600;margin-bottom:8px;box-sizing:border-box;outline:none}
+.ex-memo-sidebar{width:200px;border-right:.5px solid var(--divider);padding:10px;display:flex;flex-direction:column;min-height:0}
+.ex-memo-main{flex:1;padding:12px;display:flex;flex-direction:column;min-height:0;overflow:hidden;background:var(--panel-bg)}
+.memo-title-input{width:100%;border:.5px solid var(--input-border);border-radius:8px;padding:8px 10px;font-size:13px;font-weight:600;margin-bottom:8px;box-sizing:border-box;outline:none;background:var(--input-bg);color:var(--panel-text)}
 .memo-body-input{
-  flex:1;width:100%;min-height:120px;border:.5px solid #eee;border-radius:8px;padding:10px;font-size:13px;line-height:1.5;
-  resize:none;font-family:inherit;outline:none;background:#FAFAFA;box-sizing:border-box;
+  flex:1;width:100%;min-height:120px;border:.5px solid var(--input-border);border-radius:8px;padding:10px;font-size:13px;line-height:1.5;
+  resize:none;font-family:inherit;outline:none;background:var(--input-bg);color:var(--panel-text);box-sizing:border-box;
 }
-.memo-body-input:focus{background:#fff;border-color:#ddd}
+.memo-body-input:focus{background:var(--panel-bg);border-color:var(--accent)}
 
 /* 컴팩트·메모 탭: cp-body 전체 스크롤 끄고 목록(#cp-memo-list)만 스크롤 → '+ 새 메모' 항상 보임 */
 #cpanel.cp-shell-memo-list .cp-body{
@@ -444,18 +511,21 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
 
   <!-- ── 필 ── -->
   <div class="pill" data-tauri-drag-region>
-    <div class="traffic-lights">
-      <button class="dot close"    onclick="closeApp()"    title="닫기"></button>
-      <button class="dot minimize" onclick="minimizeApp()" title="최소화"></button>
+    <div class="pill-body" data-tauri-drag-region>
+      <div class="traffic-lights">
+        <button class="dot close"    onclick="closeApp()"    title="닫기"></button>
+        <button class="dot minimize" onclick="minimizeApp()" title="최소화"></button>
+      </div>
+      <button class="pico" id="ico-todo" onclick="openCompact('todo')" title="할 일">📋</button>
+      <button class="pico" id="ico-cal"  onclick="openCompact('cal')"  title="캘린더">📅</button>
+      <button class="pico" id="ico-memo" onclick="openCompact('memo')" title="메모">📝</button>
+      <button class="pico" id="ico-vault" onclick="openCompact('vault')" title="Vault">🔒</button>
+      <div class="pill-divider"></div>
+      <button class="fold-ico" id="ico-fold" onclick="toggleFold()" title="접기/펴기">
+        <div class="fold-arrow open" id="fold-arrow"><span></span><span></span></div>
+      </button>
     </div>
-    <button class="pico" id="ico-todo" onclick="openCompact('todo')" title="할 일">📋</button>
-    <button class="pico" id="ico-cal"  onclick="openCompact('cal')"  title="캘린더">📅</button>
-    <button class="pico" id="ico-memo" onclick="openCompact('memo')" title="메모">📝</button>
-    <button class="pico" id="ico-vault" onclick="openCompact('vault')" title="Vault">🔒</button>
-    <div class="pill-divider"></div>
-    <button class="fold-ico" id="ico-fold" onclick="toggleFold()" title="접기/펴기">
-      <div class="fold-arrow open" id="fold-arrow"><span></span><span></span></div>
-    </button>
+    <div class="pill-theme-cap" aria-hidden="true"></div>
   </div>
 
   <!-- ── 컴팩트 패널 ── -->
@@ -494,8 +564,8 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
           <button class="cn" onclick="cpCalNav(1)">▶</button>
         </div>
         <div id="cp-cal-grid"></div>
-        <div style="margin-top:10px;padding-top:8px;border-top:.5px solid #F0F0F0">
-          <div style="font-size:9px;font-weight:700;color:#aaa;letter-spacing:.4px;text-transform:uppercase;margin-bottom:6px" id="cp-cal-detail-lbl">선택한 날 일정</div>
+        <div style="margin-top:10px;padding-top:8px;border-top:.5px solid var(--divider)">
+          <div style="font-size:9px;font-weight:700;color:var(--panel-text-sub);letter-spacing:.4px;text-transform:uppercase;margin-bottom:6px" id="cp-cal-detail-lbl">선택한 날 일정</div>
           <div id="cp-today-events"><div class="loading">불러오는 중...</div></div>
         </div>
       </div>
@@ -515,10 +585,10 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
           <!-- 목록 뷰 -->
           <div id="cp-vault-list-view">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px">
-              <span style="font-size:11px;font-weight:600;color:#555">보안 항목</span>
+              <span style="font-size:11px;font-weight:600;color:var(--panel-text)">보안 항목</span>
               <div style="display:flex;align-items:center;gap:8px">
                 <span style="font-size:11px;color:#7C3AED;cursor:pointer;font-weight:600" onclick="openVaultAddModal()">＋ 추가</span>
-                <span style="font-size:9px;color:#bbb;cursor:pointer" onclick="lockVault()">🔒 잠금</span>
+                <span style="font-size:9px;color:var(--panel-text-sub);cursor:pointer" onclick="lockVault()">🔒 잠금</span>
               </div>
             </div>
             <div id="cp-vault-list"></div>
@@ -526,13 +596,13 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
           <!-- 상세 뷰 -->
           <div id="cp-vault-detail-view" style="display:none">
             <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px">
-              <button style="background:none;border:none;color:#bbb;font-size:16px;cursor:pointer;padding:0" onclick="cpVaultBack()">‹</button>
+              <button style="background:none;border:none;color:var(--panel-text-sub);font-size:16px;cursor:pointer;padding:0" onclick="cpVaultBack()">‹</button>
               <span id="cp-vault-detail-title" style="font-size:12px;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
-              <span id="cp-vault-detail-type" style="font-size:9px;color:#aaa;background:#F5F5F5;padding:2px 7px;border-radius:10px;white-space:nowrap"></span>
+              <span id="cp-vault-detail-type" style="font-size:9px;color:var(--panel-text-sub);background:var(--input-bg);padding:2px 7px;border-radius:10px;white-space:nowrap"></span>
               <button id="cp-vault-delete-btn" onclick="cpVaultDelete()" style="background:none;border:none;cursor:pointer;font-size:14px;padding:2px 4px;color:#EF4444;opacity:.6;line-height:1" title="삭제">🗑</button>
             </div>
             <div id="cp-vault-detail-fields" style="max-height:200px;overflow-y:auto"></div>
-            <button onclick="cpVaultCopy()" style="width:100%;margin-top:6px;padding:7px;border-radius:8px;border:none;background:#111;color:#fff;font-size:11px;font-weight:600;cursor:pointer">📋 전체 복사 (30초 후 삭제)</button>
+            <button onclick="cpVaultCopy()" style="width:100%;margin-top:6px;padding:7px;border-radius:8px;border:none;background:var(--accent-fg);color:var(--panel-bg);font-size:11px;font-weight:600;cursor:pointer">📋 전체 복사 (30초 후 삭제)</button>
           </div>
         </div>
       </div>
@@ -546,8 +616,8 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
         </div>
         <div id="cp-memo-detail-view" style="display:none;flex-direction:column;min-height:0;flex:1;overflow:hidden">
           <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-shrink:0">
-            <button type="button" style="background:none;border:none;color:#bbb;font-size:16px;cursor:pointer;padding:0" onclick="shelfMemoCompactBack()" title="목록">‹</button>
-            <span style="font-size:11px;color:#888">메모 편집</span>
+            <button type="button" style="background:none;border:none;color:var(--panel-text-sub);font-size:16px;cursor:pointer;padding:0" onclick="shelfMemoCompactBack()" title="목록">‹</button>
+            <span style="font-size:11px;color:var(--panel-text-sub)">메모 편집</span>
           </div>
           <input type="text" class="memo-title-input" id="cp-memo-title" placeholder="제목" autocomplete="off">
           <textarea class="memo-body-input" id="cp-memo-body" placeholder="내용" spellcheck="false" autocomplete="off"></textarea>
@@ -572,8 +642,8 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
       <div class="ex-profile" data-tauri-drag-region>
         <div class="ex-avatar" data-tauri-drag-region>S</div>
         <div data-tauri-drag-region>
-          <div style="font-size:13px;font-weight:600" id="ex-header-title" data-tauri-drag-region>프로젝트 관리</div>
-          <div style="font-size:10px;color:#aaa" data-tauri-drag-region>Shelf</div>
+          <div style="font-size:13px;font-weight:600;color:var(--panel-text)" id="ex-header-title" data-tauri-drag-region>프로젝트 관리</div>
+          <div style="font-size:10px;color:var(--panel-text-sub)" data-tauri-drag-region>Shelf</div>
         </div>
       </div>
       <div id="ex-stats-todo" class="ex-stats" data-tauri-drag-region>
@@ -607,7 +677,7 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
         </div>
         <div class="ex-task-panel">
           <div class="ex-task-hdr">
-            <span class="ex-task-title" id="ex-proj-title" style="color:#666">프로젝트를 선택하세요</span>
+            <span class="ex-task-title" id="ex-proj-title" style="color:var(--panel-text-sub)">프로젝트를 선택하세요</span>
           </div>
           <div class="type-toggle ex-todo-completion-toggle" id="ex-todo-completion-filter" style="display:none;margin-bottom:8px" aria-label="프로젝트 태스크 표시 범위">
             <button type="button" class="type-btn" data-completion-filter="open" onclick="setExTodoCompletionFilter('open')">미완료</button>
@@ -616,7 +686,7 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
           </div>
           <div id="ex-tasklist"><div class="loading">프로젝트를 선택하면 태스크가 표시됩니다</div></div>
           <div style="margin-top:6px;flex-shrink:0">
-            <button onclick="openTaskModal('current')" style="width:100%;padding:7px;border-radius:9px;border:1px dashed #ddd;background:#FAFAFA;color:#aaa;font-size:12px;cursor:pointer;transition:.15s" onmouseover="this.style.background='#F3F0FF';this.style.color='#7C3AED';this.style.borderColor='#C4B5FD'" onmouseout="this.style.background='#FAFAFA';this.style.color='#aaa';this.style.borderColor='#ddd'">＋ 태스크 추가</button>
+            <button onclick="openTaskModal('current')" style="width:100%;padding:7px;border-radius:9px;border:1px dashed var(--input-border);background:var(--panel-elev);color:var(--panel-text-sub);font-size:12px;cursor:pointer;transition:.15s" onmouseover="this.style.background='var(--panel-item-sel)';this.style.color='var(--accent)';this.style.borderColor='var(--accent)'" onmouseout="this.style.background='var(--panel-elev)';this.style.color='var(--panel-text-sub)';this.style.borderColor='var(--input-border)'">＋ 태스크 추가</button>
           </div>
         </div>
       </div>
@@ -651,12 +721,12 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
     <div class="ex-sub" id="ex-sub-vault">
       <div class="ex-vault-layout" id="ex-vault-unlocked" style="display:none">
         <div class="ex-vault-list">
-          <div style="font-size:9px;font-weight:700;color:#aaa;letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px">보안 항목</div>
+          <div style="font-size:9px;font-weight:700;color:var(--panel-text-sub);letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px">보안 항목</div>
           <div id="ex-vault-list-items"></div>
           <div class="ex-proj-add" style="margin-top:6px" onclick="openVaultAddModal()">＋ 새 항목</div>
         </div>
         <div class="ex-vault-detail" id="ex-vault-detail">
-          <div style="color:#bbb;font-size:12px;text-align:center;padding-top:40px">항목을 선택하세요</div>
+          <div style="color:var(--panel-text-sub);font-size:12px;text-align:center;padding-top:40px">항목을 선택하세요</div>
         </div>
       </div>
       <div class="ex-vault-locked" id="ex-vault-locked">
@@ -680,8 +750,8 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
           <input type="text" class="memo-title-input" id="ex-memo-title" placeholder="제목" autocomplete="off">
           <textarea class="memo-body-input" id="ex-memo-body" placeholder="내용" spellcheck="false" autocomplete="off"></textarea>
           <div style="display:flex;gap:8px;margin-top:8px;flex-shrink:0">
-            <button type="button" id="ex-memo-save-btn" style="flex:1;padding:7px;border-radius:8px;border:none;background:#111;color:#fff;font-size:11px;font-weight:600;cursor:pointer">저장</button>
-            <button type="button" id="ex-memo-delete-btn" style="flex:1;padding:7px;border-radius:8px;border:.5px solid #eee;background:#FAFAFA;color:#EF4444;font-size:11px;font-weight:600;cursor:pointer">삭제</button>
+            <button type="button" id="ex-memo-save-btn" style="flex:1;padding:7px;border-radius:8px;border:none;background:var(--accent-fg);color:var(--panel-bg);font-size:11px;font-weight:600;cursor:pointer">저장</button>
+            <button type="button" id="ex-memo-delete-btn" style="flex:1;padding:7px;border-radius:8px;border:.5px solid var(--input-border);background:var(--panel-elev);color:#EF4444;font-size:11px;font-weight:600;cursor:pointer">삭제</button>
           </div>
         </div>
       </div>
@@ -702,7 +772,7 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
     <div class="modal">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
         <div class="modal-title" style="margin:0" id="detail-title">태스크</div>
-        <button style="background:none;border:none;color:#bbb;font-size:16px;cursor:pointer" onclick="closeModal('task-detail')">×</button>
+        <button style="background:none;border:none;color:var(--panel-text-sub);font-size:16px;cursor:pointer" onclick="closeModal('task-detail')">×</button>
       </div>
       <div class="modal-field">
         <div class="modal-label">프로젝트</div>
@@ -725,8 +795,8 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
           <div class="modal-label">마감일</div>
           <div class="date-picker-wrap">
             <div class="date-display" id="detail-dp-trigger" onclick="toggleDatePicker('detail-dp')">
-              <span id="detail-date-text" style="color:#bbb;font-size:11px">날짜 선택</span>
-              <span style="color:#bbb;font-size:10px">▾</span>
+              <span id="detail-date-text" style="color:var(--panel-text-sub);font-size:11px">날짜 선택</span>
+              <span style="color:var(--panel-text-sub);font-size:10px">▾</span>
             </div>
             <div class="date-picker-pop" id="detail-dp">
               <div class="dp-hdr"><button class="dp-nav" onclick="dpNav('detail-dp',-1)">◀</button><span class="m" id="detail-dp-lbl"></span><button class="dp-nav" onclick="dpNav('detail-dp',1)">▶</button></div>
@@ -735,8 +805,8 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
           </div>
           <div class="date-picker-wrap" style="margin-top:5px">
             <div class="date-display" id="detail-tp-trigger" onclick="toggleTimePicker('detail-tp')">
-              <span id="detail-time-text" style="color:#bbb;font-size:11px">시간 선택</span>
-              <span style="color:#bbb;font-size:10px">▾</span>
+              <span id="detail-time-text" style="color:var(--panel-text-sub);font-size:11px">시간 선택</span>
+              <span style="color:var(--panel-text-sub);font-size:10px">▾</span>
             </div>
             <div class="time-picker-pop" id="detail-tp"></div>
           </div>
@@ -773,8 +843,8 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
         <div style="display:flex;gap:6px;align-items:flex-start">
           <div class="date-picker-wrap" style="flex:1">
             <div class="date-display" id="task-dp-trigger" onclick="toggleDatePicker('task-dp')">
-              <span id="task-date-text" style="color:#bbb;font-size:11px">날짜 선택</span>
-              <span style="color:#bbb;font-size:10px">▾</span>
+              <span id="task-date-text" style="color:var(--panel-text-sub);font-size:11px">날짜 선택</span>
+              <span style="color:var(--panel-text-sub);font-size:10px">▾</span>
             </div>
             <div class="date-picker-pop" id="task-dp">
               <div class="dp-hdr"><button class="dp-nav" onclick="dpNav('task-dp',-1)">◀</button><span class="m" id="task-dp-lbl"></span><button class="dp-nav" onclick="dpNav('task-dp',1)">▶</button></div>
@@ -783,8 +853,8 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
           </div>
           <div class="date-picker-wrap" style="flex:1">
             <div class="date-display" id="task-tp-trigger" onclick="toggleTimePicker('task-tp')">
-              <span id="task-time-text" style="color:#bbb;font-size:11px">시간 선택</span>
-              <span style="color:#bbb;font-size:10px">▾</span>
+              <span id="task-time-text" style="color:var(--panel-text-sub);font-size:11px">시간 선택</span>
+              <span style="color:var(--panel-text-sub);font-size:10px">▾</span>
             </div>
             <div class="time-picker-pop" id="task-tp"></div>
           </div>
@@ -855,19 +925,19 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
         <div style="display:flex;align-items:center;gap:6px">
           <div class="date-picker-wrap" style="flex:1">
             <div class="date-display" id="proj-start-dp-trigger" onclick="toggleDatePicker('proj-start-dp')" style="font-size:11px">
-              <span id="proj-start-text" style="color:#bbb;font-size:11px">시작일</span>
-              <span style="color:#bbb;font-size:10px">▾</span>
+              <span id="proj-start-text" style="color:var(--panel-text-sub);font-size:11px">시작일</span>
+              <span style="color:var(--panel-text-sub);font-size:10px">▾</span>
             </div>
             <div class="date-picker-pop" id="proj-start-dp">
               <div class="dp-hdr"><button class="dp-nav" onclick="dpNav('proj-start-dp',-1)">◀</button><span class="m" id="proj-start-dp-lbl"></span><button class="dp-nav" onclick="dpNav('proj-start-dp',1)">▶</button></div>
               <div class="dp-grid" id="proj-start-dp-grid"></div>
             </div>
           </div>
-          <span style="color:#bbb">→</span>
+          <span style="color:var(--panel-text-sub)">→</span>
           <div class="date-picker-wrap" style="flex:1">
             <div class="date-display" id="proj-end-dp-trigger" onclick="toggleDatePicker('proj-end-dp')" style="font-size:11px">
-              <span id="proj-end-text" style="color:#bbb;font-size:11px">종료일</span>
-              <span style="color:#bbb;font-size:10px">▾</span>
+              <span id="proj-end-text" style="color:var(--panel-text-sub);font-size:11px">종료일</span>
+              <span style="color:var(--panel-text-sub);font-size:10px">▾</span>
             </div>
             <div class="date-picker-pop" id="proj-end-dp" style="right:0;left:auto">
               <div class="dp-hdr"><button class="dp-nav" onclick="dpNav('proj-end-dp',-1)">◀</button><span class="m" id="proj-end-dp-lbl"></span><button class="dp-nav" onclick="dpNav('proj-end-dp',1)">▶</button></div>
@@ -887,10 +957,32 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
   <div class="modal-overlay" id="modal-project-delete" style="z-index:120" onclick="if(event.target===this)closeModal('project-delete')">
     <div class="modal">
       <div class="modal-title">프로젝트 삭제</div>
-      <p id="proj-delete-body" style="font-size:12px;line-height:1.55;color:#444;margin:0 0 14px"></p>
+      <p id="proj-delete-body" style="font-size:12px;line-height:1.55;color:var(--panel-text);margin:0 0 14px"></p>
       <div class="modal-footer" style="margin-top:0">
         <button type="button" class="btn-cancel" onclick="closeModal('project-delete')">취소</button>
         <button type="button" class="btn-submit" style="background:#B91C1C" onclick="runPendingProjectDelete()">삭제</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Shelf 테마·설정 -->
+  <div class="modal-overlay" id="modal-shelf-settings" style="z-index:130" onclick="if(event.target===this)shelfSettingsDismiss()">
+    <div class="modal" style="width:320px" onclick="event.stopPropagation()">
+      <div class="modal-title">설정</div>
+      <div class="modal-label">테마</div>
+      <div class="shelf-settings-theme-cards">
+        <button type="button" class="shelf-theme-card" data-shelf-ui-theme="dark" onclick="shelfPreviewUiThemeInSettings('dark')">
+          <div class="shelf-theme-card-title">Dark Glass</div>
+          <div class="shelf-theme-card-sub">어두운 글래스 패널 · 라임 포인트</div>
+        </button>
+        <button type="button" class="shelf-theme-card" data-shelf-ui-theme="soft" onclick="shelfPreviewUiThemeInSettings('soft')">
+          <div class="shelf-theme-card-title">Soft Color</div>
+          <div class="shelf-theme-card-sub">밝은 패널 · 바이올렛 포인트</div>
+        </button>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-cancel" onclick="shelfSettingsDismiss()">취소</button>
+        <button type="button" class="btn-submit" onclick="shelfSettingsConfirm()">적용</button>
       </div>
     </div>
   </div>
@@ -977,6 +1069,63 @@ function invoke(cmd, args){
   // fn = core.invoke 로 추출하면 this가 끊겨 args 직렬화 오류 발생
   return core.invoke(cmd, args);
 }
+
+const SHELF_UI_THEME_DARK='dark';
+const SHELF_UI_THEME_SOFT='soft';
+let shelfThemeModalBaselineToken=SHELF_UI_THEME_DARK;
+let shelfThemeModalChoiceToken=SHELF_UI_THEME_DARK;
+
+function shelfGetUiThemeToken(){
+  const t=document.documentElement.getAttribute('data-theme');
+  return t===SHELF_UI_THEME_SOFT?SHELF_UI_THEME_SOFT:SHELF_UI_THEME_DARK;
+}
+function shelfApplyUiThemeToken(themeToken){
+  if(themeToken===SHELF_UI_THEME_SOFT) document.documentElement.setAttribute('data-theme',SHELF_UI_THEME_SOFT);
+  else document.documentElement.setAttribute('data-theme',SHELF_UI_THEME_DARK);
+}
+function shelfSyncSettingsThemeCardSelection(){
+  const choice=shelfThemeModalChoiceToken;
+  document.querySelectorAll('.shelf-theme-card').forEach(btn=>{
+    btn.classList.toggle('sel',btn.getAttribute('data-shelf-ui-theme')===choice);
+  });
+}
+function shelfOpenSettingsModal(){
+  shelfThemeModalBaselineToken=shelfGetUiThemeToken();
+  shelfThemeModalChoiceToken=shelfThemeModalBaselineToken;
+  shelfSyncSettingsThemeCardSelection();
+  document.getElementById('modal-shelf-settings').classList.add('show');
+}
+function shelfPreviewUiThemeInSettings(themeToken){
+  shelfThemeModalChoiceToken=themeToken===SHELF_UI_THEME_SOFT?SHELF_UI_THEME_SOFT:SHELF_UI_THEME_DARK;
+  shelfApplyUiThemeToken(shelfThemeModalChoiceToken);
+  shelfSyncSettingsThemeCardSelection();
+}
+function shelfSettingsDismiss(){
+  document.getElementById('modal-shelf-settings').classList.remove('show');
+  shelfApplyUiThemeToken(shelfThemeModalBaselineToken);
+  shelfThemeModalChoiceToken=shelfThemeModalBaselineToken;
+  shelfSyncSettingsThemeCardSelection();
+}
+async function shelfSettingsConfirm(){
+  const token=shelfThemeModalChoiceToken;
+  try{ await invoke('set_setting',{key:'theme',value:token}); }catch(e){ console.error(e); }
+  shelfThemeModalBaselineToken=token;
+  document.getElementById('modal-shelf-settings').classList.remove('show');
+}
+async function shelfRestoreUiThemeFromDb(){
+  try{
+    const saved=await invoke('get_setting',{key:'theme'});
+    if(saved===SHELF_UI_THEME_SOFT) shelfApplyUiThemeToken(SHELF_UI_THEME_SOFT);
+    else shelfApplyUiThemeToken(SHELF_UI_THEME_DARK);
+  }catch(_){
+    shelfApplyUiThemeToken(SHELF_UI_THEME_DARK);
+  }
+}
+function shelfAttachOpenSettingsMenuListener(){
+  const ev=window.__TAURI__?.event;
+  if(!ev?.listen) return;
+  ev.listen('open-settings',()=>{ shelfOpenSettingsModal(); }).catch(()=>{});
+}
 const { getCurrentWindow, LogicalSize } = window.__TAURI__?.window || {}; // currentMonitor 는 매 호출 시 __TAURI__.window 에서 참조
 
 /** inner 크기 변경 후 OS가 외곽 좌상단을 움직이는 경우를 보정 — 레일 톱·좌 앵커 유지 */
@@ -991,18 +1140,36 @@ async function applyWindowLogicalSizeKeepingOuterTopLeft(logicalW, logicalH){
   }catch(_){}
 }
 
+/** 필 레일 물리 높이(px) — `.pill` 의 `height`·`--shelf-pill-fixed-height` 와 반드시 동일 */
+const SHELF_PILL_FIXED_LOGICAL_HEIGHT_PX = 320;
+/** 필이 잘리지 않도록 panel·expanded 시 #app 논리 높이 하한 (= 필 높이 + 상·하 10px 여백) */
+function shelfMinShellLogicalHeightForFixedPill(){
+  return SHELF_PILL_FIXED_LOGICAL_HEIGHT_PX + SHELL_SIDE_PANEL_VERTICAL_GAP_PX;
+}
+
+/** 컴팩트 `.cpanel` 카드 논리 높이 → Tauri / `#app` 논리 높이 (고정 필 하한 vs 카드+상·하 여백 중 큰 값) */
+function shelfShellLogicalHeightFromCompactPanelCardHeight(compactPanelCardLogicalHeightPx){
+  return Math.max(
+    shelfMinShellLogicalHeightForFixedPill(),
+    compactPanelCardLogicalHeightPx + SHELL_SIDE_PANEL_VERTICAL_GAP_PX
+  );
+}
+
 // ── 윈도우 크기 설정값 (논리 픽셀) ── shell 상태별 높이 분리
+// 예전 스펙(컴팩트 = 창 논리 높이): todo 280 · cal 540 · vault 300 · memo 320 · 창 min 260 · max 1000
+// 지금은 `SIZES.panel[*].h`가 패널 카드(.cpanel) 높이이므로, 예전 창 높이에서 상·하 갭 20px을 뺀 값을 기본으로 둠.
 const SHELL_DIMS = {
   foldLogicalHeight:    420,
-  /** 컴팩트 창 논리 높이 기본값 — 탭별 (할 일 짧게·캘린더 그리드·Vault 중간) */
-  compactTodoDefaultLogicalHeight:   280,
-  compactCalDefaultLogicalHeight:     540,
-  compactVaultDefaultLogicalHeight:   300,
-  compactMemoDefaultLogicalHeight:    320,
+  /** 탭별 컴팩트 패널 카드 기본 논리 높이 (= 예전 창 기본값 − 20) */
+  compactTodoDefaultPanelCardLogicalHeight:   260,
+  compactCalDefaultPanelCardLogicalHeight:     520,
+  compactVaultDefaultPanelCardLogicalHeight:   280,
+  compactMemoDefaultPanelCardLogicalHeight:    300,
   /** 확장 창 논리 높이 — expanel 실제 높이는 shell 여백 만큼 빼야 함 */
   expandedDefaultLogicalHeight: 620,
-  /** 컴팩트 창 논리 높이 — 리사이즈 핸들로만 변경, 하한·상한 */
-  compactShellMinLogicalHeight: 260,
+  /** 컴팩트 패널 카드 높이 하한 (= 예전 `compactShellMinLogicalHeight` 260 − 20) */
+  compactPanelCardMinLogicalHeight: 240,
+  /** Tauri / `#app` 논리 높이 상한 — 패널 카드는 이 값에서 상·하 갭을 뺀 만큼까지 */
   compactShellMaxLogicalHeight: 1000,
 };
 /** 필 레일 탭 id — DOM id 접두 ico- / cp- / ex-sub- 와 일치 */
@@ -1015,10 +1182,10 @@ function sidePanelInnerHeightFromShellWindowHeight(shellWindowLogicalHeightPx){
 const SIZES = {
   pill:  { w:52,  h:SHELL_DIMS.foldLogicalHeight },
   panel: {
-    todo:  { w:342, h:SHELL_DIMS.compactTodoDefaultLogicalHeight },
-    cal:   { w:342, h:SHELL_DIMS.compactCalDefaultLogicalHeight },
-    vault: { w:342, h:SHELL_DIMS.compactVaultDefaultLogicalHeight },
-    memo:  { w:342, h:SHELL_DIMS.compactMemoDefaultLogicalHeight },
+    todo:  { w:342, h:SHELL_DIMS.compactTodoDefaultPanelCardLogicalHeight },
+    cal:   { w:342, h:SHELL_DIMS.compactCalDefaultPanelCardLogicalHeight },
+    vault: { w:342, h:SHELL_DIMS.compactVaultDefaultPanelCardLogicalHeight },
+    memo:  { w:342, h:SHELL_DIMS.compactMemoDefaultPanelCardLogicalHeight },
   },
   expanded: {
     todo:  { w:622, h:SHELL_DIMS.expandedDefaultLogicalHeight },
@@ -1027,12 +1194,32 @@ const SIZES = {
     memo:  { w:622, h:SHELL_DIMS.expandedDefaultLogicalHeight },
   },
 };
-// 현재 탭의 컴팩트 크기 참조 (컴팩트 리사이즈 핸들이 이 객체 w/h를 갱신)
+// 현재 탭의 컴팩트 크기 참조 — `h`는 패널 카드(.cpanel) 논리 높이(창 전체 높이 아님)
 function cpSize(){ return SIZES.panel[curTab||'todo']; }
 // 현재 탭의 expanded 크기 참조 (확장 리사이즈 핸들이 이 객체 w/h를 갱신)
 function exSize(){ return SIZES.expanded[curTab||'todo']; }
 
-/** shell 상태별 논리 크기 — pill 고정, panel·expanded 는 탭별·사용자 리사이즈 반영 */
+/** 컴팩트 카드 높이 입력을 허용 범위로 정규화. 숫자로 못 쓰면 `null`. */
+function shelfCoerceCompactPanelCardLogicalHeightPx(raw){
+  const minCard=SHELL_DIMS.compactPanelCardMinLogicalHeight;
+  const maxCard=SHELL_DIMS.compactShellMaxLogicalHeight - SHELL_SIDE_PANEL_VERTICAL_GAP_PX;
+  const n=Math.round(Number(typeof raw==='string'? String(raw).trim(): raw));
+  if(!Number.isFinite(n)) return null;
+  return Math.min(maxCard, Math.max(minCard, n));
+}
+
+/** 탭 id별 컴팩트 패널 카드 기본 높이(`SHELL_DIMS`와 동기) — `resizeWindow` 폴백용 */
+function shelfDefaultCompactPanelCardLogicalHeightForTab(tabId){
+  const m={
+    todo:SHELL_DIMS.compactTodoDefaultPanelCardLogicalHeight,
+    cal:SHELL_DIMS.compactCalDefaultPanelCardLogicalHeight,
+    vault:SHELL_DIMS.compactVaultDefaultPanelCardLogicalHeight,
+    memo:SHELL_DIMS.compactMemoDefaultPanelCardLogicalHeight,
+  };
+  return m[tabId] ?? m.todo;
+}
+
+/** shell 상태별 논리 크기 — panel 의 `h`는 패널 카드 높이, expanded 의 `h`는 셸 창 높이 */
 function logicalSizeForShellState(shellState, tabOverride){
   if(shellState==='pill') return SIZES.pill;
   const t = tabOverride ?? curTab ?? 'todo';
@@ -1046,21 +1233,36 @@ async function resizeWindow(state, tabOverride){
   const ep=document.getElementById('expanel');
   const cp=document.getElementById('cpanel');
   const sz = logicalSizeForShellState(state, tabOverride);
-  const h = sz.h, w = sz.w;
-  app.style.width=w+'px';
-  app.style.height=h+'px';
-  if(state==='expanded'){
+  const w = sz.w;
+  let h;
+  if(state==='panel'){
+    const t=tabOverride ?? curTab ?? 'todo';
+    const panelCardH=
+      shelfCoerceCompactPanelCardLogicalHeightPx(sz.h)
+      ?? shelfCoerceCompactPanelCardLogicalHeightPx(SIZES.panel[t].h)
+      ?? shelfDefaultCompactPanelCardLogicalHeightForTab(t);
+    if(sz.h !== panelCardH) sz.h = panelCardH;
+    h = shelfShellLogicalHeightFromCompactPanelCardHeight(panelCardH);
+    app.style.width=w+'px';
+    app.style.height=h+'px';
+    cp.style.height=panelCardH+'px';
+    cp.style.maxHeight=panelCardH+'px';
+    ep.style.width=''; ep.style.height=''; ep.style.maxHeight='';
+  } else if(state==='expanded'){
+    const minShellH=shelfMinShellLogicalHeightForFixedPill();
+    h=Math.max(minShellH, sz.h);
+    if(sz.h !== h) sz.h = h;
+    app.style.width=w+'px';
+    app.style.height=h+'px';
     const epContentH=sidePanelInnerHeightFromShellWindowHeight(h);
     ep.style.width=(w-62)+'px';
     ep.style.height=epContentH+'px';
     ep.style.maxHeight=epContentH+'px';
     cp.style.height=''; cp.style.maxHeight='';
-  } else if(state==='panel'){
-    const cpInnerH=sidePanelInnerHeightFromShellWindowHeight(h);
-    cp.style.height=cpInnerH+'px';
-    cp.style.maxHeight=cpInnerH+'px';
-    ep.style.width=''; ep.style.height=''; ep.style.maxHeight='';
   } else {
+    h=sz.h;
+    app.style.width=w+'px';
+    app.style.height=h+'px';
     ep.style.width=''; ep.style.height=''; ep.style.maxHeight='';
     cp.style.height=''; cp.style.maxHeight='';
   }
@@ -1205,12 +1407,12 @@ function shelfMemoRenderOneList(hostId, clickFn){
   const host=document.getElementById(hostId);
   if(!host) return;
   if(memoSummaries.length===0){
-    host.innerHTML='<div style="text-align:center;color:#bbb;font-size:11px;padding:14px 4px">메모가 없어요<br><span style="font-size:10px">＋ 새 메모로 추가</span></div>';
+    host.innerHTML='<div style="text-align:center;color:var(--panel-text-sub);font-size:11px;padding:14px 4px">메모가 없어요<br><span style="font-size:10px">＋ 새 메모로 추가</span></div>';
     return;
   }
   host.innerHTML=memoSummaries.map(m=>{
     const sel=memoSelectedId!=null&&Number(memoSelectedId)===Number(m.id)?' sel':'';
-    const prev=(m.preview||'').trim()?escHtml(m.preview):'<span style="color:#ccc;font-size:10px">내용 없음</span>';
+    const prev=(m.preview||'').trim()?escHtml(m.preview):'<span style="color:var(--panel-text-sub);font-size:10px">내용 없음</span>';
     return `<button type="button" class="memo-row${sel}" onclick="void shelfMemo${clickFn}(${m.id})"><span class="memo-row-title">${escHtml(m.title||'제목 없음')}</span><span class="memo-row-preview">${prev}</span></button>`;
   }).join('');
 }
@@ -1487,6 +1689,7 @@ let pendingDeleteProjectId=null;
 //  - invoke가 실제 함수로 교체된 뒤에 실행되어야 함
 // ══════════════════════════════════════════════════════
 async function init(){
+  await shelfRestoreUiThemeFromDb();
   const now=new Date();
   document.getElementById('ex-date').textContent=
     `${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,'0')}.${String(now.getDate()).padStart(2,'0')} ${['일','월','화','수','목','금','토'][now.getDay()]}`;
@@ -1537,7 +1740,7 @@ function renderCpTodos(){
       if(cpTodoCompletionFilter==='open') msg='오늘 남은 할 일이 없어요 🎉';
       else if(cpTodoCompletionFilter==='done') msg='오늘 완료한 할 일이 없어요';
     }
-    list.innerHTML=`<div style="text-align:center;color:#bbb;font-size:11px;padding:16px 0">${msg}</div>`;
+    list.innerHTML=`<div style="text-align:center;color:var(--panel-text-sub);font-size:11px;padding:16px 0">${msg}</div>`;
     return;
   }
   list.innerHTML=todayTodos.map(t=>{
@@ -1633,7 +1836,7 @@ function renderExProjects(){
     <div class="proj-card${selectedProjId===-1?' sel':''}" onclick="selectProject(-1,'미분류','#999')">
       <div class="proj-card-bar" style="background:#ccc"></div>
       <div class="proj-card-info">
-        <div class="proj-card-name" style="color:#888">📌 미분류</div>
+        <div class="proj-card-name" style="color:var(--panel-text-sub)">📌 미분류</div>
         <div class="proj-card-sub">프로젝트 없음</div>
       </div>
       <div class="proj-card-cnt">${unassigned.length}</div>
@@ -1680,13 +1883,13 @@ function renderExTasks(){
   const doneInProject=allProjTodos.filter(t=>t.done).length;
   document.getElementById('ex-todo-done').textContent=doneInProject;
   if(allProjTodos.length===0){
-    list.innerHTML='<div style="color:#bbb;font-size:11px;text-align:center;padding:16px 0">태스크가 없어요. 추가해보세요!</div>';
+    list.innerHTML='<div style="color:var(--panel-text-sub);font-size:11px;text-align:center;padding:16px 0">태스크가 없어요. 추가해보세요!</div>';
     return;
   }
   const visibleTodos=allProjTodos.filter(t=>shelfTodoMatchesCompletionFilter(t,exTodoCompletionFilter));
   if(visibleTodos.length===0){
     const hint=exTodoCompletionFilter==='open'?'미완료 태스크가 없어요':exTodoCompletionFilter==='done'?'완료된 태스크가 없어요':'표시할 태스크가 없어요';
-    list.innerHTML=`<div style="color:#bbb;font-size:11px;text-align:center;padding:16px 0">${hint}</div>`;
+    list.innerHTML=`<div style="color:var(--panel-text-sub);font-size:11px;text-align:center;padding:16px 0">${hint}</div>`;
     return;
   }
   list.innerHTML=visibleTodos.map(t=>`
@@ -2003,7 +2206,7 @@ function renderDayScheduleList(containerId,ymd,opts){
 
   const el=document.getElementById(containerId);
   if(!el) return;
-  if(sections.length===0){ el.innerHTML='<div style="color:#bbb;font-size:11px;text-align:center;padding:8px 0">일정 없음</div>'; return; }
+  if(sections.length===0){ el.innerHTML='<div style="color:var(--panel-text-sub);font-size:11px;text-align:center;padding:8px 0">일정 없음</div>'; return; }
   el.innerHTML=`<div class="cal-sched-by-project">${sections.join('')}</div>`;
 }
 
@@ -2040,9 +2243,9 @@ async function loadAndRenderVaultItems(containerId){
         <span style="font-size:15px">${ICONS[v.item_type]||'📄'}</span>
         <div style="flex:1;margin-left:7px">
           <div style="font-size:11px;font-weight:500">${escHtml(v.title)}</div>
-          <div style="font-size:9px;color:#aaa">${v.item_type}</div>
+          <div style="font-size:9px;color:var(--panel-text-sub)">${v.item_type}</div>
         </div>
-        <span style="color:#ccc;font-size:11px">›</span>
+        <span style="color:var(--panel-text-sub);font-size:11px">›</span>
       </div>`).join('');
     document.getElementById('ex-vault-count').textContent=vaultItems.length;
   }catch(e){}
@@ -2055,7 +2258,7 @@ async function deleteVaultItem(id){
   const item=vaultItems.find(v=>v.id===id); if(!item) return;
   try{
     await invoke('delete_vault_item',{id});
-    document.getElementById('ex-vault-detail').innerHTML='<div style="color:#bbb;font-size:12px;text-align:center;padding-top:40px">항목을 선택하세요</div>';
+    document.getElementById('ex-vault-detail').innerHTML='<div style="color:var(--panel-text-sub);font-size:12px;text-align:center;padding-top:40px">항목을 선택하세요</div>';
     vdData=null;
     await loadAndRenderVaultItems('cp-vault-list');
     await loadAndRenderVaultItems('ex-vault-list-items');
@@ -2246,7 +2449,7 @@ function selectVaultType(type){
   const f=document.getElementById('vault-fields');
   const inp=(id,label,ph,opts='')=>`<div class="modal-field"><div class="modal-label">${label}</div><input class="modal-input" id="${id}" placeholder="${ph}" autocapitalize="none" autocorrect="off" spellcheck="false" ${opts}></div>`;
   const ta=(id,label,ph,rows=3)=>`<div class="modal-field"><div class="modal-label">${label}</div><textarea class="modal-input" id="${id}" rows="${rows}" placeholder="${ph}" autocapitalize="none" autocorrect="off" spellcheck="false" style="resize:none;line-height:1.6"></textarea></div>`;
-  const opt=(id,label,ph)=>inp(id,`${label} <span style="color:#bbb;font-weight:400">(선택)</span>`,ph);
+  const opt=(id,label,ph)=>inp(id,`${label} <span style="color:var(--panel-text-sub);font-weight:400">(선택)</span>`,ph);
   if(type==='idpw'){
     f.innerHTML=
       inp('vf-username','아이디 / 이메일','username@example.com')+
@@ -2353,7 +2556,7 @@ function openTaskDetailModal(id){
   // 프로젝트 칩 렌더
   const dChips=document.getElementById('detail-proj-chips');
   dChips.innerHTML=
-    `<div class="proj-chip${!todo.project_id?' sel':''}" data-proj-id="" onclick="selDetailProj(this)" style="color:#888;border-color:${!todo.project_id?'#888':'transparent'}">미분류</div>`+
+    `<div class="proj-chip${!todo.project_id?' sel':''}" data-proj-id="" onclick="selDetailProj(this)" style="color:var(--panel-text-sub);border-color:${!todo.project_id?'var(--panel-text-sub)':'transparent'}">미분류</div>`+
     projects.filter(p=>!p.archived).map(p=>
       `<div class="proj-chip${todo.project_id===p.id?' sel':''}" data-proj-id="${p.id}" onclick="selDetailProj(this)" style="color:${p.color};border-color:${todo.project_id===p.id?p.color:'transparent'}">
         <div class="proj-chip-dot" style="background:${p.color}"></div>${escHtml(p.name)}
@@ -2365,7 +2568,7 @@ function openTaskDetailModal(id){
     const tp=todo.due_date.slice(11,16).split(':');
     tpState['detail-tp']={h:parseInt(tp[0]),m:parseInt(tp[1])};
     document.getElementById('detail-time-text').textContent=todo.due_date.slice(11,16);
-    document.getElementById('detail-time-text').style.color='#333';
+    document.getElementById('detail-time-text').style.color='var(--panel-text)';
   } else {
     tpState['detail-tp']={h:null,m:null};
     document.getElementById('detail-time-text').textContent='시간 선택';
@@ -2373,7 +2576,7 @@ function openTaskDetailModal(id){
   }
   if(todo.due_date){
     document.getElementById('detail-date-text').textContent=todo.due_date.slice(0,10).replace(/-/g,'.');
-    document.getElementById('detail-date-text').style.color='#333';
+    document.getElementById('detail-date-text').style.color='var(--panel-text)';
   } else {
     document.getElementById('detail-date-text').textContent='날짜 선택';
     document.getElementById('detail-date-text').style.color='#bbb';
@@ -2514,7 +2717,7 @@ function openProjectDeleteConfirm(projectId){
   if(!p) return;
   pendingDeleteProjectId=projectId;
   document.getElementById('proj-delete-body').innerHTML=
-    `「<strong>${escHtml(p.name)}</strong>」를 삭제할까요?<br><span style="color:#888;font-size:11px">소속 태스크는 미분류로 돌아갑니다.</span>`;
+    `「<strong>${escHtml(p.name)}</strong>」를 삭제할까요?<br><span style="color:var(--panel-text-sub);font-size:11px">소속 태스크는 미분류로 돌아갑니다.</span>`;
   document.getElementById('modal-project-delete').classList.add('show');
 }
 
@@ -2529,7 +2732,7 @@ async function runPendingProjectDelete(){
     if(selectedProjId===projectId){
       selectedProjId=null;
       document.getElementById('ex-proj-title').textContent='프로젝트를 선택하세요';
-      document.getElementById('ex-proj-title').style.color='#666';
+      document.getElementById('ex-proj-title').style.color='var(--panel-text-sub)';
       renderExTasks();
     }
     if(editingProjectId===projectId) closeModal('project');
@@ -2554,7 +2757,7 @@ function openEditProjectModal(projectId){
   const endIso=p.end_date?String(p.end_date).slice(0,10):null;
   if(startIso){
     document.getElementById('proj-start-text').textContent=startIso.replace(/-/g,'.');
-    document.getElementById('proj-start-text').style.color='#333';
+    document.getElementById('proj-start-text').style.color='var(--panel-text)';
     const [sy,sm,sd]=startIso.split('-').map(Number);
     dpState['proj-start-dp']={y:sy,m:sm,sel:sd};
   } else {
@@ -2564,7 +2767,7 @@ function openEditProjectModal(projectId){
   }
   if(endIso){
     document.getElementById('proj-end-text').textContent=endIso.replace(/-/g,'.');
-    document.getElementById('proj-end-text').style.color='#333';
+    document.getElementById('proj-end-text').style.color='var(--panel-text)';
     const [ey,em,ed]=endIso.split('-').map(Number);
     dpState['proj-end-dp']={y:ey,m:em,sel:ed};
   } else {
@@ -2695,10 +2898,10 @@ function updateTimeDisplay(id){
   const textEl=document.getElementById(TP_TEXT_MAP[id]); if(!textEl) return;
   if(s.h!==null&&s.m!==null){
     textEl.textContent=`${String(s.h).padStart(2,'0')}:${String(s.m).padStart(2,'0')}`;
-    textEl.style.color='#333';
+    textEl.style.color='var(--panel-text)';
   } else if(s.h!==null){
     textEl.textContent=`${String(s.h).padStart(2,'0')}:--`;
-    textEl.style.color='#888';
+    textEl.style.color='var(--panel-text-sub)';
   }
 }
 function getTimeValue(tpId){
@@ -2733,7 +2936,7 @@ function selectDay(id,d){
   const {y,m}=dpState[id];
   const str=`${y}.${String(m).padStart(2,'0')}.${String(d).padStart(2,'0')}`;
   const textEl=document.getElementById(DP_TEXT_MAP[id]);
-  if(textEl){textEl.textContent=str;textEl.style.color='#333';}
+  if(textEl){textEl.textContent=str;textEl.style.color='var(--panel-text)';}
   renderDp(id);
   setTimeout(()=>document.getElementById(id)?.classList.remove('open'),150);
 }
@@ -2799,7 +3002,7 @@ function undoDelete(){
 // ══════════════════════════════════════════════════════
 (function(){
   const cpResizeEl=document.getElementById('cp-resize-handle');
-  let compactResizeDragging=false, compactResizeStartY=0, compactResizeWinH=0;
+  let compactResizeDragging=false, compactResizeStartY=0, compactResizePanelCardH=0;
 
   cpResizeEl.addEventListener('mousedown', e=>{
     e.preventDefault();
@@ -2807,7 +3010,7 @@ function undoDelete(){
     const cp=document.getElementById('cpanel');
     if(!cp.classList.contains('open')) return;
     compactResizeStartY=e.screenY;
-    compactResizeWinH=cpSize().h;
+    compactResizePanelCardH=cpSize().h;
     compactResizeDragging=true;
     cp.style.transition='none';
     document.body.style.cursor='ns-resize';
@@ -2818,20 +3021,19 @@ function undoDelete(){
     if(!compactResizeDragging) return;
     const dh=e.screenY-compactResizeStartY;
     compactResizeStartY=e.screenY;
-    const minH=SHELL_DIMS.compactShellMinLogicalHeight;
-    const maxH=SHELL_DIMS.compactShellMaxLogicalHeight;
-    const newWinH=Math.min(maxH, Math.max(minH, compactResizeWinH+dh));
-    compactResizeWinH=newWinH;
-    cpSize().h=newWinH;
+    const newCardH=shelfCoerceCompactPanelCardLogicalHeightPx(compactResizePanelCardH+dh);
+    if(newCardH==null) return;
+    compactResizePanelCardH=newCardH;
+    cpSize().h=newCardH;
     const w=cpSize().w;
-    const innerH=sidePanelInnerHeightFromShellWindowHeight(newWinH);
+    const shellH=shelfShellLogicalHeightFromCompactPanelCardHeight(newCardH);
     const app=document.getElementById('app');
     const cp=document.getElementById('cpanel');
     app.style.width=w+'px';
-    app.style.height=newWinH+'px';
-    cp.style.height=innerH+'px';
-    cp.style.maxHeight=innerH+'px';
-    void applyWindowLogicalSizeKeepingOuterTopLeft(w, newWinH);
+    app.style.height=shellH+'px';
+    cp.style.height=newCardH+'px';
+    cp.style.maxHeight=newCardH+'px';
+    void applyWindowLogicalSizeKeepingOuterTopLeft(w, shellH);
   });
 
   document.addEventListener('mouseup', ()=>{
@@ -2878,7 +3080,11 @@ function undoDelete(){
     startW=newEpW+PILL_W; startH=newEpH;
     // 창 크기: 폭은 ep+pill, 높이는 ep가 현재 창보다 클 때만 확장
     const newWinW=Math.round(newEpW)+PILL_W;
-    const newWinH=Math.max(exSize().h, Math.round(newEpH) + SHELL_SIDE_PANEL_VERTICAL_GAP_PX);
+    const newWinH=Math.max(
+      shelfMinShellLogicalHeightForFixedPill(),
+      exSize().h,
+      Math.round(newEpH)+SHELL_SIDE_PANEL_VERTICAL_GAP_PX,
+    );
     exSize().w=newWinW; exSize().h=newWinH;
     const ep=document.getElementById('expanel');
     const app=document.getElementById('app');
@@ -2913,6 +3119,7 @@ function waitAndInit(retries){
     resizeWindow('pill').then(async()=>{
       await init();
       attachShelfWindowMetricsDebug();
+      shelfAttachOpenSettingsMenuListener();
     });
     return;
   } else if(retries > 0){
