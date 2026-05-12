@@ -70,6 +70,10 @@ fn update_with(
 }
 
 fn delete_with(conn: &Connection, id: i64) -> Result<()> {
+    conn.execute(
+        "UPDATE todos SET project_id = NULL WHERE project_id = ?1",
+        rusqlite::params![id],
+    )?;
     let affected = conn.execute("DELETE FROM projects WHERE id = ?1", rusqlite::params![id])?;
     if affected == 0 {
         return Err(rusqlite::Error::QueryReturnedNoRows);

@@ -18,6 +18,9 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
   z-index:1;
 }
 #app.shell-fold .fold-drag-shim{ display:block; }
+/* 확장→컴팩트: scale 애니 동시에 돌지 않게 한 틱 transition off (setState가 클래스 제거) */
+#app.instant-shell-panel-swap .cpanel,
+#app.instant-shell-panel-swap .expanel{transition:none !important}
 /* 닫힌 패널은 보이지 않아도 레이어가 위에 있으면 클릭만 먹고 드래그 심까지 안 내려감 */
 .cpanel:not(.open),
 .expanel:not(.open){
@@ -65,14 +68,17 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
   width:280px;max-height:calc(100% - 20px);
   background:#fff;border-radius:16px;
   overflow:hidden;transition:transform .25s cubic-bezier(.4,0,.2,1),opacity .2s;opacity:0;z-index:15;
+  display:flex;flex-direction:column;min-height:0;
 }
 .cpanel.open{transform:scaleX(1);opacity:1}
-.cp-header{padding:11px 13px 0;display:flex;align-items:center;justify-content:space-between}
+.cp-header{padding:11px 13px 0;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
 .cp-title{font-size:13px;font-weight:600}
 .cp-actions{display:flex;align-items:center;gap:6px}
 .cp-expand{padding:3px 8px;border-radius:6px;background:#AAED3A;border:none;font-size:10px;font-weight:600;cursor:pointer}
 .cp-close{background:none;border:none;cursor:pointer;color:#bbb;font-size:15px;line-height:1}
-.cp-body{padding:10px 13px 13px;overflow-y:auto;max-height:440px}
+/* 본문: 패널 높이까지 flex로 채움. 할 일 탭만 아래 cp-body-scroll-capped 에서 목록 상한 440px */
+.cp-body{padding:10px 13px 13px;flex:1;min-height:0;overflow-y:auto}
+.cpanel.cp-body-scroll-capped .cp-body{max-height:440px}
 .sec{font-size:10px;font-weight:600;color:#aaa;margin:8px 0 5px;letter-spacing:.3px}
 
 /* stats */
@@ -105,7 +111,18 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
 .cal-hdr{display:flex;align-items:center;gap:5px;margin-bottom:7px}
 .cal-hdr .m{font-size:12px;font-weight:600;flex:1}
 .cn{font-size:11px;background:none;border:none;cursor:pointer;color:#bbb}
-.cgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;font-size:10px}
+/* 월 뷰: 요일 행 + 주 블록(프로젝트 기간 띠 + 일자 행) */
+.cgrid-root{display:flex;flex-direction:column;gap:3px;font-size:10px}
+.cgrid-row{display:grid;grid-template-columns:repeat(7,1fr);gap:1px}
+.cgrid-week{display:flex;flex-direction:column;gap:2px}
+.cal-week-strip-host{min-height:2px}
+.cal-week-strip-grid{
+  display:grid;grid-template-columns:repeat(7,1fr);gap:1px;align-content:start;
+}
+.cal-proj-span{
+  height:3px;border-radius:2px;opacity:.88;box-sizing:border-box;min-width:0;
+}
+.ex-left .cal-proj-span,.exgrid-root .cal-proj-span{height:4px;opacity:.9}
 .cdow{text-align:center;color:#bbb;padding:2px 0}
 .cdow:first-child{color:#E53935}
 /* 일자 셀: 숫자 행 높이 고정 → 오늘(원)·일반일 모두 하단 막대 시작선 일치 */
@@ -129,11 +146,19 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
 .cal-day-more{
   flex-shrink:0;font-size:8px;font-weight:700;line-height:1;color:#888;text-align:center;margin:1px 0 0;padding:0 2px;letter-spacing:-0.02em;
 }
-.cp-sch-item{display:flex;align-items:center;gap:7px;padding:4px 0;border-bottom:.5px solid #F7F7F7}
-.cp-sch-item:last-child{border:none}
+.cal-sched-by-project{display:flex;flex-direction:column;gap:12px}
+.cal-sched-group{display:flex;flex-direction:column;min-width:0}
+.cal-sched-group-hdr{display:flex;align-items:center;gap:10px;margin:0 0 6px}
+.cal-sched-group-line{flex:1;height:1px;background:#D8D8D8;min-width:8px}
+.cal-sched-group-title{flex-shrink:0;font-size:11px;font-weight:700;max-width:88%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cal-sched-list{display:flex;flex-direction:column;border-radius:10px;overflow:hidden;border:.5px solid #EEE;background:#FAFAFA}
+.cp-sch-item{display:flex;align-items:center;gap:7px;padding:8px 10px;border-bottom:.5px solid #E8E8E8;background:#fff}
+.cp-sch-item:last-child{border-bottom:none}
 .cp-sch-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
 .cp-sch-time{font-size:10px;color:#aaa;white-space:nowrap;min-width:34px}
 .cp-sch-title{font-size:11px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cp-sch-item-done .cp-sch-title{text-decoration:line-through;color:#bbb}
+.cp-sch-item-done .cp-sch-time{color:#ccc}
 
 /* Vault 컴팩트 */
 .vlocked{text-align:center;padding:14px 8px}
@@ -181,6 +206,12 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
 .proj-card-name{font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .proj-card-sub{font-size:9px;color:#aaa;margin-top:1px}
 .proj-card-cnt{font-size:9px;background:#F0F0F0;border-radius:10px;padding:1px 6px;color:#666;flex-shrink:0}
+.proj-card-edit{background:none;border:none;cursor:pointer;font-size:13px;padding:2px 5px;line-height:1;opacity:.38;border-radius:6px;flex-shrink:0}
+.proj-card:hover .proj-card-edit{opacity:.58}
+.proj-card-edit:hover{opacity:1;background:rgba(0,0,0,.06)}
+.proj-card-del{background:none;border:none;cursor:pointer;font-size:12px;padding:2px 5px;line-height:1;opacity:.35;border-radius:6px;flex-shrink:0}
+.proj-card:hover .proj-card-del{opacity:.55}
+.proj-card-del:hover{opacity:1;background:#FFF0F0}
 .ex-proj-add{display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:9px;cursor:pointer;color:#bbb;font-size:11px;margin-top:4px;border:.5px dashed #eee}
 .ex-proj-add:hover{background:#F7F7F7;color:#888}
 .ex-task-panel{flex:1;padding:12px 12px 24px;overflow-y:auto;display:flex;flex-direction:column;min-height:0}
@@ -196,7 +227,7 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
 .task-name.done{text-decoration:line-through;color:#bbb}
 .task-tag{padding:2px 7px;border-radius:20px;font-size:9px;font-weight:600}
 .task-sub-prog{font-size:10px;color:#bbb;background:#F0F0F0;padding:1px 6px;border-radius:8px;flex-shrink:0}
-.task-due{font-size:9px;color:#F59E0B;flex-shrink:0}
+.task-due{font-size:9px;color:#64748B;flex-shrink:0}
 .hdr-add-btn{width:22px;height:22px;border-radius:6px;background:#F0F0F0;border:none;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#666;transition:.15s}
 .hdr-add-btn:hover{background:#E0E0E0;color:#111}
 
@@ -204,7 +235,7 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
 .ex-cal-layout{display:flex;position:absolute;top:0;left:0;right:0;bottom:0;overflow:hidden}
 .ex-left{padding:14px 14px 24px;border-right:.5px solid #F0F0F0;flex:1;overflow-y:auto;min-height:0}
 .ex-right{padding:14px 14px 24px;width:190px;overflow-y:auto;min-height:0}
-.exgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;font-size:10px}
+.exgrid-root{display:flex;flex-direction:column;gap:3px;font-size:10px}
 .exdow{text-align:center;color:#bbb;padding:3px 0;font-size:9px}
 .exdow:first-child{color:#E53935}
 .exdd{
@@ -332,11 +363,21 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
 
 /* 리사이즈 핸들 */
 .resize-handle{
-  position:absolute;right:0;bottom:0;width:18px;height:18px;cursor:nwse-resize;z-index:30;
+  position:absolute;right:0;bottom:0;width:18px;height:18px;cursor:nwse-resize;z-index:100;
   display:flex;align-items:flex-end;justify-content:flex-end;padding:4px;
+  pointer-events:auto;
 }
 .resize-handle svg{opacity:.25;transition:opacity .15s}
 .resize-handle:hover svg{opacity:.6}
+
+/* 컴팩트 패널 — 높이만 조절 (창·패널 논리 높이 = cpSize().h, 탭별 SIZES.panel) */
+.cp-resize-handle{
+  position:absolute;right:0;bottom:0;width:18px;height:18px;cursor:ns-resize;z-index:40;
+  display:flex;align-items:flex-end;justify-content:flex-end;padding:4px;
+  pointer-events:auto;touch-action:none;
+}
+.cp-resize-handle svg{opacity:.25;transition:opacity .15s}
+.cp-resize-handle:hover svg{opacity:.6}
 </style>
 </head>
 <body>
@@ -389,9 +430,9 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
           <span class="m" id="cp-cal-lbl"></span>
           <button class="cn" onclick="cpCalNav(1)">▶</button>
         </div>
-        <div class="cgrid" id="cp-cal-grid"></div>
+        <div id="cp-cal-grid"></div>
         <div style="margin-top:10px;padding-top:8px;border-top:.5px solid #F0F0F0">
-          <div style="font-size:9px;font-weight:700;color:#aaa;letter-spacing:.4px;text-transform:uppercase;margin-bottom:6px" id="cp-cal-detail-lbl">일정</div>
+          <div style="font-size:9px;font-weight:700;color:#aaa;letter-spacing:.4px;text-transform:uppercase;margin-bottom:6px" id="cp-cal-detail-lbl">선택한 날 일정</div>
           <div id="cp-today-events"><div class="loading">불러오는 중...</div></div>
         </div>
       </div>
@@ -434,6 +475,11 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
       </div>
 
     </div>
+    <div class="cp-resize-handle" id="cp-resize-handle" aria-hidden="true">
+      <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
+        <path d="M1 9H9M3 9v2M5 9v2M7 9v2" stroke="#888" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+    </div>
   </div>
 
   <!-- ── 확장 패널 ── -->
@@ -451,7 +497,8 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
         <div class="ex-stat" data-tauri-drag-region><div class="n" id="ex-todo-done" data-tauri-drag-region>0</div><div class="l" data-tauri-drag-region>완료</div></div>
       </div>
       <div id="ex-stats-cal" class="ex-stats" style="display:none" data-tauri-drag-region>
-        <div class="ex-stat" data-tauri-drag-region><div class="n" id="ex-event-count" data-tauri-drag-region>-</div><div class="l" data-tauri-drag-region>일정</div></div>
+        <div class="ex-stat" data-tauri-drag-region><div class="n" id="ex-cal-proj-count" data-tauri-drag-region>-</div><div class="l" data-tauri-drag-region>프로젝트</div></div>
+        <div class="ex-stat" data-tauri-drag-region><div class="n" id="ex-cal-today-sched-count" data-tauri-drag-region>-</div><div class="l" data-tauri-drag-region>오늘 일정</div></div>
       </div>
       <div id="ex-stats-vault" class="ex-stats" style="display:none" data-tauri-drag-region>
         <div class="ex-stat" data-tauri-drag-region><div class="n" id="ex-vault-count" data-tauri-drag-region>-</div><div class="l" data-tauri-drag-region>보안 항목</div></div>
@@ -492,11 +539,17 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
             <span style="font-size:13px;font-weight:600;flex:1" id="ex-cal-lbl"></span>
             <button class="cn" onclick="exCalNav(1)">▶</button>
           </div>
-          <div class="exgrid" id="ex-cal-grid"></div>
+          <div id="ex-cal-grid"></div>
           <div class="ex-chips" id="ex-cal-chips"></div>
         </div>
         <div class="ex-right">
-          <div style="font-size:10px;font-weight:600;color:#aaa;margin-bottom:7px" id="ex-cal-detail-lbl">일정</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:7px;min-width:0">
+            <div style="font-size:10px;font-weight:600;color:#aaa;flex:1;min-width:0" id="ex-cal-detail-lbl">선택한 날 일정</div>
+            <label class="ex-cal-done-toggle" style="font-size:10px;color:#888;display:flex;align-items:center;gap:5px;cursor:pointer;flex-shrink:0;user-select:none;white-space:nowrap">
+              <input type="checkbox" id="ex-cal-show-done" onchange="toggleExCalShowDone()">
+              완료 포함
+            </label>
+          </div>
           <div id="ex-today-events"></div>
         </div>
       </div>
@@ -552,9 +605,9 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
         <div class="modal-field" style="flex:1">
           <div class="modal-label">우선순위</div>
           <div class="prio-btns">
-            <div class="prio-btn sel" data-prio="2" onclick="selDetailPrio(this)" style="color:#EF4444;border-color:#EF4444;background:#FFF5F5">🔴</div>
-            <div class="prio-btn" data-prio="1" onclick="selDetailPrio(this)" style="color:#F59E0B">🟡</div>
-            <div class="prio-btn" data-prio="0" onclick="selDetailPrio(this)" style="color:#10B981">🟢</div>
+            <div class="prio-btn sel" data-prio="2" onclick="selDetailPrio(this)" style="color:#DC2626;border-color:#DC2626;background:#FEF2F2">🔴</div>
+            <div class="prio-btn" data-prio="1" onclick="selDetailPrio(this)" style="color:#D97706">🟡</div>
+            <div class="prio-btn" data-prio="0" onclick="selDetailPrio(this)" style="color:#2563EB">🟢</div>
           </div>
         </div>
         <div class="modal-field" style="flex:1.3">
@@ -599,9 +652,9 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
       <div class="modal-field">
         <div class="modal-label">우선순위</div>
         <div class="prio-btns">
-          <div class="prio-btn sel" data-prio="2" onclick="selPrio(this)" style="color:#EF4444;border-color:#EF4444;background:#FFF5F5">🔴 높음</div>
-          <div class="prio-btn" data-prio="1" onclick="selPrio(this)" style="color:#F59E0B">🟡 중간</div>
-          <div class="prio-btn" data-prio="0" onclick="selPrio(this)" style="color:#10B981">🟢 낮음</div>
+          <div class="prio-btn sel" data-prio="2" onclick="selPrio(this)" style="color:#DC2626;border-color:#DC2626;background:#FEF2F2">🔴 높음</div>
+          <div class="prio-btn" data-prio="1" onclick="selPrio(this)" style="color:#D97706">🟡 중간</div>
+          <div class="prio-btn" data-prio="0" onclick="selPrio(this)" style="color:#2563EB">🟢 낮음</div>
         </div>
       </div>
       <div class="modal-field">
@@ -659,24 +712,24 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
     </div>
   </div>
 
-  <!-- 프로젝트 추가 -->
+  <!-- 프로젝트 추가 · 수정 -->
   <div class="modal-overlay" id="modal-project" onclick="if(event.target===this)closeModal('project')">
     <div class="modal">
-      <div class="modal-title">새 프로젝트</div>
+      <div class="modal-title" id="modal-project-title">새 프로젝트</div>
       <div class="modal-field">
         <input class="modal-input" id="proj-name-input" placeholder="프로젝트 이름...">
       </div>
       <div class="modal-field">
         <div class="modal-label">색상</div>
         <div class="color-swatches">
-          <div class="swatch sel" style="background:#7C3AED;color:#7C3AED" onclick="selColor(this)"></div>
-          <div class="swatch" style="background:#4F46E5;color:#4F46E5" onclick="selColor(this)"></div>
-          <div class="swatch" style="background:#EC4899;color:#EC4899" onclick="selColor(this)"></div>
-          <div class="swatch" style="background:#06B6D4;color:#06B6D4" onclick="selColor(this)"></div>
-          <div class="swatch" style="background:#F59E0B;color:#F59E0B" onclick="selColor(this)"></div>
-          <div class="swatch" style="background:#10B981;color:#10B981" onclick="selColor(this)"></div>
-          <div class="swatch" style="background:#EF4444;color:#EF4444" onclick="selColor(this)"></div>
-          <div class="swatch" style="background:#6B7280;color:#6B7280" onclick="selColor(this)"></div>
+          <div class="swatch sel" data-hex="#9333EA" style="background:#9333EA;color:#9333EA" onclick="selColor(this)"></div>
+          <div class="swatch" data-hex="#6366F1" style="background:#6366F1;color:#6366F1" onclick="selColor(this)"></div>
+          <div class="swatch" data-hex="#D946EF" style="background:#D946EF;color:#D946EF" onclick="selColor(this)"></div>
+          <div class="swatch" data-hex="#EC4899" style="background:#EC4899;color:#EC4899" onclick="selColor(this)"></div>
+          <div class="swatch" data-hex="#FB7185" style="background:#FB7185;color:#FB7185" onclick="selColor(this)"></div>
+          <div class="swatch" data-hex="#22D3EE" style="background:#22D3EE;color:#22D3EE" onclick="selColor(this)"></div>
+          <div class="swatch" data-hex="#34D399" style="background:#34D399;color:#34D399" onclick="selColor(this)"></div>
+          <div class="swatch" data-hex="#A3E635" style="background:#A3E635;color:#A3E635" onclick="selColor(this)"></div>
         </div>
       </div>
       <div class="modal-field">
@@ -714,7 +767,19 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
       </div>
       <div class="modal-footer">
         <button class="btn-cancel" onclick="closeModal('project')">취소</button>
-        <button class="btn-submit" onclick="submitProject()">만들기</button>
+        <button class="btn-submit" id="proj-submit-btn" onclick="submitProject()">만들기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 프로젝트 삭제 확인 (WKWebView에서 window.confirm 미동작 대비) -->
+  <div class="modal-overlay" id="modal-project-delete" style="z-index:120" onclick="if(event.target===this)closeModal('project-delete')">
+    <div class="modal">
+      <div class="modal-title">프로젝트 삭제</div>
+      <p id="proj-delete-body" style="font-size:12px;line-height:1.55;color:#444;margin:0 0 14px"></p>
+      <div class="modal-footer" style="margin-top:0">
+        <button type="button" class="btn-cancel" onclick="closeModal('project-delete')">취소</button>
+        <button type="button" class="btn-submit" style="background:#B91C1C" onclick="runPendingProjectDelete()">삭제</button>
       </div>
     </div>
   </div>
@@ -818,43 +883,70 @@ async function applyWindowLogicalSizeKeepingOuterTopLeft(logicalW, logicalH){
 // ── 윈도우 크기 설정값 (논리 픽셀) ── shell 상태별 높이 분리
 const SHELL_DIMS = {
   foldLogicalHeight:    420,
-  compactLogicalHeight: 600,
-  expandedDefaultLogicalHeight: 600,
+  /** 컴팩트 창 논리 높이 기본값 — 탭별 (할 일 짧게·캘린더 그리드·Vault 중간) */
+  compactTodoDefaultLogicalHeight:   280,
+  compactCalDefaultLogicalHeight:     540,
+  compactVaultDefaultLogicalHeight:   300,
+  /** 확장 창 논리 높이 — expanel 실제 높이는 shell 여백 만큼 빼야 함 */
+  expandedDefaultLogicalHeight: 620,
+  /** 컴팩트 창 논리 높이 — 리사이즈 핸들로만 변경, 하한·상한 */
+  compactShellMinLogicalHeight: 260,
+  compactShellMaxLogicalHeight: 1000,
 };
+/** 레일 우측 패널 공통: top 10px + #app 하단 10px ↔ max-height calc(100% - 20px) */
+const SHELL_SIDE_PANEL_VERTICAL_GAP_PX = 20;
+function sidePanelInnerHeightFromShellWindowHeight(shellWindowLogicalHeightPx){
+  return shellWindowLogicalHeightPx - SHELL_SIDE_PANEL_VERTICAL_GAP_PX;
+}
 const SIZES = {
   pill:  { w:52,  h:SHELL_DIMS.foldLogicalHeight },
-  panel: { w:342, h:SHELL_DIMS.compactLogicalHeight },
+  panel: {
+    todo:  { w:342, h:SHELL_DIMS.compactTodoDefaultLogicalHeight },
+    cal:   { w:342, h:SHELL_DIMS.compactCalDefaultLogicalHeight },
+    vault: { w:342, h:SHELL_DIMS.compactVaultDefaultLogicalHeight },
+  },
   expanded: {
     todo:  { w:622, h:SHELL_DIMS.expandedDefaultLogicalHeight },
     cal:   { w:622, h:SHELL_DIMS.expandedDefaultLogicalHeight },
     vault: { w:622, h:SHELL_DIMS.expandedDefaultLogicalHeight },
   },
 };
-// 현재 탭의 expanded 크기 참조 (리사이즈 핸들이 이 객체 w/h를 갱신)
+// 현재 탭의 컴팩트 크기 참조 (컴팩트 리사이즈 핸들이 이 객체 w/h를 갱신)
+function cpSize(){ return SIZES.panel[curTab||'todo']; }
+// 현재 탭의 expanded 크기 참조 (확장 리사이즈 핸들이 이 객체 w/h를 갱신)
 function exSize(){ return SIZES.expanded[curTab||'todo']; }
 
-/** shell 상태별 논리 크기 — pill/panel 은 고정, expanded 만 탭별·사용자 리사이즈 반영 */
-function logicalSizeForShellState(shellState, expandedTab){
+/** shell 상태별 논리 크기 — pill 고정, panel·expanded 는 탭별·사용자 리사이즈 반영 */
+function logicalSizeForShellState(shellState, tabOverride){
   if(shellState==='pill') return SIZES.pill;
-  if(shellState==='panel') return SIZES.panel;
-  const t = expandedTab ?? curTab ?? 'todo';
+  const t = tabOverride ?? curTab ?? 'todo';
+  if(shellState==='panel') return SIZES.panel[t];
   return SIZES.expanded[t];
 }
 let curState='pill', curTab=null;
 
-async function resizeWindow(state, tab){
+async function resizeWindow(state, tabOverride){
   const app=document.getElementById('app');
   const ep=document.getElementById('expanel');
-  const sz = logicalSizeForShellState(state, tab);
+  const cp=document.getElementById('cpanel');
+  const sz = logicalSizeForShellState(state, tabOverride);
   const h = sz.h, w = sz.w;
   app.style.width=w+'px';
   app.style.height=h+'px';
   if(state==='expanded'){
+    const epContentH=sidePanelInnerHeightFromShellWindowHeight(h);
     ep.style.width=(w-62)+'px';
-    ep.style.height=h+'px';      // 명시적 height → 내부 flex 자식의 overflow-y:auto 활성화
-    ep.style.maxHeight=h+'px';
+    ep.style.height=epContentH+'px';
+    ep.style.maxHeight=epContentH+'px';
+    cp.style.height=''; cp.style.maxHeight='';
+  } else if(state==='panel'){
+    const cpInnerH=sidePanelInnerHeightFromShellWindowHeight(h);
+    cp.style.height=cpInnerH+'px';
+    cp.style.maxHeight=cpInnerH+'px';
+    ep.style.width=''; ep.style.height=''; ep.style.maxHeight='';
   } else {
     ep.style.width=''; ep.style.height=''; ep.style.maxHeight='';
+    cp.style.height=''; cp.style.maxHeight='';
   }
   app.classList.toggle('shell-fold', state==='pill');
   app.classList.toggle('shell-panel', state==='panel');
@@ -871,7 +963,9 @@ async function minimizeApp(){ try{ await getCurrentWindow().minimize(); }catch(e
 //  setState가 유일한 진입점 — 직접 클래스 조작 금지
 // ══════════════════════════════════════════════════════
 async function setState(s){
+  const prevState=curState;
   curState=s;
+  const app=document.getElementById('app');
   const cp=document.getElementById('cpanel'), ex=document.getElementById('expanel');
   const fa=document.getElementById('fold-arrow');
   if(s==='pill'){
@@ -880,9 +974,12 @@ async function setState(s){
     curTab=null;
     fa.classList.remove('closed'); fa.classList.add('open');
   } else if(s==='panel'){
+    const instantCompactFromExpand=prevState==='expanded';
+    if(instantCompactFromExpand) app.classList.add('instant-shell-panel-swap');
     ex.classList.remove('open'); cp.classList.add('open');
     fa.classList.remove('open'); fa.classList.add('closed');
-    if(!curTab) openCompact('todo');
+    /* 확장에서 보던 탭(vault 등)과 컴팩트 패널 동기화 — 예전에만 openCompact('todo')가 불려 할 일로 고정되던 문제 수정 */
+    shelfApplyCompactTab(curTab||'todo');
   } else {
     cp.classList.remove('open'); ex.classList.add('open');
     fa.classList.remove('open'); fa.classList.add('closed');
@@ -890,6 +987,9 @@ async function setState(s){
     showExpandSub(ctx);
   }
   await resizeWindow(s);
+  if(s==='panel' && prevState==='expanded'){
+    requestAnimationFrame(()=>{ requestAnimationFrame(()=>{ app.classList.remove('instant-shell-panel-swap'); }); });
+  }
 }
 
 async function showExpandSub(ctx){
@@ -934,25 +1034,35 @@ async function showExpandSub(ctx){
 
 // 컴팩트 패널 탭
 const CP_TITLES={todo:'📋 할 일',cal:'📅 캘린더',vault:'🔐 Vault'};
-function openCompact(id){
-  const ex=document.getElementById('expanel');
-  if(ex.classList.contains('open')){ showExpandSub(id); return; }
-  const cp=document.getElementById('cpanel');
-  if(cp.classList.contains('open')&&curTab===id){ setState('pill'); return; }
+/** 아이콘·cp-* 표시·제목만 전환 (expand→panel 시에도 동일 탭 유지에 사용) */
+function shelfApplyCompactTab(id){
   curTab=id;
   ['todo','cal','vault'].forEach(k=>{
     document.getElementById('ico-'+k).classList.toggle('active',k===id);
     document.getElementById('cp-'+k).style.display=k===id?'block':'none';
   });
   document.getElementById('cp-title').textContent=CP_TITLES[id];
-  // 추가 버튼: todo만 표시
   document.getElementById('cp-add-btn').style.display=id==='todo'?'flex':'none';
-  cp.classList.add('open');
-  if(curState==='pill'){ curState='panel'; resizeWindow('panel'); }
-  const fa=document.getElementById('fold-arrow');
-  fa.classList.remove('open'); fa.classList.add('closed');
+  document.getElementById('cpanel').classList.toggle('cp-body-scroll-capped', id==='todo');
   if(id==='cal') renderCpCal();
   if(id==='vault') renderVaultCompact();
+}
+function openCompact(id){
+  const ex=document.getElementById('expanel');
+  if(ex.classList.contains('open')){ showExpandSub(id); return; }
+  const cp=document.getElementById('cpanel');
+  if(cp.classList.contains('open')&&curTab===id){ setState('pill'); return; }
+  const compactAlreadyOpen=cp.classList.contains('open');
+  shelfApplyCompactTab(id);
+  cp.classList.add('open');
+  if(curState==='pill'){
+    curState='panel';
+    void resizeWindow('panel');
+  } else if(compactAlreadyOpen && curState==='panel'){
+    void resizeWindow('panel');
+  }
+  const fa=document.getElementById('fold-arrow');
+  fa.classList.remove('open'); fa.classList.add('closed');
 }
 
 function toggleFold(){
@@ -980,8 +1090,10 @@ let deletedTask=null, deleteTimer=null;
 // (currentDetailProjectId !== todo.project_id 일 때만 set_todo_project 호출)
 let currentDetailTodoId=null, currentDetailProjectId=null;
 
-// 프로젝트 생성 모달 상태
-let selectedColor='#7C3AED', selectedType='personal';
+// 프로젝트 생성·수정 모달 상태
+let selectedColor='#9333EA', selectedType='personal';
+let editingProjectId=null;
+let pendingDeleteProjectId=null;
 
 // ══════════════════════════════════════════════════════
 //  초기 데이터 로드
@@ -994,7 +1106,6 @@ async function init(){
     `${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,'0')}.${String(now.getDate()).padStart(2,'0')} ${['일','월','화','수','목','금','토'][now.getDay()]}`;
   await Promise.all([ loadProjects(), loadTodos(), loadEvents() ]);
   renderCpTodos();
-  renderCpStats();
   shelfRefreshCalendars();
 }
 
@@ -1009,7 +1120,13 @@ async function loadEvents(){
 }
 
 // ── 컴팩트 할 일 렌더 ──
-const PRIO_COLORS=['#10B981','#F59E0B','#EF4444'];
+/** 태스크 우선순위(마감 막대): 파랑·주황·빨강 — 프로젝트 스와치(보라·핑크·청록 계열)과 구분 */
+const PRIO_UI=[
+  {fill:'#2563EB',border:'#2563EB',bg:'#EFF6FF'},
+  {fill:'#D97706',border:'#D97706',bg:'#FFFBEB'},
+  {fill:'#DC2626',border:'#DC2626',bg:'#FEF2F2'},
+];
+const PRIO_COLORS=PRIO_UI.map(u=>u.fill);
 const PRIO_DOTS=['🟢','🟡','🔴'];
 
 function renderCpTodos(){
@@ -1031,7 +1148,7 @@ function renderCpTodos(){
   }
   list.innerHTML=todayTodos.map(t=>{
     const proj=projects.find(p=>p.id===t.project_id);
-    const color=PRIO_COLORS[t.priority]||'#F59E0B';
+    const color=PRIO_COLORS[t.priority]??PRIO_COLORS[1];
     return `<div class="ti" onclick="toggleTiDetail(this)" data-id="${t.id}">
       <div class="ti-row">
         <div class="chk${t.done?' done':''}" onclick="cpToggleTodo(event,this,${t.id})"></div>
@@ -1051,13 +1168,23 @@ function renderCpTodos(){
 }
 
 function renderCpStats(){
-  document.getElementById('cp-proj-count').textContent=projects.filter(p=>!p.archived).length;
+  const activeProjCount=projects.filter(p=>!p.archived).length;
+  document.getElementById('cp-proj-count').textContent=activeProjCount;
   document.getElementById('cp-done-count').textContent=todos.filter(t=>t.done).length;
   // 다음 일정
   const now=new Date();
   const next=events.filter(e=>new Date(e.start_at)>now).sort((a,b)=>new Date(a.start_at)-new Date(b.start_at))[0];
   document.getElementById('cp-next-time').textContent=next?next.start_at.slice(11,16):'-';
-  document.getElementById('ex-proj-count').textContent=projects.filter(p=>!p.archived).length;
+  document.getElementById('ex-proj-count').textContent=activeProjCount;
+  // 확장 캘린더 헤더: 프로젝트 수 + 오늘(당일) 일정·마감 건수
+  const ty=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+  const todaySchedCount=
+    events.filter(e=>e.start_at&&e.start_at.startsWith(ty)).length+
+    todos.filter(t=>!t.done&&t.due_date&&t.due_date.startsWith(ty)).length;
+  const exCalP=document.getElementById('ex-cal-proj-count');
+  const exCalT=document.getElementById('ex-cal-today-sched-count');
+  if(exCalP) exCalP.textContent=activeProjCount;
+  if(exCalT) exCalT.textContent=todaySchedCount;
 }
 
 // 컴팩트 아코디언
@@ -1123,6 +1250,8 @@ function renderExProjects(){
         <div class="proj-card-name">${escHtml(p.name)}</div>
         <div class="proj-card-sub">${p.category==='work'?'회사':'개인'} · 진행 중</div>
       </div>
+      <button type="button" class="proj-card-edit" onclick="event.stopPropagation();openEditProjectModal(${p.id})" title="프로젝트 수정">✏️</button>
+      <button type="button" class="proj-card-del" onclick="event.stopPropagation();openProjectDeleteConfirm(${p.id})" title="프로젝트 삭제">🗑</button>
       <div class="proj-card-cnt">${todos.filter(t=>t.project_id===p.id&&!t.done).length}</div>
     </div>`).join('');
   list.innerHTML=unassignedCard+projectCards;
@@ -1151,7 +1280,7 @@ function renderExTasks(){
   }
   list.innerHTML=projTodos.map(t=>`
     <div class="task-item" onclick="openTaskDetailModal(${t.id})">
-      <div class="prio-dot" style="background:${PRIO_COLORS[t.priority]||'#F59E0B'}"></div>
+      <div class="prio-dot" style="background:${PRIO_COLORS[t.priority]??PRIO_COLORS[1]}"></div>
       <div class="task-chk${t.done?' done':''}" onclick="exToggleTodo(event,this,${t.id})"></div>
       <span class="task-name${t.done?' done':''}">${escHtml(t.title)}</span>
       ${t.due_date?`<span class="task-due">${t.due_date.slice(5,10)}</span>`:''}
@@ -1174,6 +1303,8 @@ async function exToggleTodo(e,el,id){
 // ── 캘린더 ──
 let cpCalY,cpCalM,exCalY,exCalM;
 let cpCalSelectedYmd=null, exCalSelectedYmd=null;
+/** 확장 캘린더만: 마감 태스크 완료 건 표시 */
+let exCalShowDoneTodos=false;
 
 function shelfLocalYmdFromDate(d){
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
@@ -1211,7 +1342,9 @@ function updateCalDetailSectionTitle(labelId,ymd){
   const y=parts[0], mo=parts[1], da=parts[2];
   const wd=['일','월','화','수','목','금','토'][new Date(y,mo-1,da).getDay()];
   const todayYmd=shelfLocalYmdFromDate(new Date());
-  el.textContent=ymd===todayYmd?`${mo}월 ${da}일 (${wd}) · 오늘`:`${mo}월 ${da}일 (${wd}) 일정`;
+  el.textContent=ymd===todayYmd
+    ?`${mo}월 ${da}일 (${wd}) · 오늘 일정`
+    :`${mo}월 ${da}일 (${wd}) 일정`;
 }
 
 function renderCpCal(){
@@ -1226,8 +1359,15 @@ function renderExCal(){
   document.getElementById('ex-cal-lbl').textContent=`${exCalY}년 ${exCalM}월`;
   exCalSelectedYmd=shelfEnsureSelectedInVisibleMonth(exCalY,exCalM,exCalSelectedYmd);
   buildCal(exCalY,exCalM,'ex-cal-grid','ex-cal-chips','exdow','exdd','exdn','expbar',exCalSelectedYmd,'ex');
-  renderDayScheduleList('ex-today-events', exCalSelectedYmd);
+  const cb=document.getElementById('ex-cal-show-done');
+  if(cb) cb.checked=exCalShowDoneTodos;
+  renderDayScheduleList('ex-today-events', exCalSelectedYmd,{includeDoneCompletedTodos:exCalShowDoneTodos});
   updateCalDetailSectionTitle('ex-cal-detail-lbl', exCalSelectedYmd);
+}
+function toggleExCalShowDone(){
+  const cb=document.getElementById('ex-cal-show-done');
+  exCalShowDoneTodos=cb?cb.checked:false;
+  renderExCal();
 }
 function exCalNav(d){ exCalM+=d; if(exCalM>12){exCalM=1;exCalY++} if(exCalM<1){exCalM=12;exCalY--} renderExCal(); }
 
@@ -1235,84 +1375,226 @@ function exCalNav(d){ exCalM+=d; if(exCalM>12){exCalM=1;exCalY++} if(exCalM<1){e
 function shelfRefreshCalendars(){
   renderCpCal();
   renderExCal();
+  renderCpStats();
 }
 
-/** 월 격자 셀: 프로젝트 기간 막대 + 마감 태스크 막대 합쳐 최대 N개만, 나머지는 +k (높이 폭주 방지) */
+/** 월 격자 셀: 마감 태스크 막대만 (프로젝트 기간은 주 단위 이어지는 띠로 분리) */
 const SHELF_CAL_GRID_MAX_STRIPES=3;
-function shelfCalDayBarsHtml(dayDateStr,dt,pbarCls){
-  const colors=[];
-  projects.filter(p=>!p.archived&&p.start_date&&p.end_date).forEach(p=>{
-    const ps=new Date(p.start_date), pe=new Date(p.end_date);
-    if(ps<=dt&&dt<=pe) colors.push(p.color);
-  });
+function shelfCalDayBarsHtml(dayDateStr,pbarCls,calKind){
+  const stripes=[];
   todos.filter(t=>!t.done&&t.due_date&&t.due_date.startsWith(dayDateStr)).forEach(t=>{
-    colors.push(PRIO_COLORS[t.priority]||'#F59E0B');
+    stripes.push({color:PRIO_COLORS[t.priority]??PRIO_COLORS[1],done:false});
   });
+  if(calKind==='ex'&&exCalShowDoneTodos){
+    todos.filter(t=>t.done&&t.due_date&&t.due_date.startsWith(dayDateStr)).forEach(t=>{
+      stripes.push({color:PRIO_COLORS[t.priority]??PRIO_COLORS[1],done:true});
+    });
+  }
   let html='';
   const cap=SHELF_CAL_GRID_MAX_STRIPES;
-  for(let i=0;i<Math.min(colors.length,cap);i++){
-    html+=`<div class="${pbarCls}" style="background:${colors[i]}"></div>`;
+  for(let i=0;i<Math.min(stripes.length,cap);i++){
+    const s=stripes[i];
+    const fade=s.done?'opacity:.38':'';
+    html+=`<div class="${pbarCls}" style="background:${s.color};${fade}"></div>`;
   }
-  const overflow=colors.length-cap;
+  const overflow=stripes.length-cap;
   if(overflow>0){
     html+=`<div class="cal-day-more" title="${overflow}개 더 있음">+${overflow}</div>`;
   }
   return html;
 }
 
-function buildCal(y,m,gridId,chipsId,dowCls,ddCls,dnCls,pbarCls,selectedYmd,calKind){
-  const days=new Date(y,m,0).getDate(), dow=new Date(y,m-1,1).getDay(), today=new Date();
-  const ym=`${y}-${String(m).padStart(2,'0')}`;
-  let h=['일','월','화','수','목','금','토'].map(d=>`<div class="${dowCls}">${d}</div>`).join('');
-  const prev=new Date(y,m-1,0).getDate();
-  for(let i=0;i<dow;i++) h+=`<div class="${ddCls} other"><div class="${dnCls}">${prev-(dow-1-i)}</div></div>`;
-  for(let d=1;d<=days;d++){
-    const sun=(dow+d-1)%7===0, td=today.getFullYear()===y&&today.getMonth()+1===m&&d===today.getDate();
-    const dt=new Date(y,m-1,d);
-    const dayDateStr=`${ym}-${String(d).padStart(2,'0')}`;
-    const isSel=selectedYmd&&dayDateStr===selectedYmd;
-    const bars=shelfCalDayBarsHtml(dayDateStr,dt,pbarCls);
-    const pick=`onclick="shelfCalPickDay('${calKind}','${dayDateStr}')"`;
-    h+=`<div class="${ddCls}${sun?' sun':''}${td?' today':''}${isSel?' cal-selected':''}" ${pick} role="button" tabindex="0"><div class="${dnCls}">${d}</div>${bars}</div>`;
+function shelfDateOnlyTs(d){
+  return new Date(d.getFullYear(),d.getMonth(),d.getDate()).getTime();
+}
+function shelfParseDayFromIso(str){
+  if(!str||str.length<10) return null;
+  const p=str.slice(0,10).split('-').map(Number);
+  if(p.length<3||p.some(n=>Number.isNaN(n))) return null;
+  return new Date(p[0],p[1]-1,p[2]);
+}
+function shelfProjectRangeTs(p){
+  if(!p.start_date||!p.end_date) return null;
+  const s=shelfParseDayFromIso(p.start_date), e=shelfParseDayFromIso(p.end_date);
+  if(!s||!e) return null;
+  return {start:shelfDateOnlyTs(s),end:shelfDateOnlyTs(e)};
+}
+/** 표시 중인 달(y, m=1–12)을 주(Sun–Sat) 단위로 분할 */
+function shelfMonthWeekSlots(y,m){
+  const weeks=[];
+  const dim=new Date(y,m,0).getDate();
+  const dow=new Date(y,m-1,1).getDay();
+  const prevDim=new Date(y,m-1,0).getDate();
+  let row=[];
+  for(let i=0;i<dow;i++){
+    const dayNum=prevDim-dow+1+i;
+    row.push({date:new Date(y,m-2,dayNum)});
   }
+  for(let d=1;d<=dim;d++){
+    row.push({date:new Date(y,m-1,d)});
+    if(row.length===7){ weeks.push(row); row=[]; }
+  }
+  let nd=1;
+  while(row.length>0&&row.length<7){
+    row.push({date:new Date(y,m,nd++)});
+  }
+  if(row.length) weeks.push(row);
+  return weeks;
+}
+function shelfAssignSpanTracks(segments){
+  segments.sort((a,b)=>a.c0-b.c0||(a.c1-a.c0)-(b.c1-b.c0));
+  const trackEnd=[];
+  segments.forEach(seg=>{
+    let ti=0;
+    while(ti<trackEnd.length&&trackEnd[ti]>=seg.c0) ti++;
+    seg.track=ti;
+    trackEnd[ti]=seg.c1;
+  });
+}
+/** 한 주(날짜 7칸) 위에 프로젝트 기간을 가로로 이어 붙인 막대 HTML */
+function shelfWeekProjectStripInnerHtml(weekDates){
+  const ts=weekDates.map(d=>shelfDateOnlyTs(d));
+  const segments=[];
+  projects.filter(p=>!p.archived&&p.start_date&&p.end_date).forEach(p=>{
+    const range=shelfProjectRangeTs(p);
+    if(!range) return;
+    let c0=-1,c1=-1;
+    for(let i=0;i<7;i++){
+      const t=ts[i];
+      if(t>=range.start&&t<=range.end){ if(c0<0) c0=i; c1=i; }
+    }
+    if(c0>=0) segments.push({c0,c1,color:p.color});
+  });
+  if(segments.length===0) return '';
+  shelfAssignSpanTracks(segments);
+  const maxT=segments.reduce((m,s)=>Math.max(m,s.track),0);
+  const rows=Math.min(maxT+1,8);
+  let html=`<div class="cal-week-strip-grid" style="grid-template-rows:repeat(${rows},5px)">`;
+  segments.forEach(seg=>{
+    if(seg.track>=8) return;
+    const gc=`${seg.c0+1} / ${seg.c1+2}`;
+    html+=`<div class="cal-proj-span" style="grid-column:${gc};grid-row:${seg.track+1};background:${seg.color}" title="프로젝트 기간"></div>`;
+  });
+  html+='</div>';
+  return html;
+}
+
+function buildCal(y,m,gridId,chipsId,dowCls,ddCls,dnCls,pbarCls,selectedYmd,calKind){
+  const today=new Date();
+  const rootCls=gridId.includes('ex')?'exgrid-root':'cgrid-root';
+  const weeks=shelfMonthWeekSlots(y,m);
+  let h=`<div class="${rootCls}"><div class="cgrid-row">`;
+  h+=['일','월','화','수','목','금','토'].map(d=>`<div class="${dowCls}">${d}</div>`).join('');
+  h+='</div>';
+  weeks.forEach(week=>{
+    const stripInner=shelfWeekProjectStripInnerHtml(week.map(s=>s.date));
+    h+=`<div class="cgrid-week"><div class="cal-week-strip-host">${stripInner}</div><div class="cgrid-row">`;
+    week.forEach(slot=>{
+      const dt=slot.date;
+      const dayDateStr=shelfLocalYmdFromDate(dt);
+      const inMonth=dt.getFullYear()===y&&dt.getMonth()===m-1;
+      const sun=dt.getDay()===0;
+      const td=shelfLocalYmdFromDate(today)===dayDateStr;
+      const isSel=selectedYmd&&dayDateStr===selectedYmd;
+      const bars=shelfCalDayBarsHtml(dayDateStr,pbarCls,calKind);
+      const ddClsUse=inMonth?ddCls:`${ddCls} other`;
+      const pick=`onclick="shelfCalPickDay('${calKind}','${dayDateStr}')"`;
+      const dn=dt.getDate();
+      h+=`<div class="${ddClsUse}${sun?' sun':''}${td?' today':''}${isSel?' cal-selected':''}" ${pick} role="button" tabindex="0"><div class="${dnCls}">${dn}</div>${bars}</div>`;
+    });
+    h+='</div></div>';
+  });
+  h+='</div>';
   document.getElementById(gridId).innerHTML=h;
   if(chipsId) document.getElementById(chipsId).innerHTML=
     projects.filter(p=>!p.archived).map(p=>`<div class="exchip"><div class="excdot" style="background:${p.color}"></div>${escHtml(p.name)}</div>`).join('');
 }
 
-function renderDayScheduleList(containerId,ymd){
-  const todayEvs=events.filter(e=>e.start_at&&e.start_at.startsWith(ymd));
-  const dayTodos=todos.filter(t=>!t.done&&t.due_date&&t.due_date.startsWith(ymd));
-  const rows=[];
-  todayEvs.forEach(e=>rows.push({
-    sort:e.start_at,
-    html:`<div class="cp-sch-item">
-      <div class="cp-sch-dot" style="background:#7C3AED"></div>
-      <span class="cp-sch-time">${e.start_at.slice(11,16)}</span>
-      <span class="cp-sch-title">${escHtml(e.title)}</span>
-    </div>`,
-  }));
-  dayTodos.forEach(t=>{
-    const sort=t.due_date.length>10?t.due_date:ymd+'T23:59';
-    let timeLabel='종일';
-    if(t.due_date.length>11){
-      const hm=t.due_date.slice(11,16);
-      timeLabel=hm==='00:00'?'종일':hm;
-    }
-    rows.push({
-      sort,
-      html:`<div class="cp-sch-item">
-      <div class="cp-sch-dot" style="background:${PRIO_COLORS[t.priority]||'#F59E0B'}"></div>
+function shelfTodoDueSortKey(t,ymd){
+  return t.due_date&&t.due_date.length>11?t.due_date:`${ymd}T23:59`;
+}
+function calSchedTodoRowHtml(t,ymd){
+  let timeLabel='종일';
+  if(t.due_date&&t.due_date.length>11){
+    const hm=t.due_date.slice(11,16);
+    timeLabel=hm==='00:00'?'종일':hm;
+  }
+  const doneCls=t.done?' cp-sch-item-done':'';
+  const dotFade=t.done?'opacity:.45':'';
+  return `<div class="cp-sch-item${doneCls}">
+      <div class="cp-sch-dot" style="background:${PRIO_COLORS[t.priority]??PRIO_COLORS[1]};${dotFade}"></div>
       <span class="cp-sch-time">${timeLabel}</span>
       <span class="cp-sch-title">${escHtml(t.title)}</span>
-    </div>`,
-    });
+    </div>`;
+}
+function calScheduleGroupSection(titleText,titleColor,itemsHtml){
+  return `<div class="cal-sched-group">
+    <div class="cal-sched-group-hdr">
+      <span class="cal-sched-group-line"></span>
+      <span class="cal-sched-group-title" style="color:${titleColor}">${escHtml(titleText)}</span>
+      <span class="cal-sched-group-line"></span>
+    </div>
+    <div class="cal-sched-list">${itemsHtml}</div>
+  </div>`;
+}
+function renderDayScheduleList(containerId,ymd,opts){
+  const includeDone=!!opts?.includeDoneCompletedTodos;
+  const todayEvs=events.filter(e=>e.start_at&&e.start_at.startsWith(ymd)).sort((a,b)=>a.start_at.localeCompare(b.start_at));
+  const dayTodos=todos.filter(t=>{
+    if(!t.due_date||!t.due_date.startsWith(ymd)) return false;
+    if(t.done) return includeDone;
+    return true;
   });
-  rows.sort((a,b)=>a.sort.localeCompare(b.sort));
+
+  const sections=[];
+  if(todayEvs.length){
+    const evBody=todayEvs.map(e=>`<div class="cp-sch-item">
+      <div class="cp-sch-dot" style="background:#9333EA"></div>
+      <span class="cp-sch-time">${e.start_at.slice(11,16)}</span>
+      <span class="cp-sch-title">${escHtml(e.title)}</span>
+    </div>`).join('');
+    sections.push(calScheduleGroupSection('일정','#64748B',evBody));
+  }
+
+  const byProjId=new Map();
+  dayTodos.forEach(t=>{
+    const pid=t.project_id??null;
+    if(!byProjId.has(pid)) byProjId.set(pid,[]);
+    byProjId.get(pid).push(t);
+  });
+  const projIds=[...byProjId.keys()].filter(k=>k!==null).sort((a,b)=>{
+    const pa=projects.find(p=>p.id===a), pb=projects.find(p=>p.id===b);
+    return (pa?.name||'').localeCompare(pb?.name||'','ko');
+  });
+  projIds.forEach(pid=>{
+    const list=(byProjId.get(pid)||[]).slice().sort((a,b)=>{
+      const c=shelfTodoDueSortKey(a,ymd).localeCompare(shelfTodoDueSortKey(b,ymd));
+      if(c!==0) return c;
+      if(a.done!==b.done) return a.done?1:-1;
+      return 0;
+    });
+    const projMeta=projects.find(p=>p.id===pid);
+    const title=projMeta?projMeta.name:'프로젝트';
+    const color=projMeta?projMeta.color:'#64748B';
+    const body=list.map(t=>calSchedTodoRowHtml(t,ymd)).join('');
+    sections.push(calScheduleGroupSection(title,color,body));
+  });
+
+  const noneList=(byProjId.get(null)||[]).slice().sort((a,b)=>{
+    const c=shelfTodoDueSortKey(a,ymd).localeCompare(shelfTodoDueSortKey(b,ymd));
+    if(c!==0) return c;
+    if(a.done!==b.done) return a.done?1:-1;
+    return 0;
+  });
+  if(noneList.length){
+    const body=noneList.map(t=>calSchedTodoRowHtml(t,ymd)).join('');
+    sections.push(calScheduleGroupSection('미분류','#94A3B8',body));
+  }
+
   const el=document.getElementById(containerId);
   if(!el) return;
-  if(rows.length===0){ el.innerHTML='<div style="color:#bbb;font-size:11px;text-align:center;padding:8px 0">일정 없음</div>'; return; }
-  el.innerHTML=rows.map(r=>r.html).join('');
+  if(sections.length===0){ el.innerHTML='<div style="color:#bbb;font-size:11px;text-align:center;padding:8px 0">일정 없음</div>'; return; }
+  el.innerHTML=`<div class="cal-sched-by-project">${sections.join('')}</div>`;
 }
 
 // ── Vault ──
@@ -1641,11 +1923,14 @@ function openTaskModal(ctx){
   dpState['task-dp']={...dpStateInit()};
   tpState['task-tp']={h:null,m:null};
   // 우선순위 초기화
-  document.querySelectorAll('#modal-task .prio-btn').forEach((b,i)=>{
-    const on=i===0;
+  document.querySelectorAll('#modal-task .prio-btn').forEach(b=>{
+    const pr=parseInt(b.dataset.prio);
+    const U=PRIO_UI[pr];
+    const on=pr===2;
     b.classList.toggle('sel',on);
-    b.style.background=on?'#FFF5F5':'#fafafa';
-    b.style.borderColor=on?'#EF4444':'#eee';
+    b.style.color=U.fill;
+    b.style.background=on?U.bg:'#fafafa';
+    b.style.borderColor=on?U.border:'#eee';
   });
   document.getElementById('modal-task').classList.add('show');
   setTimeout(()=>document.getElementById('task-title-input').focus(),50);
@@ -1685,12 +1970,13 @@ function openTaskDetailModal(id){
   }
   // 우선순위
   document.querySelectorAll('#modal-task-detail .prio-btn').forEach(b=>{
-    const on=parseInt(b.dataset.prio)===todo.priority;
+    const pr=parseInt(b.dataset.prio);
+    const U=PRIO_UI[pr];
+    const on=pr===todo.priority;
     b.classList.toggle('sel',on);
-    const colors={2:'#EF4444',1:'#F59E0B',0:'#10B981'};
-    const bgs={2:'#FFF5F5',1:'#FFFBEB',0:'#F0FDF4'};
-    b.style.background=on?bgs[b.dataset.prio]:'#fafafa';
-    b.style.borderColor=on?colors[b.dataset.prio]:'#eee';
+    b.style.color=U.fill;
+    b.style.background=on?U.bg:'#fafafa';
+    b.style.borderColor=on?U.border:'#eee';
   });
   document.getElementById('modal-task-detail').classList.add('show');
 }
@@ -1756,14 +2042,15 @@ function selTaskProj(el){
   el.classList.add('sel');
 }
 function selPrio(el){
-  const colors={2:'#EF4444',1:'#F59E0B',0:'#10B981'};
-  const bgs={2:'#FFF5F5',1:'#FFFBEB',0:'#F0FDF4'};
   const container=el.closest('.prio-btns');
   container.querySelectorAll('.prio-btn').forEach(b=>{
+    const pr=parseInt(b.dataset.prio);
+    const U=PRIO_UI[pr];
     const on=b===el;
     b.classList.toggle('sel',on);
-    b.style.background=on?bgs[b.dataset.prio]:'#fafafa';
-    b.style.borderColor=on?colors[b.dataset.prio]:'#eee';
+    b.style.color=U.fill;
+    b.style.background=on?U.bg:'#fafafa';
+    b.style.borderColor=on?U.border:'#eee';
   });
 }
 function selDetailPrio(el){ selPrio(el); }
@@ -1777,13 +2064,29 @@ function selDetailProj(el){
   currentDetailProjectId=el.dataset.projId?parseInt(el.dataset.projId):null;
 }
 function switchToProjectModal(){ closeModal('task'); openProjectModal(); }
-function closeModal(type){ document.getElementById('modal-'+type).classList.remove('show'); }
+function closeModal(type){
+  document.getElementById('modal-'+type).classList.remove('show');
+  if(type==='project') editingProjectId=null;
+  if(type==='project-delete') pendingDeleteProjectId=null;
+}
 
 // ── 프로젝트 모달 ──
+function syncProjectModalSwatchSelection(hex){
+  const norm=s=>(s||'').trim().toLowerCase();
+  const t=norm(hex);
+  document.querySelectorAll('#modal-project .swatch').forEach(s=>{
+    const on=!!t&&norm(s.dataset.hex)===t;
+    s.classList.toggle('sel',on);
+  });
+}
+
 function openProjectModal(){
+  editingProjectId=null;
+  document.getElementById('modal-project-title').textContent='새 프로젝트';
+  document.getElementById('proj-submit-btn').textContent='만들기';
   document.getElementById('proj-name-input').value='';
-  selectedColor='#7C3AED'; selectedType='personal';
-  document.querySelectorAll('.swatch').forEach((s,i)=>s.classList.toggle('sel',i===0));
+  selectedColor='#9333EA'; selectedType='personal';
+  document.querySelectorAll('#modal-project .swatch').forEach((s,i)=>s.classList.toggle('sel',i===0));
   document.getElementById('type-personal').classList.add('sel');
   document.getElementById('type-work').classList.remove('sel');
   document.getElementById('proj-start-text').textContent='시작일';
@@ -1795,6 +2098,74 @@ function openProjectModal(){
   document.getElementById('modal-project').classList.add('show');
   setTimeout(()=>document.getElementById('proj-name-input').focus(),50);
 }
+
+function openProjectDeleteConfirm(projectId){
+  const p=projects.find(x=>x.id===projectId);
+  if(!p) return;
+  pendingDeleteProjectId=projectId;
+  document.getElementById('proj-delete-body').innerHTML=
+    `「<strong>${escHtml(p.name)}</strong>」를 삭제할까요?<br><span style="color:#888;font-size:11px">소속 태스크는 미분류로 돌아갑니다.</span>`;
+  document.getElementById('modal-project-delete').classList.add('show');
+}
+
+async function runPendingProjectDelete(){
+  const projectId=pendingDeleteProjectId;
+  if(projectId==null) return;
+  closeModal('project-delete');
+  try{
+    await invoke('delete_project',{id:projectId});
+    todos.forEach(t=>{ if(t.project_id===projectId) t.project_id=null; });
+    projects=projects.filter(x=>x.id!==projectId);
+    if(selectedProjId===projectId){
+      selectedProjId=null;
+      document.getElementById('ex-proj-title').textContent='프로젝트를 선택하세요';
+      document.getElementById('ex-proj-title').style.color='#666';
+      renderExTasks();
+    }
+    if(editingProjectId===projectId) closeModal('project');
+    renderExProjects(); renderCpStats(); renderCpTodos();
+    shelfRefreshCalendars();
+  }catch(e){ console.error(e); }
+}
+
+function openEditProjectModal(projectId){
+  const p=projects.find(x=>x.id===projectId);
+  if(!p||p.archived) return;
+  editingProjectId=projectId;
+  document.getElementById('modal-project-title').textContent='프로젝트 수정';
+  document.getElementById('proj-submit-btn').textContent='저장';
+  document.getElementById('proj-name-input').value=p.name;
+  selectedColor=p.color;
+  selectedType=p.category==='work'?'work':'personal';
+  document.getElementById('type-personal').classList.toggle('sel',selectedType==='personal');
+  document.getElementById('type-work').classList.toggle('sel',selectedType==='work');
+  syncProjectModalSwatchSelection(p.color);
+  const startIso=p.start_date?String(p.start_date).slice(0,10):null;
+  const endIso=p.end_date?String(p.end_date).slice(0,10):null;
+  if(startIso){
+    document.getElementById('proj-start-text').textContent=startIso.replace(/-/g,'.');
+    document.getElementById('proj-start-text').style.color='#333';
+    const [sy,sm,sd]=startIso.split('-').map(Number);
+    dpState['proj-start-dp']={y:sy,m:sm,sel:sd};
+  } else {
+    document.getElementById('proj-start-text').textContent='시작일';
+    document.getElementById('proj-start-text').style.color='#bbb';
+    dpState['proj-start-dp']={...dpStateInit()};
+  }
+  if(endIso){
+    document.getElementById('proj-end-text').textContent=endIso.replace(/-/g,'.');
+    document.getElementById('proj-end-text').style.color='#333';
+    const [ey,em,ed]=endIso.split('-').map(Number);
+    dpState['proj-end-dp']={y:ey,m:em,sel:ed};
+  } else {
+    document.getElementById('proj-end-text').textContent='종료일';
+    document.getElementById('proj-end-text').style.color='#bbb';
+    dpState['proj-end-dp']={...dpStateInit()};
+  }
+  document.getElementById('modal-project').classList.add('show');
+  setTimeout(()=>document.getElementById('proj-name-input').focus(),50);
+}
+
 async function submitProject(){
   const name=document.getElementById('proj-name-input').value.trim();
   if(!name) return;
@@ -1803,16 +2174,29 @@ async function submitProject(){
   const start_date=startText==='시작일'?null:startText.replace(/\./g,'-');
   const end_date=endText==='종료일'?null:endText.replace(/\./g,'-');
   try{
-    const id=await invoke('create_project',{name,color:selectedColor,category:selectedType,start_date,end_date});
-    projects.push({id,name,color:selectedColor,category:selectedType,archived:false,start_date,end_date,created_at:new Date().toISOString()});
-    renderExProjects(); renderCpStats();
+    if(editingProjectId!=null){
+      await invoke('update_project',{id:editingProjectId,name,color:selectedColor,category:selectedType,start_date,end_date});
+      const idx=projects.findIndex(p=>p.id===editingProjectId);
+      if(idx>=0){
+        projects[idx]={...projects[idx],name,color:selectedColor,category:selectedType,start_date,end_date};
+      }
+      if(selectedProjId===editingProjectId){
+        document.getElementById('ex-proj-title').textContent='📁 '+name;
+        document.getElementById('ex-proj-title').style.color=selectedColor;
+      }
+    } else {
+      const id=await invoke('create_project',{name,color:selectedColor,category:selectedType,start_date,end_date});
+      projects.push({id,name,color:selectedColor,category:selectedType,archived:false,start_date,end_date,created_at:new Date().toISOString()});
+    }
+    renderExProjects(); renderCpStats(); renderCpTodos();
+    shelfRefreshCalendars();
   }catch(e){ console.error(e); }
   closeModal('project');
 }
 function selColor(el){
-  document.querySelectorAll('.swatch').forEach(s=>s.classList.remove('sel'));
+  document.querySelectorAll('#modal-project .swatch').forEach(s=>s.classList.remove('sel'));
   el.classList.add('sel');
-  selectedColor=el.style.background;
+  selectedColor=el.dataset.hex||'#9333EA';
 }
 function selType(t){
   selectedType=t;
@@ -1982,6 +2366,55 @@ function undoDelete(){
 }
 
 // ══════════════════════════════════════════════════════
+//  컴팩트 패널 — 높이만 리사이즈 (폭 고정)
+// ══════════════════════════════════════════════════════
+(function(){
+  const cpResizeEl=document.getElementById('cp-resize-handle');
+  let compactResizeDragging=false, compactResizeStartY=0, compactResizeWinH=0;
+
+  cpResizeEl.addEventListener('mousedown', e=>{
+    e.preventDefault();
+    e.stopPropagation();
+    const cp=document.getElementById('cpanel');
+    if(!cp.classList.contains('open')) return;
+    compactResizeStartY=e.screenY;
+    compactResizeWinH=cpSize().h;
+    compactResizeDragging=true;
+    cp.style.transition='none';
+    document.body.style.cursor='ns-resize';
+    document.body.style.userSelect='none';
+  });
+
+  document.addEventListener('mousemove', e=>{
+    if(!compactResizeDragging) return;
+    const dh=e.screenY-compactResizeStartY;
+    compactResizeStartY=e.screenY;
+    const minH=SHELL_DIMS.compactShellMinLogicalHeight;
+    const maxH=SHELL_DIMS.compactShellMaxLogicalHeight;
+    const newWinH=Math.min(maxH, Math.max(minH, compactResizeWinH+dh));
+    compactResizeWinH=newWinH;
+    cpSize().h=newWinH;
+    const w=cpSize().w;
+    const innerH=sidePanelInnerHeightFromShellWindowHeight(newWinH);
+    const app=document.getElementById('app');
+    const cp=document.getElementById('cpanel');
+    app.style.width=w+'px';
+    app.style.height=newWinH+'px';
+    cp.style.height=innerH+'px';
+    cp.style.maxHeight=innerH+'px';
+    void applyWindowLogicalSizeKeepingOuterTopLeft(w, newWinH);
+  });
+
+  document.addEventListener('mouseup', ()=>{
+    if(!compactResizeDragging) return;
+    compactResizeDragging=false;
+    document.body.style.cursor='';
+    document.body.style.userSelect='';
+    document.getElementById('cpanel').style.transition='';
+  });
+})();
+
+// ══════════════════════════════════════════════════════
 //  확장 패널 리사이즈 핸들
 // ══════════════════════════════════════════════════════
 (function(){
@@ -2012,11 +2445,11 @@ function undoDelete(){
     startX=e.screenX; startY=e.screenY;
     // ep 크기 계산
     const newEpW=Math.min(MAX_W-PILL_W, Math.max(100, startW-PILL_W+dw));
-    const newEpH=Math.min(MAX_H-20, Math.max(60, startH+dh));
+    const newEpH=Math.min(MAX_H - SHELL_SIDE_PANEL_VERTICAL_GAP_PX, Math.max(60, startH+dh));
     startW=newEpW+PILL_W; startH=newEpH;
     // 창 크기: 폭은 ep+pill, 높이는 ep가 현재 창보다 클 때만 확장
     const newWinW=Math.round(newEpW)+PILL_W;
-    const newWinH=Math.max(exSize().h, Math.round(newEpH)+20);
+    const newWinH=Math.max(exSize().h, Math.round(newEpH) + SHELL_SIDE_PANEL_VERTICAL_GAP_PX);
     exSize().w=newWinW; exSize().h=newWinH;
     const ep=document.getElementById('expanel');
     const app=document.getElementById('app');
