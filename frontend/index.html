@@ -8,7 +8,8 @@
 html,body{width:100%;height:100%;overflow:hidden;background:transparent}
 body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
 
-#app{position:relative;width:622px;height:600px}
+/* 초기값은 폴드 기준 — 실행 후 resizeWindow가 상태별로 덮어씀 */
+#app{position:relative;width:52px;height:420px}
 /* 폴드만: 창 전체에서 드래그 가능 — 필 위·아래 투명 영역(.fold-drag-shim) */
 .fold-drag-shim{
   display:none;
@@ -30,6 +31,13 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
   padding:12px 0;display:flex;flex-direction:column;align-items:center;gap:16px;
   border:.5px solid rgba(255,255,255,.08);z-index:20;
 }
+/* 폴드·컴팩트·확장: 레일 상단 앵커 — 창만 커져도 필 위치가 세로 중앙으로 튀지 않음 */
+#app.shell-fold .pill,
+#app.shell-panel .pill,
+#app.shell-expanded .pill{
+  top:10px;
+  transform:none;
+}
 .traffic-lights{display:flex;flex-direction:row;gap:5px;padding-top:2px}
 .dot{width:10px;height:10px;border-radius:50%;border:none;cursor:pointer;padding:0}
 .dot.close{background:#FF5F57}
@@ -50,14 +58,15 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
 /* ────────────────────────────────────────────────────────────────────────────── */
 /**/ /**/
 /* ── 컴  팩트 패널 32322── */
+/* 컴팩트 패널 상단 = 레일 필 상단(반원 top)과 동일 — #app.shell-panel .pill 의 top 과 맞출 것 */
 .cpanel{
-  position:absolute;left:62px;top:50%;
-  transform:translateY(-50%) scaleX(0);transform-origin:left center;
-  width:280px;max-height:500px;
+  position:absolute;left:62px;top:10px;
+  transform:scaleX(0);transform-origin:left top;
+  width:280px;max-height:calc(100% - 20px);
   background:#fff;border-radius:16px;
   overflow:hidden;transition:transform .25s cubic-bezier(.4,0,.2,1),opacity .2s;opacity:0;z-index:15;
 }
-.cpanel.open{transform:translateY(-50%) scaleX(1);opacity:1}
+.cpanel.open{transform:scaleX(1);opacity:1}
 .cp-header{padding:11px 13px 0;display:flex;align-items:center;justify-content:space-between}
 .cp-title{font-size:13px;font-weight:600}
 .cp-actions{display:flex;align-items:center;gap:6px}
@@ -99,12 +108,27 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
 .cgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;font-size:10px}
 .cdow{text-align:center;color:#bbb;padding:2px 0}
 .cdow:first-child{color:#E53935}
-.cdd{text-align:center;padding:3px 1px;border-radius:4px;cursor:pointer;min-height:24px}
+/* 일자 셀: 숫자 행 높이 고정 → 오늘(원)·일반일 모두 하단 막대 시작선 일치 */
+.cdd{
+  display:flex;flex-direction:column;align-items:center;padding:3px 1px;border-radius:4px;cursor:pointer;min-height:24px;
+}
 .cdd:hover{background:#F5F5F5}
-.cdd.today .cdn{background:#AAED3A;border-radius:50%;width:16px;height:16px;display:flex;align-items:center;justify-content:center;margin:0 auto;font-weight:700}
+.cdd .cdn{
+  flex-shrink:0;min-height:18px;display:flex;align-items:center;justify-content:center;line-height:1;width:100%;
+}
+.cdd.today .cdn{
+  background:#AAED3A;border-radius:50%;width:18px;height:18px;min-height:18px;margin:0 auto;font-weight:700;
+}
+.cdd.cal-selected{background:rgba(124,58,237,.1)}
+.cdd.cal-selected .cdn{box-shadow:0 0 0 2px #7C3AED;border-radius:50%}
+.cdd.today.cal-selected .cdn{box-shadow:0 0 0 2px #5B21B6}
 .cdd.sun .cdn{color:#E53935}
 .cdd.other .cdn{color:#ddd}
-.pbar{height:3px;border-radius:2px;margin:1px 2px}
+.pbar{flex-shrink:0;height:3px;border-radius:2px;margin:2px 2px 0;width:calc(100% - 4px);max-width:100%}
+/* 월 그리드: 하루 막대 최대 개수 초과 시 — 숫자만 (+N), 높이 무한 증식 방지 */
+.cal-day-more{
+  flex-shrink:0;font-size:8px;font-weight:700;line-height:1;color:#888;text-align:center;margin:1px 0 0;padding:0 2px;letter-spacing:-0.02em;
+}
 .cp-sch-item{display:flex;align-items:center;gap:7px;padding:4px 0;border-bottom:.5px solid #F7F7F7}
 .cp-sch-item:last-child{border:none}
 .cp-sch-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
@@ -123,17 +147,16 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
 .vitem:hover{background:#EFEFEF}
 .vitem.sel{background:#F3F0FF;border:.5px solid #C4B5FD}
 
-/* ── 확장 패널 ── */
+/* ── 확장 패널 — 상단 = 레일 필 상단(컴팩트와 동일), 높이는 resizeWindow 인라인 */
 .expanel{
-  position:absolute;left:62px;top:50%;
-  transform:translateY(-50%) scale(0);transform-origin:left center;
+  position:absolute;left:62px;top:10px;
+  transform:scale(0);transform-origin:left top;
   width:560px;background:#fff;border-radius:18px;
   overflow:hidden;transition:transform .3s cubic-bezier(.34,1.2,.64,1),opacity .25s;opacity:0;z-index:15;
-  display:flex;flex-direction:column;max-height:540px;
-  /* 리사이즈 핸들 절대 위치 기준 */
-  position:absolute;
+  display:flex;flex-direction:column;
+  max-height:calc(100% - 20px);
 }
-.expanel.open{transform:translateY(-50%) scale(1);opacity:1;height:100vh;max-height:100vh}
+.expanel.open{transform:scale(1);opacity:1}
 .ex-header{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:.5px solid #F0F0F0;flex-shrink:0}
 .ex-profile{display:flex;align-items:center;gap:8px;flex:1}
 .ex-avatar{width:32px;height:32px;border-radius:50%;background:#111;color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600}
@@ -184,11 +207,20 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
 .exgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;font-size:10px}
 .exdow{text-align:center;color:#bbb;padding:3px 0;font-size:9px}
 .exdow:first-child{color:#E53935}
-.exdd{text-align:center;padding:3px 1px;border-radius:5px;cursor:pointer;min-height:30px}
-.exdd.today .exdn{background:#AAED3A;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;margin:0 auto;font-weight:700}
+.exdd{
+  display:flex;flex-direction:column;align-items:center;padding:3px 1px;border-radius:5px;cursor:pointer;min-height:30px;
+}
+.exdd .exdn{
+  flex-shrink:0;min-height:18px;display:flex;align-items:center;justify-content:center;line-height:1;width:100%;
+}
+.exdd.today .exdn{background:#AAED3A;border-radius:50%;width:18px;height:18px;min-height:18px;margin:0 auto;font-weight:700}
+.exdd.cal-selected{background:rgba(124,58,237,.1)}
+.exdd.cal-selected .exdn{box-shadow:0 0 0 2px #7C3AED;border-radius:50%}
+.exdd.today.cal-selected .exdn{box-shadow:0 0 0 2px #5B21B6}
 .exdd.sun .exdn{color:#E53935}
 .exdd.other .exdn{color:#ddd}
-.expbar{height:4px;border-radius:2px;margin:1px 2px}
+.expbar{flex-shrink:0;height:4px;border-radius:2px;margin:2px 2px 0;width:calc(100% - 4px);max-width:100%}
+.exdd .cal-day-more{font-size:9px}
 .ex-chips{display:flex;flex-wrap:wrap;gap:3px;margin-top:8px;padding-top:8px;border-top:.5px solid #F0F0F0}
 .exchip{display:flex;align-items:center;gap:3px;padding:2px 7px;border-radius:20px;font-size:9px;border:.5px solid #eee;background:#fafafa}
 .excdot{width:6px;height:6px;border-radius:50%}
@@ -359,7 +391,7 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
         </div>
         <div class="cgrid" id="cp-cal-grid"></div>
         <div style="margin-top:10px;padding-top:8px;border-top:.5px solid #F0F0F0">
-          <div style="font-size:9px;font-weight:700;color:#aaa;letter-spacing:.4px;text-transform:uppercase;margin-bottom:6px">오늘 일정</div>
+          <div style="font-size:9px;font-weight:700;color:#aaa;letter-spacing:.4px;text-transform:uppercase;margin-bottom:6px" id="cp-cal-detail-lbl">일정</div>
           <div id="cp-today-events"><div class="loading">불러오는 중...</div></div>
         </div>
       </div>
@@ -464,7 +496,7 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
           <div class="ex-chips" id="ex-cal-chips"></div>
         </div>
         <div class="ex-right">
-          <div style="font-size:10px;font-weight:600;color:#aaa;margin-bottom:7px">오늘 일정</div>
+          <div style="font-size:10px;font-weight:600;color:#aaa;margin-bottom:7px" id="ex-cal-detail-lbl">일정</div>
           <div id="ex-today-events"></div>
         </div>
       </div>
@@ -771,15 +803,32 @@ function invoke(cmd, args){
 }
 const { getCurrentWindow, LogicalSize } = window.__TAURI__?.window || {}; // currentMonitor 는 매 호출 시 __TAURI__.window 에서 참조
 
-// ── 윈도우 크기 설정값 (논리 픽셀) ──
+/** inner 크기 변경 후 OS가 외곽 좌상단을 움직이는 경우를 보정 — 레일 톱·좌 앵커 유지 */
+async function applyWindowLogicalSizeKeepingOuterTopLeft(logicalW, logicalH){
+  if(!getCurrentWindow) return;
+  const gw = getCurrentWindow();
+  let outerTopLeftPhysical = null;
+  try{ outerTopLeftPhysical = await gw.outerPosition(); }catch(_){ /* 브라우저 미리보기 등 */ }
+  try{
+    await gw.setSize(new LogicalSize(logicalW, logicalH));
+    if(outerTopLeftPhysical) await gw.setPosition(outerTopLeftPhysical);
+  }catch(_){}
+}
+
+// ── 윈도우 크기 설정값 (논리 픽셀) ── shell 상태별 높이 분리
+const SHELL_DIMS = {
+  foldLogicalHeight:    420,
+  compactLogicalHeight: 600,
+  expandedDefaultLogicalHeight: 600,
+};
 const SIZES = {
-  pill:  {w:52,  h:600},
-  panel: {w:342, h:600},
+  pill:  { w:52,  h:SHELL_DIMS.foldLogicalHeight },
+  panel: { w:342, h:SHELL_DIMS.compactLogicalHeight },
   expanded: {
-    todo:  {w:622, h:600},
-    cal:   {w:622, h:600},
-    vault: {w:622, h:600},
-  }
+    todo:  { w:622, h:SHELL_DIMS.expandedDefaultLogicalHeight },
+    cal:   { w:622, h:SHELL_DIMS.expandedDefaultLogicalHeight },
+    vault: { w:622, h:SHELL_DIMS.expandedDefaultLogicalHeight },
+  },
 };
 // 현재 탭의 expanded 크기 참조 (리사이즈 핸들이 이 객체 w/h를 갱신)
 function exSize(){ return SIZES.expanded[curTab||'todo']; }
@@ -808,7 +857,9 @@ async function resizeWindow(state, tab){
     ep.style.width=''; ep.style.height=''; ep.style.maxHeight='';
   }
   app.classList.toggle('shell-fold', state==='pill');
-  if(getCurrentWindow) try{ await getCurrentWindow().setSize(new LogicalSize(w,h)); }catch(e){}
+  app.classList.toggle('shell-panel', state==='panel');
+  app.classList.toggle('shell-expanded', state==='expanded');
+  await applyWindowLogicalSizeKeepingOuterTopLeft(w, h);
   if(SHELF_WINDOW_METRICS_DEBUG) void logShelfWindowMetrics('resizeWindow('+state+')');
 }
 async function closeApp(){ try{ await getCurrentWindow().close(); }catch(e){} }
@@ -869,8 +920,8 @@ async function showExpandSub(ctx){
   }
 
   if(ctx==='cal'){
-    // 컴팩트에서 보던 월을 확장 뷰에 동기화
     exCalY=cpCalY; exCalM=cpCalM;
+    exCalSelectedYmd=shelfEnsureSelectedInVisibleMonth(exCalY,exCalM,cpCalSelectedYmd);
     renderExCal();
   }
 
@@ -944,6 +995,7 @@ async function init(){
   await Promise.all([ loadProjects(), loadTodos(), loadEvents() ]);
   renderCpTodos();
   renderCpStats();
+  shelfRefreshCalendars();
 }
 
 async function loadTodos(){
@@ -1030,6 +1082,7 @@ async function cpToggleTodo(e,el,id){
     el.classList.toggle('done',newDone);
     el.nextElementSibling.classList.toggle('done',newDone);
     renderCpStats();
+    shelfRefreshCalendars();
   }catch(err){ console.error(err); }
 }
 function cpDeleteTodo(e,id,name){
@@ -1044,6 +1097,7 @@ function cpDeleteTodo(e,id,name){
     todos=todos.filter(t=>t.id!==id);
     item.remove();
     renderCpStats();
+    shelfRefreshCalendars();
     showToast(`"${name}" 삭제됨`, {undo:true});
   },200);
 }
@@ -1113,58 +1167,152 @@ async function exToggleTodo(e,el,id){
     await invoke('toggle_todo',{id,done:newDone});
     todo.done=newDone;
     renderExTasks(); renderCpTodos(); renderCpStats();
+    shelfRefreshCalendars();
   }catch(err){}
 }
 
 // ── 캘린더 ──
 let cpCalY,cpCalM,exCalY,exCalM;
-function initCal(){ const n=new Date(); cpCalY=exCalY=n.getFullYear(); cpCalM=exCalM=n.getMonth()+1; }
+let cpCalSelectedYmd=null, exCalSelectedYmd=null;
+
+function shelfLocalYmdFromDate(d){
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function shelfDefaultSelectedYmdForMonth(y,m){
+  const now=new Date();
+  if(now.getFullYear()===y&&(now.getMonth()+1)===m) return shelfLocalYmdFromDate(now);
+  return `${y}-${String(m).padStart(2,'0')}-01`;
+}
+/** 보이는 월 안에서만 선택 유지, 월 변경 시 해당 월의 기본일로 */
+function shelfEnsureSelectedInVisibleMonth(y,m,prev){
+  const prefix=`${y}-${String(m).padStart(2,'0')}-`;
+  if(prev&&prev.startsWith(prefix)) return prev;
+  return shelfDefaultSelectedYmdForMonth(y,m);
+}
+
+function initCal(){
+  const n=new Date();
+  cpCalY=exCalY=n.getFullYear();
+  cpCalM=exCalM=n.getMonth()+1;
+  const ymd=shelfLocalYmdFromDate(n);
+  cpCalSelectedYmd=ymd;
+  exCalSelectedYmd=ymd;
+}
+
+function shelfCalPickDay(calKind,ymd){
+  if(calKind==='cp'){ cpCalSelectedYmd=ymd; renderCpCal(); }
+  else { exCalSelectedYmd=ymd; renderExCal(); }
+}
+
+function updateCalDetailSectionTitle(labelId,ymd){
+  const el=document.getElementById(labelId);
+  if(!el||!ymd) return;
+  const parts=ymd.split('-').map(Number);
+  const y=parts[0], mo=parts[1], da=parts[2];
+  const wd=['일','월','화','수','목','금','토'][new Date(y,mo-1,da).getDay()];
+  const todayYmd=shelfLocalYmdFromDate(new Date());
+  el.textContent=ymd===todayYmd?`${mo}월 ${da}일 (${wd}) · 오늘`:`${mo}월 ${da}일 (${wd}) 일정`;
+}
+
 function renderCpCal(){
   document.getElementById('cp-cal-lbl').textContent=`${cpCalY}년 ${cpCalM}월`;
-  buildCal(cpCalY,cpCalM,'cp-cal-grid',null,'cdow','cdd','cdn','pbar');
-  renderTodayEvents('cp-today-events');
+  cpCalSelectedYmd=shelfEnsureSelectedInVisibleMonth(cpCalY,cpCalM,cpCalSelectedYmd);
+  buildCal(cpCalY,cpCalM,'cp-cal-grid',null,'cdow','cdd','cdn','pbar',cpCalSelectedYmd,'cp');
+  renderDayScheduleList('cp-today-events', cpCalSelectedYmd);
+  updateCalDetailSectionTitle('cp-cal-detail-lbl', cpCalSelectedYmd);
 }
 function cpCalNav(d){ cpCalM+=d; if(cpCalM>12){cpCalM=1;cpCalY++} if(cpCalM<1){cpCalM=12;cpCalY--} renderCpCal(); }
 function renderExCal(){
   document.getElementById('ex-cal-lbl').textContent=`${exCalY}년 ${exCalM}월`;
-  buildCal(exCalY,exCalM,'ex-cal-grid','ex-cal-chips','exdow','exdd','exdn','expbar');
-  renderTodayEvents('ex-today-events');
+  exCalSelectedYmd=shelfEnsureSelectedInVisibleMonth(exCalY,exCalM,exCalSelectedYmd);
+  buildCal(exCalY,exCalM,'ex-cal-grid','ex-cal-chips','exdow','exdd','exdn','expbar',exCalSelectedYmd,'ex');
+  renderDayScheduleList('ex-today-events', exCalSelectedYmd);
+  updateCalDetailSectionTitle('ex-cal-detail-lbl', exCalSelectedYmd);
 }
 function exCalNav(d){ exCalM+=d; if(exCalM>12){exCalM=1;exCalY++} if(exCalM<1){exCalM=12;exCalY--} renderExCal(); }
 
-function buildCal(y,m,gridId,chipsId,dowCls,ddCls,dnCls,pbarCls){
+/** 할 일·이벤트 변경 후 컴팩트/확장 캘린더 동기화 */
+function shelfRefreshCalendars(){
+  renderCpCal();
+  renderExCal();
+}
+
+/** 월 격자 셀: 프로젝트 기간 막대 + 마감 태스크 막대 합쳐 최대 N개만, 나머지는 +k (높이 폭주 방지) */
+const SHELF_CAL_GRID_MAX_STRIPES=3;
+function shelfCalDayBarsHtml(dayDateStr,dt,pbarCls){
+  const colors=[];
+  projects.filter(p=>!p.archived&&p.start_date&&p.end_date).forEach(p=>{
+    const ps=new Date(p.start_date), pe=new Date(p.end_date);
+    if(ps<=dt&&dt<=pe) colors.push(p.color);
+  });
+  todos.filter(t=>!t.done&&t.due_date&&t.due_date.startsWith(dayDateStr)).forEach(t=>{
+    colors.push(PRIO_COLORS[t.priority]||'#F59E0B');
+  });
+  let html='';
+  const cap=SHELF_CAL_GRID_MAX_STRIPES;
+  for(let i=0;i<Math.min(colors.length,cap);i++){
+    html+=`<div class="${pbarCls}" style="background:${colors[i]}"></div>`;
+  }
+  const overflow=colors.length-cap;
+  if(overflow>0){
+    html+=`<div class="cal-day-more" title="${overflow}개 더 있음">+${overflow}</div>`;
+  }
+  return html;
+}
+
+function buildCal(y,m,gridId,chipsId,dowCls,ddCls,dnCls,pbarCls,selectedYmd,calKind){
   const days=new Date(y,m,0).getDate(), dow=new Date(y,m-1,1).getDay(), today=new Date();
+  const ym=`${y}-${String(m).padStart(2,'0')}`;
   let h=['일','월','화','수','목','금','토'].map(d=>`<div class="${dowCls}">${d}</div>`).join('');
   const prev=new Date(y,m-1,0).getDate();
   for(let i=0;i<dow;i++) h+=`<div class="${ddCls} other"><div class="${dnCls}">${prev-(dow-1-i)}</div></div>`;
   for(let d=1;d<=days;d++){
     const sun=(dow+d-1)%7===0, td=today.getFullYear()===y&&today.getMonth()+1===m&&d===today.getDate();
-    const dt=new Date(y,m-1,d); let bars='';
-    projects.filter(p=>!p.archived&&p.start_date&&p.end_date).forEach(p=>{
-      const ps=new Date(p.start_date), pe=new Date(p.end_date);
-      if(ps<=dt&&dt<=pe) bars+=`<div class="${pbarCls}" style="background:${p.color}"></div>`;
-    });
-    h+=`<div class="${ddCls}${sun?' sun':''}${td?' today':''}"><div class="${dnCls}">${d}</div>${bars}</div>`;
+    const dt=new Date(y,m-1,d);
+    const dayDateStr=`${ym}-${String(d).padStart(2,'0')}`;
+    const isSel=selectedYmd&&dayDateStr===selectedYmd;
+    const bars=shelfCalDayBarsHtml(dayDateStr,dt,pbarCls);
+    const pick=`onclick="shelfCalPickDay('${calKind}','${dayDateStr}')"`;
+    h+=`<div class="${ddCls}${sun?' sun':''}${td?' today':''}${isSel?' cal-selected':''}" ${pick} role="button" tabindex="0"><div class="${dnCls}">${d}</div>${bars}</div>`;
   }
   document.getElementById(gridId).innerHTML=h;
   if(chipsId) document.getElementById(chipsId).innerHTML=
     projects.filter(p=>!p.archived).map(p=>`<div class="exchip"><div class="excdot" style="background:${p.color}"></div>${escHtml(p.name)}</div>`).join('');
 }
 
-function renderTodayEvents(containerId){
-  const today=new Date();
-  const todayStr=today.toISOString().slice(0,10);
-  const todayEvs=events.filter(e=>e.start_at&&e.start_at.startsWith(todayStr))
-    .sort((a,b)=>a.start_at.localeCompare(b.start_at));
-  const el=document.getElementById(containerId);
-  if(!el) return;
-  if(todayEvs.length===0){ el.innerHTML='<div style="color:#bbb;font-size:11px;text-align:center;padding:8px 0">일정 없음</div>'; return; }
-  el.innerHTML=todayEvs.map(e=>`
-    <div class="cp-sch-item">
+function renderDayScheduleList(containerId,ymd){
+  const todayEvs=events.filter(e=>e.start_at&&e.start_at.startsWith(ymd));
+  const dayTodos=todos.filter(t=>!t.done&&t.due_date&&t.due_date.startsWith(ymd));
+  const rows=[];
+  todayEvs.forEach(e=>rows.push({
+    sort:e.start_at,
+    html:`<div class="cp-sch-item">
       <div class="cp-sch-dot" style="background:#7C3AED"></div>
       <span class="cp-sch-time">${e.start_at.slice(11,16)}</span>
       <span class="cp-sch-title">${escHtml(e.title)}</span>
-    </div>`).join('');
+    </div>`,
+  }));
+  dayTodos.forEach(t=>{
+    const sort=t.due_date.length>10?t.due_date:ymd+'T23:59';
+    let timeLabel='종일';
+    if(t.due_date.length>11){
+      const hm=t.due_date.slice(11,16);
+      timeLabel=hm==='00:00'?'종일':hm;
+    }
+    rows.push({
+      sort,
+      html:`<div class="cp-sch-item">
+      <div class="cp-sch-dot" style="background:${PRIO_COLORS[t.priority]||'#F59E0B'}"></div>
+      <span class="cp-sch-time">${timeLabel}</span>
+      <span class="cp-sch-title">${escHtml(t.title)}</span>
+    </div>`,
+    });
+  });
+  rows.sort((a,b)=>a.sort.localeCompare(b.sort));
+  const el=document.getElementById(containerId);
+  if(!el) return;
+  if(rows.length===0){ el.innerHTML='<div style="color:#bbb;font-size:11px;text-align:center;padding:8px 0">일정 없음</div>'; return; }
+  el.innerHTML=rows.map(r=>r.html).join('');
 }
 
 // ── Vault ──
@@ -1565,6 +1713,7 @@ async function saveTaskDetail(){
       todo.project_id=currentDetailProjectId;
     }
     renderExTasks(); renderCpTodos();
+    shelfRefreshCalendars();
   }catch(e){ console.error(e); }
   closeModal('task-detail');
 }
@@ -1575,6 +1724,7 @@ async function deleteFromDetail(){
     await invoke('delete_todo',{id:currentDetailTodoId});
     todos=todos.filter(t=>t.id!==currentDetailTodoId);
     renderExTasks(); renderCpTodos(); renderCpStats();
+    shelfRefreshCalendars();
     showToast(`"${todo.title}" 삭제됨`, {undo:true});
   }catch(e){}
   closeModal('task-detail');
@@ -1597,6 +1747,7 @@ async function submitTask(){
     todos.push({id,title,note:'',done:false,due_date,recurrence:'none',recurrence_next:null,project_id:localProjId,category:'작업',priority,created_at:new Date().toISOString(),completed_at:null});
     renderCpTodos(); renderExTasks(); renderCpStats();
     renderExProjects();
+    shelfRefreshCalendars();
   }catch(e){ console.error(e); }
   closeModal('task');
 }
@@ -1827,6 +1978,7 @@ function undoDelete(){
   deletedTask=null;
   renderCpTodos();
   renderCpStats();
+  shelfRefreshCalendars();
 }
 
 // ══════════════════════════════════════════════════════
@@ -1873,7 +2025,7 @@ function undoDelete(){
     ep.style.width=Math.round(newEpW)+'px';
     ep.style.height=Math.round(newEpH)+'px';
     ep.style.maxHeight=Math.round(newEpH)+'px';
-    if(getCurrentWindow) getCurrentWindow().setSize(new LogicalSize(newWinW,newWinH)).catch(()=>{});
+    void applyWindowLogicalSizeKeepingOuterTopLeft(newWinW, newWinH);
   });
 
   document.addEventListener('mouseup', ()=>{
