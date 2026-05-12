@@ -1,0 +1,1914 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>Shelf</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;overflow:hidden;background:transparent}
+body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
+
+#app{position:relative;width:622px;height:600px}
+/* 폴드만: 창 전체에서 드래그 가능 — 필 위·아래 투명 영역(.fold-drag-shim) */
+.fold-drag-shim{
+  display:none;
+  position:absolute;
+  inset:0;
+  z-index:1;
+}
+#app.shell-fold .fold-drag-shim{ display:block; }
+/* 닫힌 패널은 보이지 않아도 레이어가 위에 있으면 클릭만 먹고 드래그 심까지 안 내려감 */
+.cpanel:not(.open),
+.expanel:not(.open){
+  pointer-events:none;
+}
+
+/* ── 필 ── */
+.pill{
+  position:absolute;left:0;top:50%;transform:translateY(-50%);
+  width:52px;background:#1E1E2E;border-radius:26px;
+  padding:12px 0;display:flex;flex-direction:column;align-items:center;gap:16px;
+  border:.5px solid rgba(255,255,255,.08);z-index:20;
+}
+.traffic-lights{display:flex;flex-direction:row;gap:5px;padding-top:2px}
+.dot{width:10px;height:10px;border-radius:50%;border:none;cursor:pointer;padding:0}
+.dot.close{background:#FF5F57}
+.dot.minimize{background:#FEBC2E}
+.pico{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer;transition:.15s;position:relative;border:none;background:transparent}
+.pico:hover{background:rgba(255,255,255,.1)}
+.pico.active{background:rgba(255,255,255,.15)}
+.pico.active::before{content:'';position:absolute;right:-10px;top:50%;transform:translateY(-50%);width:3px;height:20px;border-radius:2px;background:#AAED3A}
+.pill-divider{width:28px;height:.5px;background:rgba(255,255,255,.08)}
+.fold-ico{width:30px;height:20px;background:rgba(255,255,255,.06);border-radius:6px;color:rgba(255,255,255,.5);display:flex;align-items:center;justify-content:center;border:none;cursor:pointer;transition:.15s}
+.fold-ico:hover{background:rgba(255,255,255,.12);color:#fff}
+.fold-arrow{display:flex;flex-direction:column;gap:3px;align-items:center;justify-content:center;transition:transform .2s}
+.fold-arrow span{display:block;width:10px;height:1.5px;background:currentColor;border-radius:1px;transition:.2s}
+.fold-arrow.open span:first-child{transform:rotate(-35deg) translateY(1px)}
+.fold-arrow.open span:last-child{transform:rotate(35deg) translateY(-1px)}
+.fold-arrow.closed span:first-child{transform:rotate(35deg) translateY(1px)}
+.fold-arrow.closed span:last-child{transform:rotate(-35deg) translateY(-1px)}
+/* ────────────────────────────────────────────────────────────────────────────── */
+/**/ /**/
+/* ── 컴  팩트 패널 32322── */
+.cpanel{
+  position:absolute;left:62px;top:50%;
+  transform:translateY(-50%) scaleX(0);transform-origin:left center;
+  width:280px;max-height:500px;
+  background:#fff;border-radius:16px;
+  overflow:hidden;transition:transform .25s cubic-bezier(.4,0,.2,1),opacity .2s;opacity:0;z-index:15;
+}
+.cpanel.open{transform:translateY(-50%) scaleX(1);opacity:1}
+.cp-header{padding:11px 13px 0;display:flex;align-items:center;justify-content:space-between}
+.cp-title{font-size:13px;font-weight:600}
+.cp-actions{display:flex;align-items:center;gap:6px}
+.cp-expand{padding:3px 8px;border-radius:6px;background:#AAED3A;border:none;font-size:10px;font-weight:600;cursor:pointer}
+.cp-close{background:none;border:none;cursor:pointer;color:#bbb;font-size:15px;line-height:1}
+.cp-body{padding:10px 13px 13px;overflow-y:auto;max-height:440px}
+.sec{font-size:10px;font-weight:600;color:#aaa;margin:8px 0 5px;letter-spacing:.3px}
+
+/* stats */
+.sm-stats{display:flex;gap:5px;margin-bottom:8px}
+.sm-s{flex:1;background:#F7F7F7;border-radius:7px;padding:6px 7px;text-align:center}
+.sm-s .n{font-size:16px;font-weight:700}
+.sm-s .l{font-size:9px;color:#aaa;margin-top:1px}
+
+/* 컴팩트 태스크 */
+.ti{border-bottom:.5px solid #F0F0F0;cursor:pointer}
+.ti:last-child{border:none}
+.ti-row{display:flex;align-items:center;gap:6px;padding:5px 0}
+.ti-detail{display:none;padding:0 0 8px 20px;animation:slideDown .15s ease}
+.ti-detail.open{display:block}
+@keyframes slideDown{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+.ti-memo{font-size:11px;color:#888;margin-bottom:7px;line-height:1.5;white-space:pre-wrap}
+.ti-actions{display:flex;gap:5px}
+.ti-btn{padding:3px 10px;border-radius:6px;font-size:11px;font-weight:500;cursor:pointer;border:none}
+.ti-btn-edit{background:#F5F5F5;color:#555}
+.ti-btn-edit:hover{background:#EAEAEA}
+.ti-btn-del{background:#FFF0F0;color:#EF4444}
+.ti-btn-del:hover{background:#FFE0E0}
+.chk{width:14px;height:14px;border-radius:3px;border:1.5px solid #ddd;cursor:pointer;flex-shrink:0;transition:.15s}
+.chk.done{background:#AAED3A;border-color:#AAED3A}
+.tn{flex:1;font-size:12px}
+.tn.done{text-decoration:line-through;color:#bbb}
+.bdg{padding:2px 7px;border-radius:20px;font-size:9px;font-weight:600}
+
+/* 컴팩트 캘린더 */
+.cal-hdr{display:flex;align-items:center;gap:5px;margin-bottom:7px}
+.cal-hdr .m{font-size:12px;font-weight:600;flex:1}
+.cn{font-size:11px;background:none;border:none;cursor:pointer;color:#bbb}
+.cgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;font-size:10px}
+.cdow{text-align:center;color:#bbb;padding:2px 0}
+.cdow:first-child{color:#E53935}
+.cdd{text-align:center;padding:3px 1px;border-radius:4px;cursor:pointer;min-height:24px}
+.cdd:hover{background:#F5F5F5}
+.cdd.today .cdn{background:#AAED3A;border-radius:50%;width:16px;height:16px;display:flex;align-items:center;justify-content:center;margin:0 auto;font-weight:700}
+.cdd.sun .cdn{color:#E53935}
+.cdd.other .cdn{color:#ddd}
+.pbar{height:3px;border-radius:2px;margin:1px 2px}
+.cp-sch-item{display:flex;align-items:center;gap:7px;padding:4px 0;border-bottom:.5px solid #F7F7F7}
+.cp-sch-item:last-child{border:none}
+.cp-sch-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.cp-sch-time{font-size:10px;color:#aaa;white-space:nowrap;min-width:34px}
+.cp-sch-title{font-size:11px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* Vault 컴팩트 */
+.vlocked{text-align:center;padding:14px 8px}
+.vlocked .vico{font-size:30px;margin-bottom:6px}
+.vlocked p{font-size:11px;color:#aaa;margin-bottom:10px;line-height:1.5}
+.vbtn{width:100%;padding:8px;border-radius:8px;border:none;cursor:pointer;font-size:12px;font-weight:600;margin-bottom:5px}
+.vbtn.vp{background:#111;color:#fff}
+.vbtn.vb{background:#F5F5F5;color:#333;border:.5px solid #eee}
+.vinput{width:100%;border:.5px solid #eee;border-radius:8px;padding:7px 10px;font-size:12px;outline:none;text-align:center;letter-spacing:3px;margin-bottom:7px}
+.vitem{display:flex;align-items:center;gap:7px;padding:6px 8px;background:#F7F7F7;border-radius:8px;margin-bottom:4px;cursor:pointer}
+.vitem:hover{background:#EFEFEF}
+.vitem.sel{background:#F3F0FF;border:.5px solid #C4B5FD}
+
+/* ── 확장 패널 ── */
+.expanel{
+  position:absolute;left:62px;top:50%;
+  transform:translateY(-50%) scale(0);transform-origin:left center;
+  width:560px;background:#fff;border-radius:18px;
+  overflow:hidden;transition:transform .3s cubic-bezier(.34,1.2,.64,1),opacity .25s;opacity:0;z-index:15;
+  display:flex;flex-direction:column;max-height:540px;
+  /* 리사이즈 핸들 절대 위치 기준 */
+  position:absolute;
+}
+.expanel.open{transform:translateY(-50%) scale(1);opacity:1;height:100vh;max-height:100vh}
+.ex-header{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:.5px solid #F0F0F0;flex-shrink:0}
+.ex-profile{display:flex;align-items:center;gap:8px;flex:1}
+.ex-avatar{width:32px;height:32px;border-radius:50%;background:#111;color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600}
+.ex-stats{display:flex;gap:12px}
+.ex-stat .n{font-size:18px;font-weight:700;line-height:1}
+.ex-stat .l{font-size:9px;color:#aaa}
+.ex-date{font-size:11px;color:#aaa;white-space:nowrap}
+.ex-compact{padding:4px 10px;border-radius:6px;background:#F5F5F5;border:.5px solid #eee;font-size:10px;cursor:pointer}
+.ex-close{background:none;border:none;cursor:pointer;color:#bbb;font-size:16px}
+.ex-sub{display:none;flex:1;overflow:hidden;min-height:0}
+.ex-sub.active{display:flex;flex-direction:column;min-height:0;position:relative}
+
+/* 확장 TODO */
+.ex-todo-layout{display:flex;position:absolute;top:0;left:0;right:0;bottom:0;overflow:hidden}
+.ex-proj-panel{width:200px;border-right:.5px solid #F0F0F0;padding:10px;overflow-y:auto;display:flex;flex-direction:column;gap:2px;min-height:0}
+.ex-proj-hdr{font-size:9px;font-weight:700;color:#aaa;letter-spacing:.5px;text-transform:uppercase;padding:0 4px;margin-bottom:4px}
+.proj-card{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:9px;cursor:pointer;transition:.15s}
+.proj-card:hover{background:#F7F7F7}
+.proj-card.sel{background:#F3F0FF}
+.proj-card-bar{width:3px;border-radius:2px;flex-shrink:0;align-self:stretch;min-height:28px}
+.proj-card-info{flex:1;min-width:0}
+.proj-card-name{font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.proj-card-sub{font-size:9px;color:#aaa;margin-top:1px}
+.proj-card-cnt{font-size:9px;background:#F0F0F0;border-radius:10px;padding:1px 6px;color:#666;flex-shrink:0}
+.ex-proj-add{display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:9px;cursor:pointer;color:#bbb;font-size:11px;margin-top:4px;border:.5px dashed #eee}
+.ex-proj-add:hover{background:#F7F7F7;color:#888}
+.ex-task-panel{flex:1;padding:12px 12px 24px;overflow-y:auto;display:flex;flex-direction:column;min-height:0}
+.ex-task-hdr{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-shrink:0}
+.ex-task-title{font-size:13px;font-weight:600;flex:1}
+.ex-task-sort{font-size:10px;color:#aaa;background:#F7F7F7;border:none;border-radius:6px;padding:3px 8px;cursor:pointer}
+.task-item{display:flex;align-items:center;gap:8px;padding:9px 11px;background:#FAFAFA;border-radius:9px;margin-bottom:5px;cursor:pointer;transition:.15s;border:.5px solid transparent}
+.task-item:hover{background:#F3F0FF;border-color:#E9D5FF;transform:translateX(2px)}
+.prio-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.task-chk{width:14px;height:14px;border-radius:3px;border:1.5px solid #ddd;cursor:pointer;flex-shrink:0;transition:.15s}
+.task-chk.done{background:#AAED3A;border-color:#AAED3A}
+.task-name{flex:1;font-size:12px}
+.task-name.done{text-decoration:line-through;color:#bbb}
+.task-tag{padding:2px 7px;border-radius:20px;font-size:9px;font-weight:600}
+.task-sub-prog{font-size:10px;color:#bbb;background:#F0F0F0;padding:1px 6px;border-radius:8px;flex-shrink:0}
+.task-due{font-size:9px;color:#F59E0B;flex-shrink:0}
+.hdr-add-btn{width:22px;height:22px;border-radius:6px;background:#F0F0F0;border:none;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#666;transition:.15s}
+.hdr-add-btn:hover{background:#E0E0E0;color:#111}
+
+/* 확장 캘린더 */
+.ex-cal-layout{display:flex;position:absolute;top:0;left:0;right:0;bottom:0;overflow:hidden}
+.ex-left{padding:14px 14px 24px;border-right:.5px solid #F0F0F0;flex:1;overflow-y:auto;min-height:0}
+.ex-right{padding:14px 14px 24px;width:190px;overflow-y:auto;min-height:0}
+.exgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;font-size:10px}
+.exdow{text-align:center;color:#bbb;padding:3px 0;font-size:9px}
+.exdow:first-child{color:#E53935}
+.exdd{text-align:center;padding:3px 1px;border-radius:5px;cursor:pointer;min-height:30px}
+.exdd.today .exdn{background:#AAED3A;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;margin:0 auto;font-weight:700}
+.exdd.sun .exdn{color:#E53935}
+.exdd.other .exdn{color:#ddd}
+.expbar{height:4px;border-radius:2px;margin:1px 2px}
+.ex-chips{display:flex;flex-wrap:wrap;gap:3px;margin-top:8px;padding-top:8px;border-top:.5px solid #F0F0F0}
+.exchip{display:flex;align-items:center;gap:3px;padding:2px 7px;border-radius:20px;font-size:9px;border:.5px solid #eee;background:#fafafa}
+.excdot{width:6px;height:6px;border-radius:50%}
+.ex-sch-item{display:flex;align-items:center;gap:7px;padding:5px 7px;border-radius:7px;background:#F7F7F7;margin-bottom:4px}
+.ex-sch-time{font-size:10px;color:#aaa;white-space:nowrap;min-width:32px}
+.ex-sch-bar{width:3px;height:26px;border-radius:2px;flex-shrink:0}
+.ex-sch-title{flex:1;font-size:11px}
+
+/* 확장 Vault */
+.ex-vault-layout{display:flex;position:absolute;top:0;left:0;right:0;bottom:0;overflow:hidden}
+.ex-vault-list{width:190px;border-right:.5px solid #F0F0F0;padding:10px;overflow-y:auto;min-height:0}
+.ex-vault-detail{flex:1;padding:16px 16px 24px;overflow-y:auto;min-height:0}
+.ex-vault-locked{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;text-align:center;gap:10px}
+.ex-vault-locked .vico{font-size:36px}
+.ex-vault-locked p{font-size:11px;color:#aaa;line-height:1.6}
+.vd-field{margin-bottom:12px}
+.vd-label{font-size:9px;color:#aaa;font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px}
+.vd-val{font-size:12px;background:#F7F7F7;border-radius:8px;padding:8px 11px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.vd-masked{font-family:monospace;letter-spacing:2px;color:#333;flex:1}
+.vd-toggle{background:none;border:.5px solid #ddd;border-radius:5px;padding:2px 7px;font-size:10px;cursor:pointer;color:#888;white-space:nowrap}
+.vd-copy{background:#111;color:#fff;border:none;border-radius:6px;padding:5px 11px;font-size:11px;cursor:pointer;margin-top:6px;width:100%}
+.vd-delete{background:#FFF0F0;color:#EF4444;border:none;border-radius:6px;padding:5px 11px;font-size:11px;cursor:pointer;margin-top:4px;width:100%}
+.vd-delete:hover{background:#FFE0E0}
+.vd-copy-field{background:none;border:.5px solid #ddd;border-radius:5px;padding:2px 7px;font-size:10px;cursor:pointer;color:#888;white-space:nowrap}
+.vd-copy-field:hover{background:#F0F0F0}
+.vd-type-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:600;margin-bottom:12px}
+.vd-val-text{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vd-val-mono{flex:1;font-family:monospace;font-size:11px;word-break:break-all;white-space:pre-wrap;overflow:hidden}
+/* vault form field styles */
+.vf-pw-wrap{position:relative;display:flex;align-items:center}
+.vf-pw-wrap .modal-input{flex:1;padding-right:52px}
+.vf-pw-toggle{position:absolute;right:8px;background:none;border:.5px solid #ddd;border-radius:5px;padding:2px 8px;font-size:10px;cursor:pointer;color:#888;white-space:nowrap}
+.vf-row{display:flex;gap:8px}
+.vf-row .modal-field{flex:1}
+/* compact vault detail fields */
+.cpvdf{background:#F7F7F7;border-radius:9px;padding:8px 11px;margin-bottom:8px}
+.cpvdf-label{font-size:9px;color:#aaa;font-weight:700;text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px}
+.cpvdf-val{font-size:11px;font-family:monospace;word-break:break-all;white-space:pre-wrap;color:#333;cursor:pointer;transition:filter .15s}
+.cpvdf-actions{display:flex;justify-content:space-between;align-items:center;margin-top:5px}
+.cpvdf-hint{font-size:9px;color:#bbb}
+.cpvdf-copy{background:none;border:.5px solid #ddd;border-radius:5px;padding:2px 8px;font-size:10px;cursor:pointer;color:#888}
+
+/* 모달 */
+.modal-overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:100;opacity:0;pointer-events:none;transition:opacity .15s}
+.modal-overlay.show{opacity:1;pointer-events:all}
+.modal{background:#fff;border-radius:16px;padding:20px;width:300px;box-shadow:0 2px 24px rgba(0,0,0,.14),0 0 0 1px rgba(0,0,0,.07);max-height:92%;overflow-y:auto}
+.modal-title{font-size:14px;font-weight:700;margin-bottom:16px}
+.modal-field{margin-bottom:13px}
+.modal-label{font-size:10px;font-weight:600;color:#aaa;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px}
+.modal-input{width:100%;border:1px solid #eee;border-radius:8px;padding:8px 11px;font-size:13px;outline:none;background:#FAFAFA;font-family:inherit;transition:.15s}
+.modal-input:focus{border-color:#7C3AED;background:#fff}
+.proj-chips{display:flex;flex-wrap:wrap;gap:5px}
+.proj-chip{display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:500;cursor:pointer;border:1.5px solid transparent;background:#F5F5F5;transition:.15s}
+.proj-chip:hover{filter:brightness(.95)}
+.proj-chip.sel{border-color:currentColor}
+.proj-chip-dot{width:7px;height:7px;border-radius:50%}
+.proj-chip-new{background:#F5F5F5;color:#888;border:1.5px dashed #ddd}
+.prio-btns{display:flex;gap:6px}
+.prio-btn{flex:1;padding:6px;border-radius:8px;border:1.5px solid #eee;background:#fafafa;font-size:11px;font-weight:600;cursor:pointer;text-align:center;transition:.15s}
+.prio-btn.sel{border-width:2px}
+.color-swatches{display:flex;gap:6px}
+.swatch{width:24px;height:24px;border-radius:50%;cursor:pointer;border:2.5px solid transparent;transition:.15s}
+.swatch.sel{border-color:#fff;box-shadow:0 0 0 2.5px currentColor}
+.type-toggle{display:flex;background:#F5F5F5;border-radius:8px;padding:3px;gap:3px}
+.type-btn{flex:1;padding:5px;border:none;border-radius:6px;font-size:11px;font-weight:500;cursor:pointer;background:none;color:#888;transition:.15s}
+.type-btn.sel{background:#fff;color:#111;box-shadow:0 1px 4px rgba(0,0,0,.1)}
+.modal-footer{display:flex;gap:7px;margin-top:16px}
+.btn-cancel{flex:1;padding:8px;border-radius:8px;border:1px solid #eee;background:#fafafa;font-size:12px;font-weight:500;cursor:pointer;color:#666}
+.btn-cancel:hover{background:#f0f0f0}
+.btn-submit{flex:2;padding:8px;border-radius:8px;border:none;background:#111;color:#fff;font-size:12px;font-weight:600;cursor:pointer}
+.btn-submit:hover{background:#333}
+
+/* 커스텀 날짜/시간 피커 */
+.date-picker-wrap{position:relative}
+.date-display{width:100%;border:1px solid #eee;border-radius:8px;padding:8px 11px;font-size:12px;background:#FAFAFA;cursor:pointer;display:flex;align-items:center;justify-content:space-between;user-select:none}
+.date-display:hover{border-color:#ccc}
+.date-picker-pop{position:fixed;background:#fff;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.18);padding:10px;width:220px;z-index:400;display:none}
+.date-picker-pop.open{display:block}
+.time-picker-pop{position:fixed;background:#fff;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.18);padding:10px;width:160px;z-index:400;display:none}
+.time-picker-pop.open{display:flex;gap:4px}
+.tp-col{flex:1;display:flex;flex-direction:column;gap:1px;max-height:180px;overflow-y:auto;scrollbar-width:none}
+.tp-col::-webkit-scrollbar{display:none}
+.tp-col-lbl{font-size:9px;color:#bbb;text-align:center;padding-bottom:4px;font-weight:600;letter-spacing:.3px;position:sticky;top:0;background:#fff}
+.tp-item{text-align:center;padding:5px 4px;border-radius:6px;cursor:pointer;font-size:11px;color:#333}
+.tp-item:hover{background:#F3F0FF;color:#7C3AED}
+.tp-item.sel{background:#7C3AED;color:#fff}
+.dp-hdr{display:flex;align-items:center;gap:4px;margin-bottom:8px}
+.dp-hdr .m{flex:1;font-size:12px;font-weight:600;text-align:center}
+.dp-nav{background:none;border:none;cursor:pointer;color:#bbb;font-size:12px;padding:2px 5px;border-radius:4px}
+.dp-nav:hover{background:#F5F5F5;color:#333}
+.dp-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;font-size:10px}
+.dp-dow{text-align:center;color:#bbb;padding:2px 0;font-size:9px}
+.dp-dow:first-child{color:#E53935}
+.dp-day{text-align:center;padding:4px 2px;border-radius:4px;cursor:pointer;font-size:10px}
+.dp-day:hover{background:#F3F0FF}
+.dp-day.today{font-weight:700}
+.dp-day.sel{background:#7C3AED;color:#fff;border-radius:50%}
+.dp-day.other{color:#ddd}
+.dp-day.sun{color:#E53935}
+.dp-day.sel.sun{color:#fff}
+
+/* 토스트 */
+.del-toast{position:fixed;top:0;left:0;transform:translateX(-50%) translateY(-6px);background:#1E1E2E;color:#fff;padding:9px 16px;border-radius:10px;font-size:12px;display:flex;align-items:center;gap:10px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:200;white-space:nowrap}
+.del-toast.show{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:all}
+.del-toast-undo{background:#AAED3A;color:#111;border:none;border-radius:6px;padding:3px 9px;font-size:11px;font-weight:700;cursor:pointer}
+
+/* 로딩 */
+.loading{display:flex;align-items:center;justify-content:center;height:80px;color:#bbb;font-size:12px}
+
+/* 리사이즈 핸들 */
+.resize-handle{
+  position:absolute;right:0;bottom:0;width:18px;height:18px;cursor:nwse-resize;z-index:30;
+  display:flex;align-items:flex-end;justify-content:flex-end;padding:4px;
+}
+.resize-handle svg{opacity:.25;transition:opacity .15s}
+.resize-handle:hover svg{opacity:.6}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <div class="fold-drag-shim" id="fold-drag-shim" data-tauri-drag-region aria-hidden="true"></div>
+
+  <!-- ── 필 ── -->
+  <div class="pill" data-tauri-drag-region>
+    <div class="traffic-lights">
+      <button class="dot close"    onclick="closeApp()"    title="닫기"></button>
+      <button class="dot minimize" onclick="minimizeApp()" title="최소화"></button>
+    </div>
+    <button class="pico" id="ico-todo" onclick="openCompact('todo')" title="할 일">📋</button>
+    <button class="pico" id="ico-cal"  onclick="openCompact('cal')"  title="캘린더">📅</button>
+    <button class="pico" id="ico-vault" onclick="openCompact('vault')" title="Vault">🔒</button>
+    <div class="pill-divider"></div>
+    <button class="fold-ico" id="ico-fold" onclick="toggleFold()" title="접기/펴기">
+      <div class="fold-arrow open" id="fold-arrow"><span></span><span></span></div>
+    </button>
+  </div>
+
+  <!-- ── 컴팩트 패널 ── -->
+  <div class="cpanel" id="cpanel">
+    <div class="cp-header" data-tauri-drag-region>
+      <span class="cp-title" id="cp-title" data-tauri-drag-region>할 일</span>
+      <div class="cp-actions">
+        <button class="hdr-add-btn" id="cp-add-btn" onclick="openTaskModal(null)" title="추가">＋</button>
+        <button class="cp-expand" onclick="setState('expanded')">⬜ 확장</button>
+        <button class="cp-close" onclick="setState('pill')" title="접기">«</button>
+      </div>
+    </div>
+    <div class="cp-body">
+
+      <!-- 할 일 -->
+      <div id="cp-todo">
+        <div class="sm-stats">
+          <div class="sm-s"><div class="n" id="cp-proj-count">-</div><div class="l">프로젝트</div></div>
+          <div class="sm-s"><div class="n" id="cp-done-count">0</div><div class="l">완료</div></div>
+          <div class="sm-s"><div class="n" id="cp-next-time">-</div><div class="l">다음 일정</div></div>
+        </div>
+        <div class="sec">오늘 할 일</div>
+        <div id="tlist"><div class="loading">불러오는 중...</div></div>
+      </div>
+
+      <!-- 캘린더 -->
+      <div id="cp-cal" style="display:none">
+        <div class="cal-hdr">
+          <button class="cn" onclick="cpCalNav(-1)">◀</button>
+          <span class="m" id="cp-cal-lbl"></span>
+          <button class="cn" onclick="cpCalNav(1)">▶</button>
+        </div>
+        <div class="cgrid" id="cp-cal-grid"></div>
+        <div style="margin-top:10px;padding-top:8px;border-top:.5px solid #F0F0F0">
+          <div style="font-size:9px;font-weight:700;color:#aaa;letter-spacing:.4px;text-transform:uppercase;margin-bottom:6px">오늘 일정</div>
+          <div id="cp-today-events"><div class="loading">불러오는 중...</div></div>
+        </div>
+      </div>
+
+      <!-- Vault -->
+      <div id="cp-vault" style="display:none">
+        <div id="cp-vault-locked">
+          <div class="vlocked">
+            <div class="vico">🔐</div>
+            <p>비밀번호 또는 Touch ID로<br>잠금 해제</p>
+            <input class="vinput" id="cp-vault-pw" type="password" placeholder="••••••••">
+            <button class="vbtn vp" onclick="unlockVault()">잠금 해제</button>
+            <button class="vbtn vb" onclick="unlockVaultBiometric()">👆 Touch ID</button>
+          </div>
+        </div>
+        <div id="cp-vault-open" style="display:none">
+          <!-- 목록 뷰 -->
+          <div id="cp-vault-list-view">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px">
+              <span style="font-size:11px;font-weight:600;color:#555">보안 항목</span>
+              <div style="display:flex;align-items:center;gap:8px">
+                <span style="font-size:11px;color:#7C3AED;cursor:pointer;font-weight:600" onclick="openVaultAddModal()">＋ 추가</span>
+                <span style="font-size:9px;color:#bbb;cursor:pointer" onclick="lockVault()">🔒 잠금</span>
+              </div>
+            </div>
+            <div id="cp-vault-list"></div>
+          </div>
+          <!-- 상세 뷰 -->
+          <div id="cp-vault-detail-view" style="display:none">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px">
+              <button style="background:none;border:none;color:#bbb;font-size:16px;cursor:pointer;padding:0" onclick="cpVaultBack()">‹</button>
+              <span id="cp-vault-detail-title" style="font-size:12px;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
+              <span id="cp-vault-detail-type" style="font-size:9px;color:#aaa;background:#F5F5F5;padding:2px 7px;border-radius:10px;white-space:nowrap"></span>
+              <button id="cp-vault-delete-btn" onclick="cpVaultDelete()" style="background:none;border:none;cursor:pointer;font-size:14px;padding:2px 4px;color:#EF4444;opacity:.6;line-height:1" title="삭제">🗑</button>
+            </div>
+            <div id="cp-vault-detail-fields" style="max-height:200px;overflow-y:auto"></div>
+            <button onclick="cpVaultCopy()" style="width:100%;margin-top:6px;padding:7px;border-radius:8px;border:none;background:#111;color:#fff;font-size:11px;font-weight:600;cursor:pointer">📋 전체 복사 (30초 후 삭제)</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── 확장 패널 ── -->
+  <div class="expanel" id="expanel">
+    <div class="ex-header" data-tauri-drag-region>
+      <div class="ex-profile" data-tauri-drag-region>
+        <div class="ex-avatar" data-tauri-drag-region>S</div>
+        <div data-tauri-drag-region>
+          <div style="font-size:13px;font-weight:600" id="ex-header-title" data-tauri-drag-region>프로젝트 관리</div>
+          <div style="font-size:10px;color:#aaa" data-tauri-drag-region>Shelf</div>
+        </div>
+      </div>
+      <div id="ex-stats-todo" class="ex-stats" data-tauri-drag-region>
+        <div class="ex-stat" data-tauri-drag-region><div class="n" id="ex-proj-count" data-tauri-drag-region>-</div><div class="l" data-tauri-drag-region>프로젝트</div></div>
+        <div class="ex-stat" data-tauri-drag-region><div class="n" id="ex-todo-done" data-tauri-drag-region>0</div><div class="l" data-tauri-drag-region>완료</div></div>
+      </div>
+      <div id="ex-stats-cal" class="ex-stats" style="display:none" data-tauri-drag-region>
+        <div class="ex-stat" data-tauri-drag-region><div class="n" id="ex-event-count" data-tauri-drag-region>-</div><div class="l" data-tauri-drag-region>일정</div></div>
+      </div>
+      <div id="ex-stats-vault" class="ex-stats" style="display:none" data-tauri-drag-region>
+        <div class="ex-stat" data-tauri-drag-region><div class="n" id="ex-vault-count" data-tauri-drag-region>-</div><div class="l" data-tauri-drag-region>보안 항목</div></div>
+      </div>
+      <span class="ex-date" id="ex-date" data-tauri-drag-region></span>
+      <div style="display:flex;gap:6px;align-items:center">
+        <button class="ex-compact" onclick="setState('panel')">▼ 컴팩트</button>
+        <button class="ex-close" onclick="setState('pill')">×</button>
+      </div>
+    </div>
+
+    <!-- 확장 TODO -->
+    <div class="ex-sub active" id="ex-sub-todo">
+      <div class="ex-todo-layout">
+        <div class="ex-proj-panel" id="ex-proj-panel">
+          <div class="ex-proj-hdr">프로젝트</div>
+          <div id="ex-proj-list"><div class="loading">불러오는 중...</div></div>
+          <div class="ex-proj-add" onclick="openProjectModal()">＋ 새 프로젝트</div>
+        </div>
+        <div class="ex-task-panel">
+          <div class="ex-task-hdr">
+            <span class="ex-task-title" id="ex-proj-title" style="color:#666">프로젝트를 선택하세요</span>
+          </div>
+          <div id="ex-tasklist"><div class="loading">프로젝트를 선택하면 태스크가 표시됩니다</div></div>
+          <div style="margin-top:6px;flex-shrink:0">
+            <button onclick="openTaskModal('current')" style="width:100%;padding:7px;border-radius:9px;border:1px dashed #ddd;background:#FAFAFA;color:#aaa;font-size:12px;cursor:pointer;transition:.15s" onmouseover="this.style.background='#F3F0FF';this.style.color='#7C3AED';this.style.borderColor='#C4B5FD'" onmouseout="this.style.background='#FAFAFA';this.style.color='#aaa';this.style.borderColor='#ddd'">＋ 태스크 추가</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 확장 캘린더 -->
+    <div class="ex-sub" id="ex-sub-cal">
+      <div class="ex-cal-layout">
+        <div class="ex-left">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
+            <button class="cn" onclick="exCalNav(-1)">◀</button>
+            <span style="font-size:13px;font-weight:600;flex:1" id="ex-cal-lbl"></span>
+            <button class="cn" onclick="exCalNav(1)">▶</button>
+          </div>
+          <div class="exgrid" id="ex-cal-grid"></div>
+          <div class="ex-chips" id="ex-cal-chips"></div>
+        </div>
+        <div class="ex-right">
+          <div style="font-size:10px;font-weight:600;color:#aaa;margin-bottom:7px">오늘 일정</div>
+          <div id="ex-today-events"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 확장 Vault -->
+    <div class="ex-sub" id="ex-sub-vault">
+      <div class="ex-vault-layout" id="ex-vault-unlocked" style="display:none">
+        <div class="ex-vault-list">
+          <div style="font-size:9px;font-weight:700;color:#aaa;letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px">보안 항목</div>
+          <div id="ex-vault-list-items"></div>
+          <div class="ex-proj-add" style="margin-top:6px" onclick="openVaultAddModal()">＋ 새 항목</div>
+        </div>
+        <div class="ex-vault-detail" id="ex-vault-detail">
+          <div style="color:#bbb;font-size:12px;text-align:center;padding-top:40px">항목을 선택하세요</div>
+        </div>
+      </div>
+      <div class="ex-vault-locked" id="ex-vault-locked">
+        <div class="vico">🔐</div>
+        <p>비밀번호 또는 Touch ID로<br>잠금 해제하세요</p>
+        <input class="vinput" id="ex-vault-pw" type="password" placeholder="••••••••" style="width:200px;text-align:center;letter-spacing:3px">
+        <button class="vbtn vp" onclick="unlockVaultEx()" style="width:200px">잠금 해제</button>
+        <button class="vbtn vb" onclick="unlockVaultBiometricEx()" style="width:200px">👆 Touch ID</button>
+      </div>
+    </div>
+
+    <!-- 우하단 리사이즈 핸들 -->
+    <div class="resize-handle" id="resize-handle">
+      <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+        <path d="M9 1L1 9M9 5L5 9M9 9" stroke="#888" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+    </div>
+  </div>
+
+  <!-- ── 모달들 ── -->
+
+  <!-- 태스크 상세 -->
+  <div class="modal-overlay" id="modal-task-detail" onclick="if(event.target===this)closeModal('task-detail')">
+    <div class="modal">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <div class="modal-title" style="margin:0" id="detail-title">태스크</div>
+        <button style="background:none;border:none;color:#bbb;font-size:16px;cursor:pointer" onclick="closeModal('task-detail')">×</button>
+      </div>
+      <div class="modal-field">
+        <div class="modal-label">프로젝트</div>
+        <div class="proj-chips" id="detail-proj-chips"></div>
+      </div>
+      <div class="modal-field">
+        <div class="modal-label">메모</div>
+        <textarea class="modal-input" id="detail-memo" rows="3" style="resize:none;line-height:1.5" placeholder="메모 입력..."></textarea>
+      </div>
+      <div style="display:flex;gap:10px">
+        <div class="modal-field" style="flex:1">
+          <div class="modal-label">우선순위</div>
+          <div class="prio-btns">
+            <div class="prio-btn sel" data-prio="2" onclick="selDetailPrio(this)" style="color:#EF4444;border-color:#EF4444;background:#FFF5F5">🔴</div>
+            <div class="prio-btn" data-prio="1" onclick="selDetailPrio(this)" style="color:#F59E0B">🟡</div>
+            <div class="prio-btn" data-prio="0" onclick="selDetailPrio(this)" style="color:#10B981">🟢</div>
+          </div>
+        </div>
+        <div class="modal-field" style="flex:1.3">
+          <div class="modal-label">마감일</div>
+          <div class="date-picker-wrap">
+            <div class="date-display" id="detail-dp-trigger" onclick="toggleDatePicker('detail-dp')">
+              <span id="detail-date-text" style="color:#bbb;font-size:11px">날짜 선택</span>
+              <span style="color:#bbb;font-size:10px">▾</span>
+            </div>
+            <div class="date-picker-pop" id="detail-dp">
+              <div class="dp-hdr"><button class="dp-nav" onclick="dpNav('detail-dp',-1)">◀</button><span class="m" id="detail-dp-lbl"></span><button class="dp-nav" onclick="dpNav('detail-dp',1)">▶</button></div>
+              <div class="dp-grid" id="detail-dp-grid"></div>
+            </div>
+          </div>
+          <div class="date-picker-wrap" style="margin-top:5px">
+            <div class="date-display" id="detail-tp-trigger" onclick="toggleTimePicker('detail-tp')">
+              <span id="detail-time-text" style="color:#bbb;font-size:11px">시간 선택</span>
+              <span style="color:#bbb;font-size:10px">▾</span>
+            </div>
+            <div class="time-picker-pop" id="detail-tp"></div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer" style="margin-top:8px">
+        <button class="ti-btn ti-btn-del" style="flex:1;padding:8px;border-radius:8px;font-size:12px" onclick="deleteFromDetail()">🗑 삭제</button>
+        <button class="btn-submit" style="flex:2" onclick="saveTaskDetail()">저장</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 태스크 추가 -->
+  <div class="modal-overlay" id="modal-task" onclick="if(event.target===this)closeModal('task')">
+    <div class="modal">
+      <div class="modal-title">새 태스크</div>
+      <div class="modal-field">
+        <input class="modal-input" id="task-title-input" placeholder="태스크 제목...">
+      </div>
+      <div class="modal-field">
+        <div class="modal-label">프로젝트</div>
+        <div class="proj-chips" id="task-proj-chips"></div>
+      </div>
+      <div class="modal-field">
+        <div class="modal-label">우선순위</div>
+        <div class="prio-btns">
+          <div class="prio-btn sel" data-prio="2" onclick="selPrio(this)" style="color:#EF4444;border-color:#EF4444;background:#FFF5F5">🔴 높음</div>
+          <div class="prio-btn" data-prio="1" onclick="selPrio(this)" style="color:#F59E0B">🟡 중간</div>
+          <div class="prio-btn" data-prio="0" onclick="selPrio(this)" style="color:#10B981">🟢 낮음</div>
+        </div>
+      </div>
+      <div class="modal-field">
+        <div class="modal-label">마감일 / 시간 (선택)</div>
+        <div style="display:flex;gap:6px;align-items:flex-start">
+          <div class="date-picker-wrap" style="flex:1">
+            <div class="date-display" id="task-dp-trigger" onclick="toggleDatePicker('task-dp')">
+              <span id="task-date-text" style="color:#bbb;font-size:11px">날짜 선택</span>
+              <span style="color:#bbb;font-size:10px">▾</span>
+            </div>
+            <div class="date-picker-pop" id="task-dp">
+              <div class="dp-hdr"><button class="dp-nav" onclick="dpNav('task-dp',-1)">◀</button><span class="m" id="task-dp-lbl"></span><button class="dp-nav" onclick="dpNav('task-dp',1)">▶</button></div>
+              <div class="dp-grid" id="task-dp-grid"></div>
+            </div>
+          </div>
+          <div class="date-picker-wrap" style="flex:1">
+            <div class="date-display" id="task-tp-trigger" onclick="toggleTimePicker('task-tp')">
+              <span id="task-time-text" style="color:#bbb;font-size:11px">시간 선택</span>
+              <span style="color:#bbb;font-size:10px">▾</span>
+            </div>
+            <div class="time-picker-pop" id="task-tp"></div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel" onclick="closeModal('task')">취소</button>
+        <button class="btn-submit" onclick="submitTask()">추가하기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Vault 항목 추가 -->
+  <div class="modal-overlay" id="modal-vault" onclick="if(event.target===this)closeModal('vault')">
+    <div class="modal">
+      <div class="modal-title">🔐 새 보안 항목</div>
+      <div class="modal-field">
+        <div class="modal-label">유형</div>
+        <div class="type-toggle" id="vault-type-toggle">
+          <button class="type-btn sel" data-type="idpw"     onclick="selectVaultType('idpw')">🔑 ID/PW</button>
+          <button class="type-btn"     data-type="mnemonic" onclick="selectVaultType('mnemonic')">🔐 니모닉</button>
+          <button class="type-btn"     data-type="card"     onclick="selectVaultType('card')">💳 카드</button>
+          <button class="type-btn"     data-type="memo"     onclick="selectVaultType('memo')">📝 메모</button>
+        </div>
+      </div>
+      <div class="modal-field">
+        <div class="modal-label">제목</div>
+        <input class="modal-input" id="vault-title" placeholder="예: Gmail, 비트코인 지갑..." autocapitalize="none" autocorrect="off" spellcheck="false">
+      </div>
+      <!-- 타입별 동적 필드 -->
+      <div id="vault-fields"></div>
+      <div class="modal-footer">
+        <button class="btn-cancel" onclick="closeModal('vault')">취소</button>
+        <button class="btn-submit" id="vault-submit-btn" onclick="submitVaultItem()">저장</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 프로젝트 추가 -->
+  <div class="modal-overlay" id="modal-project" onclick="if(event.target===this)closeModal('project')">
+    <div class="modal">
+      <div class="modal-title">새 프로젝트</div>
+      <div class="modal-field">
+        <input class="modal-input" id="proj-name-input" placeholder="프로젝트 이름...">
+      </div>
+      <div class="modal-field">
+        <div class="modal-label">색상</div>
+        <div class="color-swatches">
+          <div class="swatch sel" style="background:#7C3AED;color:#7C3AED" onclick="selColor(this)"></div>
+          <div class="swatch" style="background:#4F46E5;color:#4F46E5" onclick="selColor(this)"></div>
+          <div class="swatch" style="background:#EC4899;color:#EC4899" onclick="selColor(this)"></div>
+          <div class="swatch" style="background:#06B6D4;color:#06B6D4" onclick="selColor(this)"></div>
+          <div class="swatch" style="background:#F59E0B;color:#F59E0B" onclick="selColor(this)"></div>
+          <div class="swatch" style="background:#10B981;color:#10B981" onclick="selColor(this)"></div>
+          <div class="swatch" style="background:#EF4444;color:#EF4444" onclick="selColor(this)"></div>
+          <div class="swatch" style="background:#6B7280;color:#6B7280" onclick="selColor(this)"></div>
+        </div>
+      </div>
+      <div class="modal-field">
+        <div class="modal-label">유형</div>
+        <div class="type-toggle">
+          <button class="type-btn sel" id="type-personal" onclick="selType('personal')">👤 개인</button>
+          <button class="type-btn" id="type-work"     onclick="selType('work')">💼 회사</button>
+        </div>
+      </div>
+      <div class="modal-field">
+        <div class="modal-label">기간 (선택)</div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <div class="date-picker-wrap" style="flex:1">
+            <div class="date-display" id="proj-start-dp-trigger" onclick="toggleDatePicker('proj-start-dp')" style="font-size:11px">
+              <span id="proj-start-text" style="color:#bbb;font-size:11px">시작일</span>
+              <span style="color:#bbb;font-size:10px">▾</span>
+            </div>
+            <div class="date-picker-pop" id="proj-start-dp">
+              <div class="dp-hdr"><button class="dp-nav" onclick="dpNav('proj-start-dp',-1)">◀</button><span class="m" id="proj-start-dp-lbl"></span><button class="dp-nav" onclick="dpNav('proj-start-dp',1)">▶</button></div>
+              <div class="dp-grid" id="proj-start-dp-grid"></div>
+            </div>
+          </div>
+          <span style="color:#bbb">→</span>
+          <div class="date-picker-wrap" style="flex:1">
+            <div class="date-display" id="proj-end-dp-trigger" onclick="toggleDatePicker('proj-end-dp')" style="font-size:11px">
+              <span id="proj-end-text" style="color:#bbb;font-size:11px">종료일</span>
+              <span style="color:#bbb;font-size:10px">▾</span>
+            </div>
+            <div class="date-picker-pop" id="proj-end-dp" style="right:0;left:auto">
+              <div class="dp-hdr"><button class="dp-nav" onclick="dpNav('proj-end-dp',-1)">◀</button><span class="m" id="proj-end-dp-lbl"></span><button class="dp-nav" onclick="dpNav('proj-end-dp',1)">▶</button></div>
+              <div class="dp-grid" id="proj-end-dp-grid"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel" onclick="closeModal('project')">취소</button>
+        <button class="btn-submit" onclick="submitProject()">만들기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 삭제 토스트 -->
+  <div class="del-toast" id="del-toast">
+    <span id="del-toast-msg">삭제됨</span>
+    <button class="del-toast-undo" onclick="undoDelete()">되돌리기</button>
+  </div>
+
+</div><!-- /app -->
+
+<script>
+function dbg(){} // 디버그 종료 — no-op
+
+/** URL ?debugWindow=1 또는 localStorage shelfDebugWindow=1 일 때만 창·모니터 메트릭 로깅 */
+const SHELF_WINDOW_METRICS_DEBUG =
+  typeof location !== 'undefined' &&
+  (/[?&]debugWindow=1(?:&|$)/.test(location.search) ||
+    (typeof localStorage !== 'undefined' && localStorage.getItem('shelfDebugWindow') === '1'));
+
+function shelfDebounce(fn, ms){
+  let t;
+  return function(...args){
+    clearTimeout(t);
+    t = setTimeout(()=>fn.apply(this, args), ms);
+  };
+}
+
+async function logShelfWindowMetrics(reason){
+  if(!SHELF_WINDOW_METRICS_DEBUG) return;
+  const tw = window.__TAURI__?.window;
+  const gw = tw?.getCurrentWindow?.();
+  const cm = tw?.currentMonitor;
+  if(!gw || typeof cm !== 'function') return;
+  try{
+    const sf = await gw.scaleFactor();
+    const outer = await gw.outerSize();
+    const outerPos = await gw.outerPosition();
+    const logicalW = outer.width / sf;
+    const logicalH = outer.height / sf;
+    const mon = await cm();
+    const workHLogical = mon?.workArea?.size ? mon.workArea.size.height / mon.scaleFactor : null;
+    const fullHLogical = mon?.size ? mon.size.height / mon.scaleFactor : null;
+    console.info('[Shelf·창]', reason, {
+      shellState: typeof curState !== 'undefined' ? curState : '?',
+      appOuterLogical: { w: Math.round(logicalW), h: Math.round(logicalH) },
+      appOuterPhysicalPx: { w: outer.width, h: outer.height },
+      outerTopLeftPhysicalPx: { x: outerPos.x, y: outerPos.y },
+      windowScaleFactor: sf,
+      monitorName: mon?.name ?? null,
+      monitorWorkAreaLogicalHeight: workHLogical != null ? Math.round(workHLogical) : null,
+      monitorFullLogicalHeight: fullHLogical != null ? Math.round(fullHLogical) : null,
+    });
+  }catch(e){
+    console.warn('[Shelf·창] metrics 실패', reason, e);
+  }
+}
+
+function attachShelfWindowMetricsDebug(){
+  if(!SHELF_WINDOW_METRICS_DEBUG) return;
+  const gw = window.__TAURI__?.window?.getCurrentWindow?.();
+  if(!gw) return;
+  const onStopMoving = shelfDebounce(()=>logShelfWindowMetrics('창 이동 후(디바운스, 드래그 놓은 직후에 가깝게)'), 280);
+  const onStopResize = shelfDebounce(()=>logShelfWindowMetrics('창 크기 변경 후(디바운스)'), 280);
+  gw.onMoved(()=>onStopMoving()).catch(()=>{});
+  gw.onResized(()=>onStopResize()).catch(()=>{});
+  void logShelfWindowMetrics('구독 시작 직후');
+}
+// ══════════════════════════════════════════════════════
+//  Tauri IPC 브릿지
+//  - invoke를 변수가 아닌 함수로 정의해 매 호출마다 window.__TAURI__ 를 직접 참조
+//  - browser-sync 리로드 직후 브릿지가 늦게 주입돼도
+//    실제 호출 시점에 항상 최신 상태를 읽으므로 타이밍 문제 없음
+// ══════════════════════════════════════════════════════
+function invoke(cmd, args){
+  const core = window.__TAURI__?.core;
+  if(!core?.invoke){
+    dbg(`❌ TAURI 없음: ${cmd}`);
+    return Promise.resolve(null);
+  }
+  dbg(`✅ invoke: ${cmd}`);
+  // core.invoke(...)로 호출해야 this 컨텍스트 유지됨
+  // fn = core.invoke 로 추출하면 this가 끊겨 args 직렬화 오류 발생
+  return core.invoke(cmd, args);
+}
+const { getCurrentWindow, LogicalSize } = window.__TAURI__?.window || {}; // currentMonitor 는 매 호출 시 __TAURI__.window 에서 참조
+
+// ── 윈도우 크기 설정값 (논리 픽셀) ──
+const SIZES = {
+  pill:  {w:52,  h:600},
+  panel: {w:342, h:600},
+  expanded: {
+    todo:  {w:622, h:600},
+    cal:   {w:622, h:600},
+    vault: {w:622, h:600},
+  }
+};
+// 현재 탭의 expanded 크기 참조 (리사이즈 핸들이 이 객체 w/h를 갱신)
+function exSize(){ return SIZES.expanded[curTab||'todo']; }
+
+/** shell 상태별 논리 크기 — pill/panel 은 고정, expanded 만 탭별·사용자 리사이즈 반영 */
+function logicalSizeForShellState(shellState, expandedTab){
+  if(shellState==='pill') return SIZES.pill;
+  if(shellState==='panel') return SIZES.panel;
+  const t = expandedTab ?? curTab ?? 'todo';
+  return SIZES.expanded[t];
+}
+let curState='pill', curTab=null;
+
+async function resizeWindow(state, tab){
+  const app=document.getElementById('app');
+  const ep=document.getElementById('expanel');
+  const sz = logicalSizeForShellState(state, tab);
+  const h = sz.h, w = sz.w;
+  app.style.width=w+'px';
+  app.style.height=h+'px';
+  if(state==='expanded'){
+    ep.style.width=(w-62)+'px';
+    ep.style.height=h+'px';      // 명시적 height → 내부 flex 자식의 overflow-y:auto 활성화
+    ep.style.maxHeight=h+'px';
+  } else {
+    ep.style.width=''; ep.style.height=''; ep.style.maxHeight='';
+  }
+  app.classList.toggle('shell-fold', state==='pill');
+  if(getCurrentWindow) try{ await getCurrentWindow().setSize(new LogicalSize(w,h)); }catch(e){}
+  if(SHELF_WINDOW_METRICS_DEBUG) void logShelfWindowMetrics('resizeWindow('+state+')');
+}
+async function closeApp(){ try{ await getCurrentWindow().close(); }catch(e){} }
+async function minimizeApp(){ try{ await getCurrentWindow().minimize(); }catch(e){} }
+
+// ══════════════════════════════════════════════════════
+//  UI 상태 머신
+//  pill → panel(컴팩트) → expanded(확장) 3단계
+//  setState가 유일한 진입점 — 직접 클래스 조작 금지
+// ══════════════════════════════════════════════════════
+async function setState(s){
+  curState=s;
+  const cp=document.getElementById('cpanel'), ex=document.getElementById('expanel');
+  const fa=document.getElementById('fold-arrow');
+  if(s==='pill'){
+    cp.classList.remove('open'); ex.classList.remove('open');
+    ['todo','cal','vault'].forEach(k=>document.getElementById('ico-'+k).classList.remove('active'));
+    curTab=null;
+    fa.classList.remove('closed'); fa.classList.add('open');
+  } else if(s==='panel'){
+    ex.classList.remove('open'); cp.classList.add('open');
+    fa.classList.remove('open'); fa.classList.add('closed');
+    if(!curTab) openCompact('todo');
+  } else {
+    cp.classList.remove('open'); ex.classList.add('open');
+    fa.classList.remove('open'); fa.classList.add('closed');
+    const ctx=curTab||'todo';
+    showExpandSub(ctx);
+  }
+  await resizeWindow(s);
+}
+
+async function showExpandSub(ctx){
+  const prevTab=curTab;
+  curTab=ctx;
+  ['todo','cal','vault'].forEach(k=>{
+    document.getElementById('ex-sub-'+k).classList.toggle('active',k===ctx);
+    document.getElementById('ico-'+k).classList.toggle('active',k===ctx);
+  });
+  const titles={todo:'프로젝트 관리',cal:'캘린더',vault:'🔐 Vault'};
+  document.getElementById('ex-header-title').textContent=titles[ctx];
+  ['todo','cal','vault'].forEach(k=>{
+    document.getElementById('ex-stats-'+k).style.display=k===ctx?'flex':'none';
+  });
+  if(prevTab!==ctx) resizeWindow('expanded', ctx);
+
+  if(ctx==='todo'){
+    renderExProjects();
+    // 컴팩트에서 열려있던 할 일 → 해당 프로젝트 자동 선택
+    if(cpOpenTodoId){
+      const todo=todos.find(t=>t.id===cpOpenTodoId);
+      if(todo){
+        const proj=todo.project_id?projects.find(p=>p.id===todo.project_id):null;
+        if(proj) selectProject(proj.id,proj.name,proj.color);
+        else selectProject(-1,'미분류','#999');
+      }
+    }
+  }
+
+  if(ctx==='cal'){
+    // 컴팩트에서 보던 월을 확장 뷰에 동기화
+    exCalY=cpCalY; exCalM=cpCalM;
+    renderExCal();
+  }
+
+  if(ctx==='vault'){
+    await renderVaultExpand();
+    // 컴팩트 상세에서 보던 아이템이 있으면 확장 뷰에서도 바로 열기
+    if(cpVaultCurrentId) await showVaultDetail(cpVaultCurrentId);
+  }
+}
+
+// 컴팩트 패널 탭
+const CP_TITLES={todo:'📋 할 일',cal:'📅 캘린더',vault:'🔐 Vault'};
+function openCompact(id){
+  const ex=document.getElementById('expanel');
+  if(ex.classList.contains('open')){ showExpandSub(id); return; }
+  const cp=document.getElementById('cpanel');
+  if(cp.classList.contains('open')&&curTab===id){ setState('pill'); return; }
+  curTab=id;
+  ['todo','cal','vault'].forEach(k=>{
+    document.getElementById('ico-'+k).classList.toggle('active',k===id);
+    document.getElementById('cp-'+k).style.display=k===id?'block':'none';
+  });
+  document.getElementById('cp-title').textContent=CP_TITLES[id];
+  // 추가 버튼: todo만 표시
+  document.getElementById('cp-add-btn').style.display=id==='todo'?'flex':'none';
+  cp.classList.add('open');
+  if(curState==='pill'){ curState='panel'; resizeWindow('panel'); }
+  const fa=document.getElementById('fold-arrow');
+  fa.classList.remove('open'); fa.classList.add('closed');
+  if(id==='cal') renderCpCal();
+  if(id==='vault') renderVaultCompact();
+}
+
+function toggleFold(){
+  const cp=document.getElementById('cpanel'), ex=document.getElementById('expanel');
+  const isOpen=cp.classList.contains('open')||ex.classList.contains('open');
+  isOpen ? setState('pill') : setState('panel');
+}
+
+// ══════════════════════════════════════════════════════
+//  전역 데이터 스토어 (DB 미러)
+//  - Tauri 커맨드로 읽어온 데이터를 메모리에 캐싱
+//  - DB 변경 후에는 항상 로컬 배열도 동기 업데이트
+// ══════════════════════════════════════════════════════
+let todos=[], projects=[], events=[], vaultItems=[];
+// 컴팩트 뷰에서 마지막으로 열린 항목 (탭별 sync용)
+let cpOpenTodoId=null;
+
+// selectedProjId: null=프로젝트 미선택, -1=미분류(project_id=null인 태스크), 양수=프로젝트ID
+let selectedProjId=null;
+
+// 지연 삭제 패턴: UI에서 즉시 제거 → 5초 뒤 DB 삭제, 그 사이 undo 가능
+let deletedTask=null, deleteTimer=null;
+
+// 태스크 상세 모달 상태 — 저장 시 프로젝트가 실제로 변경됐는지 비교하는 데 사용
+// (currentDetailProjectId !== todo.project_id 일 때만 set_todo_project 호출)
+let currentDetailTodoId=null, currentDetailProjectId=null;
+
+// 프로젝트 생성 모달 상태
+let selectedColor='#7C3AED', selectedType='personal';
+
+// ══════════════════════════════════════════════════════
+//  초기 데이터 로드
+//  - waitAndInit에서 Tauri IPC 준비 확인 후 호출
+//  - invoke가 실제 함수로 교체된 뒤에 실행되어야 함
+// ══════════════════════════════════════════════════════
+async function init(){
+  const now=new Date();
+  document.getElementById('ex-date').textContent=
+    `${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,'0')}.${String(now.getDate()).padStart(2,'0')} ${['일','월','화','수','목','금','토'][now.getDay()]}`;
+  await Promise.all([ loadProjects(), loadTodos(), loadEvents() ]);
+  renderCpTodos();
+  renderCpStats();
+}
+
+async function loadTodos(){
+  try{ todos=await invoke('get_todos')||[]; }catch(e){ todos=[]; }
+}
+async function loadProjects(){
+  try{ projects=await invoke('get_projects')||[]; }catch(e){ projects=[]; }
+}
+async function loadEvents(){
+  try{ events=await invoke('get_events')||[]; }catch(e){ events=[]; }
+}
+
+// ── 컴팩트 할 일 렌더 ──
+const PRIO_COLORS=['#10B981','#F59E0B','#EF4444'];
+const PRIO_DOTS=['🟢','🟡','🔴'];
+
+function renderCpTodos(){
+  const today=new Date();
+  const todayStr=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+  // 표시 기준:
+  // - due_date 있음 → 해당 날짜에만 표시
+  // - due_date 없음 → created_at 기준, 만든 날 표시
+  // - 완료된 건 컴팩트에서 즉시 제거 (확장 패널에서 취소선으로 확인)
+  const todayTodos=todos.filter(t=>{
+    if(t.done) return false;
+    if(t.due_date) return t.due_date.startsWith(todayStr);
+    return t.created_at.startsWith(todayStr); // 날짜 미지정 → 만든 날
+  }).slice(0,10);
+  const list=document.getElementById('tlist');
+  if(todayTodos.length===0){
+    list.innerHTML='<div style="text-align:center;color:#bbb;font-size:11px;padding:16px 0">오늘 할 일이 없어요 🎉</div>';
+    return;
+  }
+  list.innerHTML=todayTodos.map(t=>{
+    const proj=projects.find(p=>p.id===t.project_id);
+    const color=PRIO_COLORS[t.priority]||'#F59E0B';
+    return `<div class="ti" onclick="toggleTiDetail(this)" data-id="${t.id}">
+      <div class="ti-row">
+        <div class="chk${t.done?' done':''}" onclick="cpToggleTodo(event,this,${t.id})"></div>
+        <span class="tn${t.done?' done':''}">${escHtml(t.title)}</span>
+        ${proj?`<span class="bdg" style="background:${proj.color}22;color:${proj.color}">${escHtml(proj.name)}</span>`:''}
+      </div>
+      <div class="ti-detail">
+        <div class="ti-memo">${t.note?escHtml(t.note):'메모 없음'}${t.due_date?'\n마감: '+t.due_date.replace('T',' '):''}
+</div>
+        <div class="ti-actions">
+          <button class="ti-btn ti-btn-edit" onclick="event.stopPropagation();openTaskDetailModal(${t.id})">✏️ 수정</button>
+          <button class="ti-btn ti-btn-del" onclick="cpDeleteTodo(event,${t.id},'${escHtml(t.title)}')">🗑 삭제</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderCpStats(){
+  document.getElementById('cp-proj-count').textContent=projects.filter(p=>!p.archived).length;
+  document.getElementById('cp-done-count').textContent=todos.filter(t=>t.done).length;
+  // 다음 일정
+  const now=new Date();
+  const next=events.filter(e=>new Date(e.start_at)>now).sort((a,b)=>new Date(a.start_at)-new Date(b.start_at))[0];
+  document.getElementById('cp-next-time').textContent=next?next.start_at.slice(11,16):'-';
+  document.getElementById('ex-proj-count').textContent=projects.filter(p=>!p.archived).length;
+}
+
+// 컴팩트 아코디언
+function toggleTiDetail(el){
+  const detail=el.querySelector('.ti-detail');
+  const isOpen=detail.classList.contains('open');
+  document.querySelectorAll('.ti-detail.open').forEach(d=>d.classList.remove('open'));
+  if(!isOpen){
+    detail.classList.add('open');
+    cpOpenTodoId=parseInt(el.dataset.id)||null;
+  } else {
+    cpOpenTodoId=null;
+  }
+}
+async function cpToggleTodo(e,el,id){
+  e.stopPropagation();
+  const todo=todos.find(t=>t.id===id); if(!todo) return;
+  const newDone=!todo.done;
+  try{
+    await invoke('toggle_todo',{id,done:newDone});
+    todo.done=newDone;
+    el.classList.toggle('done',newDone);
+    el.nextElementSibling.classList.toggle('done',newDone);
+    renderCpStats();
+  }catch(err){ console.error(err); }
+}
+function cpDeleteTodo(e,id,name){
+  e.stopPropagation();
+  const item=document.querySelector(`.ti[data-id="${id}"]`); if(!item) return;
+  item.style.transition='opacity .2s,transform .2s';
+  item.style.opacity='0'; item.style.transform='translateX(6px)';
+  setTimeout(()=>{
+    const todo=todos.find(t=>t.id===id); if(!todo) return;
+    // UI·로컬 상태에서만 제거 (DB 삭제는 5초 뒤)
+    deletedTask={id,name,todo:{...todo}};
+    todos=todos.filter(t=>t.id!==id);
+    item.remove();
+    renderCpStats();
+    showToast(`"${name}" 삭제됨`, {undo:true});
+  },200);
+}
+
+// ── 확장 프로젝트 렌더 ──
+function renderExProjects(){
+  const list=document.getElementById('ex-proj-list');
+  const active=projects.filter(p=>!p.archived);
+  const unassigned=todos.filter(t=>!t.project_id&&!t.done);
+  const unassignedCard=`
+    <div class="proj-card${selectedProjId===-1?' sel':''}" onclick="selectProject(-1,'미분류','#999')">
+      <div class="proj-card-bar" style="background:#ccc"></div>
+      <div class="proj-card-info">
+        <div class="proj-card-name" style="color:#888">📌 미분류</div>
+        <div class="proj-card-sub">프로젝트 없음</div>
+      </div>
+      <div class="proj-card-cnt">${unassigned.length}</div>
+    </div>`;
+  const projectCards=active.map(p=>`
+    <div class="proj-card${selectedProjId===p.id?' sel':''}" onclick="selectProject(${p.id},'${escHtml(p.name)}','${p.color}')">
+      <div class="proj-card-bar" style="background:${p.color}"></div>
+      <div class="proj-card-info">
+        <div class="proj-card-name">${escHtml(p.name)}</div>
+        <div class="proj-card-sub">${p.category==='work'?'회사':'개인'} · 진행 중</div>
+      </div>
+      <div class="proj-card-cnt">${todos.filter(t=>t.project_id===p.id&&!t.done).length}</div>
+    </div>`).join('');
+  list.innerHTML=unassignedCard+projectCards;
+}
+
+function selectProject(id,name,color){
+  selectedProjId=id;
+  renderExProjects();
+  document.getElementById('ex-proj-title').textContent='📁 '+name;
+  document.getElementById('ex-proj-title').style.color=color;
+  renderExTasks();
+}
+
+function renderExTasks(){
+  const list=document.getElementById('ex-tasklist');
+  if(selectedProjId===null){
+    list.innerHTML='<div class="loading">프로젝트를 선택하면 태스크가 표시됩니다</div>';
+    return;
+  }
+  const projTodos=selectedProjId===-1
+    ? todos.filter(t=>!t.project_id)
+    : todos.filter(t=>t.project_id===selectedProjId);
+  if(projTodos.length===0){
+    list.innerHTML='<div style="color:#bbb;font-size:11px;text-align:center;padding:16px 0">태스크가 없어요. 추가해보세요!</div>';
+    return;
+  }
+  list.innerHTML=projTodos.map(t=>`
+    <div class="task-item" onclick="openTaskDetailModal(${t.id})">
+      <div class="prio-dot" style="background:${PRIO_COLORS[t.priority]||'#F59E0B'}"></div>
+      <div class="task-chk${t.done?' done':''}" onclick="exToggleTodo(event,this,${t.id})"></div>
+      <span class="task-name${t.done?' done':''}">${escHtml(t.title)}</span>
+      ${t.due_date?`<span class="task-due">${t.due_date.slice(5,10)}</span>`:''}
+    </div>`).join('');
+  document.getElementById('ex-todo-done').textContent=projTodos.filter(t=>t.done).length;
+}
+
+async function exToggleTodo(e,el,id){
+  e.stopPropagation();
+  const todo=todos.find(t=>t.id===id); if(!todo) return;
+  const newDone=!todo.done;
+  try{
+    await invoke('toggle_todo',{id,done:newDone});
+    todo.done=newDone;
+    renderExTasks(); renderCpTodos(); renderCpStats();
+  }catch(err){}
+}
+
+// ── 캘린더 ──
+let cpCalY,cpCalM,exCalY,exCalM;
+function initCal(){ const n=new Date(); cpCalY=exCalY=n.getFullYear(); cpCalM=exCalM=n.getMonth()+1; }
+function renderCpCal(){
+  document.getElementById('cp-cal-lbl').textContent=`${cpCalY}년 ${cpCalM}월`;
+  buildCal(cpCalY,cpCalM,'cp-cal-grid',null,'cdow','cdd','cdn','pbar');
+  renderTodayEvents('cp-today-events');
+}
+function cpCalNav(d){ cpCalM+=d; if(cpCalM>12){cpCalM=1;cpCalY++} if(cpCalM<1){cpCalM=12;cpCalY--} renderCpCal(); }
+function renderExCal(){
+  document.getElementById('ex-cal-lbl').textContent=`${exCalY}년 ${exCalM}월`;
+  buildCal(exCalY,exCalM,'ex-cal-grid','ex-cal-chips','exdow','exdd','exdn','expbar');
+  renderTodayEvents('ex-today-events');
+}
+function exCalNav(d){ exCalM+=d; if(exCalM>12){exCalM=1;exCalY++} if(exCalM<1){exCalM=12;exCalY--} renderExCal(); }
+
+function buildCal(y,m,gridId,chipsId,dowCls,ddCls,dnCls,pbarCls){
+  const days=new Date(y,m,0).getDate(), dow=new Date(y,m-1,1).getDay(), today=new Date();
+  let h=['일','월','화','수','목','금','토'].map(d=>`<div class="${dowCls}">${d}</div>`).join('');
+  const prev=new Date(y,m-1,0).getDate();
+  for(let i=0;i<dow;i++) h+=`<div class="${ddCls} other"><div class="${dnCls}">${prev-(dow-1-i)}</div></div>`;
+  for(let d=1;d<=days;d++){
+    const sun=(dow+d-1)%7===0, td=today.getFullYear()===y&&today.getMonth()+1===m&&d===today.getDate();
+    const dt=new Date(y,m-1,d); let bars='';
+    projects.filter(p=>!p.archived&&p.start_date&&p.end_date).forEach(p=>{
+      const ps=new Date(p.start_date), pe=new Date(p.end_date);
+      if(ps<=dt&&dt<=pe) bars+=`<div class="${pbarCls}" style="background:${p.color}"></div>`;
+    });
+    h+=`<div class="${ddCls}${sun?' sun':''}${td?' today':''}"><div class="${dnCls}">${d}</div>${bars}</div>`;
+  }
+  document.getElementById(gridId).innerHTML=h;
+  if(chipsId) document.getElementById(chipsId).innerHTML=
+    projects.filter(p=>!p.archived).map(p=>`<div class="exchip"><div class="excdot" style="background:${p.color}"></div>${escHtml(p.name)}</div>`).join('');
+}
+
+function renderTodayEvents(containerId){
+  const today=new Date();
+  const todayStr=today.toISOString().slice(0,10);
+  const todayEvs=events.filter(e=>e.start_at&&e.start_at.startsWith(todayStr))
+    .sort((a,b)=>a.start_at.localeCompare(b.start_at));
+  const el=document.getElementById(containerId);
+  if(!el) return;
+  if(todayEvs.length===0){ el.innerHTML='<div style="color:#bbb;font-size:11px;text-align:center;padding:8px 0">일정 없음</div>'; return; }
+  el.innerHTML=todayEvs.map(e=>`
+    <div class="cp-sch-item">
+      <div class="cp-sch-dot" style="background:#7C3AED"></div>
+      <span class="cp-sch-time">${e.start_at.slice(11,16)}</span>
+      <span class="cp-sch-title">${escHtml(e.title)}</span>
+    </div>`).join('');
+}
+
+// ── Vault ──
+let vaultUnlocked=false;
+async function renderVaultCompact(){
+  try{
+    const initialized=await invoke('vault_initialized');
+    const unlocked=await invoke('is_vault_unlocked');
+    vaultUnlocked=unlocked;
+    document.getElementById('cp-vault-locked').style.display=unlocked?'none':'block';
+    document.getElementById('cp-vault-open').style.display=unlocked?'block':'none';
+    if(unlocked) await loadAndRenderVaultItems('cp-vault-list');
+  }catch(e){}
+}
+async function renderVaultExpand(){
+  try{
+    const unlocked=await invoke('is_vault_unlocked');
+    vaultUnlocked=unlocked;
+    document.getElementById('ex-vault-locked').style.display=unlocked?'none':'flex';
+    document.getElementById('ex-vault-unlocked').style.display=unlocked?'flex':'none';
+    if(unlocked) await loadAndRenderVaultItems('ex-vault-list-items');
+  }catch(e){}
+}
+async function loadAndRenderVaultItems(containerId){
+  try{
+    vaultItems=await invoke('get_vault_items')||[];
+    const el=document.getElementById(containerId);
+    if(!el) return;
+    const ICONS={mnemonic:'🔐',idpw:'🔑',memo:'📝',card:'💳'};
+    const isCompact=(containerId==='cp-vault-list');
+    el.innerHTML=vaultItems.map(v=>`
+      <div class="vitem" data-id="${v.id}" onclick="${isCompact?`cpVaultShowDetail(${v.id})`:`showVaultDetail(${v.id})`}">
+        <span style="font-size:15px">${ICONS[v.item_type]||'📄'}</span>
+        <div style="flex:1;margin-left:7px">
+          <div style="font-size:11px;font-weight:500">${escHtml(v.title)}</div>
+          <div style="font-size:9px;color:#aaa">${v.item_type}</div>
+        </div>
+        <span style="color:#ccc;font-size:11px">›</span>
+      </div>`).join('');
+    document.getElementById('ex-vault-count').textContent=vaultItems.length;
+  }catch(e){}
+}
+
+// ── Vault 삭제 ──
+let cpVaultCurrentId=null;
+async function deleteVaultItem(id){
+  // 확장 뷰용: undo 토스트
+  const item=vaultItems.find(v=>v.id===id); if(!item) return;
+  try{
+    await invoke('delete_vault_item',{id});
+    document.getElementById('ex-vault-detail').innerHTML='<div style="color:#bbb;font-size:12px;text-align:center;padding-top:40px">항목을 선택하세요</div>';
+    vdData=null;
+    await loadAndRenderVaultItems('cp-vault-list');
+    await loadAndRenderVaultItems('ex-vault-list-items');
+    showToast(`"${item.title}" 삭제됨`);
+  }catch(e){ alert('삭제 실패: '+e); }
+}
+async function cpVaultDelete(){
+  if(!cpVaultCurrentId) return;
+  const item=vaultItems.find(v=>v.id===cpVaultCurrentId); if(!item) return;
+  const btn=document.getElementById('cp-vault-delete-btn');
+  btn.disabled=true;
+  try{
+    await invoke('delete_vault_item',{id:cpVaultCurrentId});
+    cpVaultBack();
+    await loadAndRenderVaultItems('cp-vault-list');
+    await loadAndRenderVaultItems('ex-vault-list-items');
+    showToast(`"${item.title}" 삭제됨`);
+  }catch(e){ alert('삭제 실패: '+e); }finally{ btn.disabled=false; }
+}
+
+// ── 컴팩트 Vault 상세 ──
+let cpVaultData=null;
+let cpVaultType='';
+async function cpVaultShowDetail(id){
+  const item=vaultItems.find(v=>v.id===id); if(!item) return;
+  try{
+    const raw=await invoke('get_vault_content',{id});
+    let data; try{data=JSON.parse(raw);}catch(_){data={content:raw};}
+    cpVaultData=data; cpVaultType=item.item_type; cpVaultCurrentId=id;
+    const LABELS={mnemonic:'니모닉',idpw:'ID/PW',card:'카드',memo:'메모'};
+    document.getElementById('cp-vault-detail-title').textContent=item.title;
+    document.getElementById('cp-vault-detail-type').textContent=LABELS[item.item_type]||item.item_type;
+    const DEFS={
+      idpw:[['아이디','username',false],['비밀번호','password',true],['메모','memo',false]],
+      mnemonic:[['니모닉 구문','phrase',true],['메모','memo',false]],
+      card:[['카드 번호','number',true],['유효기간','expiry',false],['CVV','cvv',true],['카드 명의','holder',false]],
+      memo:[['내용','content',false]],
+    };
+    const defs=(DEFS[item.item_type]||[['내용','content',false]]).filter(([,k])=>data[k]);
+    document.getElementById('cp-vault-detail-fields').innerHTML=defs.map(([label,key,sens],i)=>`
+      <div class="cpvdf">
+        <div class="cpvdf-label">${label}</div>
+        <div class="cpvdf-val" id="cpvdf-${i}" data-shown="${sens?'0':'1'}" style="${sens?'filter:blur(4px)':''}" onclick="${sens?`cpvdfToggle(${i},'${key}')`:''}">${escHtml(data[key]||'')}</div>
+        <div class="cpvdf-actions">
+          ${sens?`<span class="cpvdf-hint" id="cpvdf-hint-${i}">탭해서 보기</span>`:'<span></span>'}
+          <button class="cpvdf-copy" onclick="cpvdfCopy('${key}')">복사</button>
+        </div>
+      </div>`).join('');
+    document.getElementById('cp-vault-list-view').style.display='none';
+    document.getElementById('cp-vault-detail-view').style.display='block';
+  }catch(e){}
+}
+function cpvdfToggle(i,key){
+  const el=document.getElementById('cpvdf-'+i); if(!el||!cpVaultData) return;
+  const hint=document.getElementById('cpvdf-hint-'+i);
+  const shown=el.dataset.shown==='1';
+  el.style.filter=shown?'blur(4px)':'none';
+  el.dataset.shown=shown?'0':'1';
+  if(hint) hint.textContent=shown?'탭해서 보기':'';
+}
+function cpvdfCopy(key){
+  if(!cpVaultData) return;
+  copyVaultContent(cpVaultData[key]||'');
+}
+function cpVaultBack(){
+  document.getElementById('cp-vault-detail-view').style.display='none';
+  document.getElementById('cp-vault-list-view').style.display='';
+  cpVaultData=null; cpVaultType=''; cpVaultCurrentId=null;
+}
+function cpVaultCopy(){
+  if(!cpVaultData) return;
+  copyVaultContent(formatVaultForCopy(cpVaultType,cpVaultData));
+}
+async function unlockVault(){
+  const pw=document.getElementById('cp-vault-pw').value;
+  const btn=document.querySelector('#cp-vault-locked .vbtn.vp');
+  btn.textContent='잠금 해제 중...'; btn.disabled=true;
+  try{
+    await invoke('unlock_vault',{password:pw});
+    await renderVaultCompact();
+  }catch(e){
+    alert('비밀번호가 틀렸습니다');
+  }finally{
+    btn.textContent='잠금 해제'; btn.disabled=false;
+  }
+}
+async function unlockVaultBiometric(){
+  // password를 null로 보내야 Rust에서 Touch ID 경로로 진입
+  try{ await invoke('unlock_vault',{password:null}); await renderVaultCompact(); }
+  catch(e){ alert('Touch ID 인증 실패'); }
+}
+async function unlockVaultEx(){
+  const pw=document.getElementById('ex-vault-pw').value;
+  const btn=document.querySelector('#ex-vault-locked .vbtn.vp');
+  btn.textContent='잠금 해제 중...'; btn.disabled=true;
+  try{
+    await invoke('unlock_vault',{password:pw});
+    await renderVaultExpand();
+  }catch(e){
+    alert('비밀번호가 틀렸습니다');
+  }finally{
+    btn.textContent='잠금 해제'; btn.disabled=false;
+  }
+}
+async function unlockVaultBiometricEx(){
+  try{ await invoke('unlock_vault',{password:null}); await renderVaultExpand(); }
+  catch(e){ alert('Touch ID 인증 실패'); }
+}
+async function lockVault(){
+  try{ await invoke('lock_vault'); vaultUnlocked=false; await renderVaultCompact(); }catch(e){}
+}
+// expanded detail state
+let vdData=null;
+
+async function showVaultDetail(id){
+  const item=vaultItems.find(v=>v.id===id); if(!item) return;
+  // 사이드 리스트 하이라이트
+  document.querySelectorAll('#ex-vault-list-items .vitem').forEach(el=>{
+    el.classList.toggle('sel', parseInt(el.dataset.id)===id);
+  });
+  try{
+    const raw=await invoke('get_vault_content',{id});
+    let data; try{data=JSON.parse(raw);}catch(_){data={content:raw};}
+    vdData=data;
+    const type=item.item_type;
+    const COLORS={mnemonic:'#F3F0FF:#7C3AED',idpw:'#EFF6FF:#2563EB',memo:'#F0FDF4:#16A34A',card:'#FFF7ED:#EA580C'};
+    const TYPE_LABELS={mnemonic:'🔐 니모닉',idpw:'🔑 ID/PW',memo:'📝 메모',card:'💳 카드'};
+    const [bg,fg]=(COLORS[type]||'#F5F5F5:#666').split(':');
+    // field defs: [label, key, sensitive]
+    const DEFS={
+      idpw:[['아이디','username',false],['비밀번호','password',true],['메모','memo',false]],
+      mnemonic:[['니모닉 구문','phrase',true],['메모','memo',false]],
+      card:[['카드 번호','number',true],['유효기간','expiry',false],['CVV','cvv',true],['카드 명의','holder',false]],
+      memo:[['내용','content',false]],
+    };
+    const defs=DEFS[type]||[['내용','content',false]];
+    const fieldsHtml=defs.filter(([,k])=>data[k]).map(([label,key,sens],i)=>`
+      <div class="vd-field">
+        <div class="vd-label">${label}</div>
+        <div class="vd-val">
+          <span class="${sens?'vd-masked':'vd-val-text'}" id="vdf-exp-${i}" data-shown="${sens?'0':'1'}">${sens?'••••••••••••':escHtml(data[key]||'')}</span>
+          ${sens?`<button class="vd-toggle" onclick="vdToggleField(${i},'${key}')">보기</button>`:''}
+          <button class="vd-copy-field" onclick="vdCopyField('${key}')">복사</button>
+        </div>
+      </div>`).join('');
+    document.getElementById('ex-vault-detail').innerHTML=`
+      <div class="vd-type-badge" style="background:${bg};color:${fg}">${TYPE_LABELS[type]||type}</div>
+      <div style="font-size:13px;font-weight:600;margin-bottom:12px">${escHtml(item.title)}</div>
+      ${fieldsHtml}
+      <button class="vd-copy" onclick="copyVaultContent(formatVaultForCopy('${type}',vdData))">📋 전체 복사 (30초 후 자동 삭제)</button>
+      <button class="vd-delete" onclick="deleteVaultItem(${id})">🗑 삭제</button>`;
+  }catch(e){}
+}
+function vdToggleField(i,key){
+  const el=document.getElementById('vdf-exp-'+i); if(!el||!vdData) return;
+  const shown=el.dataset.shown==='1';
+  el.textContent=shown?'••••••••••••':escHtml(vdData[key]||'');
+  el.dataset.shown=shown?'0':'1';
+  el.closest('.vd-val').querySelector('.vd-toggle').textContent=shown?'보기':'숨김';
+}
+function vdCopyField(key){
+  if(!vdData) return;
+  copyVaultContent(vdData[key]||'');
+}
+function copyVaultContent(content){
+  navigator.clipboard.writeText(content).then(()=>{
+    showToast('클립보드에 복사됨');
+    setTimeout(()=>navigator.clipboard.writeText(''),30000);
+  });
+}
+
+// ── Vault 추가 모달 ──
+let currentVaultType='idpw';
+
+function openVaultAddModal(){
+  currentVaultType='idpw';
+  document.getElementById('vault-title').value='';
+  selectVaultType('idpw');
+  document.getElementById('modal-vault').classList.add('show');
+  setTimeout(()=>document.getElementById('vault-title').focus(),100);
+}
+
+function selectVaultType(type){
+  currentVaultType=type;
+  document.querySelectorAll('#vault-type-toggle .type-btn').forEach(b=>{
+    b.classList.toggle('sel', b.dataset.type===type);
+  });
+  const f=document.getElementById('vault-fields');
+  const inp=(id,label,ph,opts='')=>`<div class="modal-field"><div class="modal-label">${label}</div><input class="modal-input" id="${id}" placeholder="${ph}" autocapitalize="none" autocorrect="off" spellcheck="false" ${opts}></div>`;
+  const ta=(id,label,ph,rows=3)=>`<div class="modal-field"><div class="modal-label">${label}</div><textarea class="modal-input" id="${id}" rows="${rows}" placeholder="${ph}" autocapitalize="none" autocorrect="off" spellcheck="false" style="resize:none;line-height:1.6"></textarea></div>`;
+  const opt=(id,label,ph)=>inp(id,`${label} <span style="color:#bbb;font-weight:400">(선택)</span>`,ph);
+  if(type==='idpw'){
+    f.innerHTML=
+      inp('vf-username','아이디 / 이메일','username@example.com')+
+      `<div class="modal-field"><div class="modal-label">비밀번호</div><div class="vf-pw-wrap"><input class="modal-input" id="vf-password" type="password" placeholder="비밀번호..." autocapitalize="none" autocorrect="off" spellcheck="false"><button type="button" class="vf-pw-toggle" onclick="toggleVfPw('vf-password',this)">보기</button></div></div>`+
+      opt('vf-memo','메모','추가 메모...');
+  } else if(type==='mnemonic'){
+    f.innerHTML=
+      ta('vf-phrase','니모닉 구문 (시드)','단어1 단어2 단어3 단어4 ...',3)+
+      opt('vf-memo','메모','예: 메인 ETH 지갑');
+  } else if(type==='card'){
+    f.innerHTML=
+      inp('vf-number','카드 번호','1234-5678-9012-3456','inputmode="numeric"')+
+      `<div class="vf-row"><div class="modal-field" style="flex:1"><div class="modal-label">유효기간</div><input class="modal-input" id="vf-expiry" placeholder="MM/YY" autocapitalize="none" autocorrect="off" spellcheck="false" inputmode="numeric"></div><div class="modal-field" style="flex:1"><div class="modal-label">CVV</div><div class="vf-pw-wrap"><input class="modal-input" id="vf-cvv" type="password" placeholder="123" autocapitalize="none" autocorrect="off" spellcheck="false" inputmode="numeric"><button type="button" class="vf-pw-toggle" onclick="toggleVfPw('vf-cvv',this)">보기</button></div></div></div>`+
+      opt('vf-holder','카드 명의','홍 길동');
+  } else {
+    f.innerHTML=ta('vf-content','내용','자유롭게 입력하세요...',4);
+  }
+}
+
+function toggleVfPw(inputId,btn){
+  const inp=document.getElementById(inputId);
+  if(inp.type==='password'){inp.type='text';btn.textContent='숨김';}
+  else{inp.type='password';btn.textContent='보기';}
+}
+
+function collectVaultData(type){
+  const g=id=>{const el=document.getElementById(id);return el?el.value.trim():''};
+  if(type==='idpw') return{username:g('vf-username'),password:g('vf-password'),memo:g('vf-memo')};
+  if(type==='mnemonic') return{phrase:g('vf-phrase'),memo:g('vf-memo')};
+  if(type==='card') return{number:g('vf-number'),expiry:g('vf-expiry'),cvv:g('vf-cvv'),holder:g('vf-holder')};
+  return{content:g('vf-content')};
+}
+
+function validateVaultData(type,data){
+  if(type==='idpw') return !!(data.username||data.password);
+  if(type==='mnemonic') return !!data.phrase;
+  if(type==='card') return !!data.number;
+  return !!data.content;
+}
+
+function formatVaultForCopy(type,data){
+  if(type==='idpw') return `ID: ${data.username||''}\nPW: ${data.password||''}${data.memo?'\nMemo: '+data.memo:''}`;
+  if(type==='mnemonic') return data.phrase||'';
+  if(type==='card') return `Card: ${data.number||''}\nExpiry: ${data.expiry||''}\nCVV: ${data.cvv||''}${data.holder?'\nHolder: '+data.holder:''}`;
+  return data.content||'';
+}
+
+async function submitVaultItem(){
+  const title=document.getElementById('vault-title').value.trim();
+  if(!title){ document.getElementById('vault-title').focus(); return; }
+  const data=collectVaultData(currentVaultType);
+  if(!validateVaultData(currentVaultType,data)){ showToast('필수 항목을 입력해주세요'); return; }
+  const content=JSON.stringify(data);
+  const btn=document.getElementById('vault-submit-btn');
+  btn.textContent='저장 중...'; btn.disabled=true;
+  try{
+    await invoke('create_vault_item',{title,content,item_type:currentVaultType});
+    closeModal('vault');
+    await loadAndRenderVaultItems('cp-vault-list');
+    await loadAndRenderVaultItems('ex-vault-list-items');
+    showToast('보안 항목이 저장됐어요');
+  }catch(e){
+    alert('저장 실패: '+e);
+  }finally{
+    btn.textContent='저장'; btn.disabled=false;
+  }
+}
+
+// ── 태스크 모달 ──
+function openTaskModal(ctx){
+  // 프로젝트 칩 렌더
+  const chips=document.getElementById('task-proj-chips');
+  chips.innerHTML=projects.filter(p=>!p.archived).map((p,i)=>`
+    <div class="proj-chip${(ctx==='current'&&p.id===selectedProjId)||(!selectedProjId&&i===0)?' sel':''}"
+         data-proj-id="${p.id}" onclick="selTaskProj(this)" style="color:${p.color}">
+      <div class="proj-chip-dot" style="background:${p.color}"></div>${escHtml(p.name)}
+    </div>`).join('')+
+    `<div class="proj-chip proj-chip-new" onclick="switchToProjectModal()">＋ 새 프로젝트</div>`;
+  document.getElementById('task-title-input').value='';
+  document.getElementById('task-date-text').textContent='날짜 선택';
+  document.getElementById('task-date-text').style.color='#bbb';
+  document.getElementById('task-time-text').textContent='시간 선택';
+  document.getElementById('task-time-text').style.color='#bbb';
+  dpState['task-dp']={...dpStateInit()};
+  tpState['task-tp']={h:null,m:null};
+  // 우선순위 초기화
+  document.querySelectorAll('#modal-task .prio-btn').forEach((b,i)=>{
+    const on=i===0;
+    b.classList.toggle('sel',on);
+    b.style.background=on?'#FFF5F5':'#fafafa';
+    b.style.borderColor=on?'#EF4444':'#eee';
+  });
+  document.getElementById('modal-task').classList.add('show');
+  setTimeout(()=>document.getElementById('task-title-input').focus(),50);
+}
+function openTaskDetailModal(id){
+  const todo=todos.find(t=>t.id===id); if(!todo) return;
+  currentDetailTodoId=id;
+  currentDetailProjectId = todo.project_id ?? null;
+  document.getElementById('detail-title').textContent=todo.title;
+  // 프로젝트 칩 렌더
+  const dChips=document.getElementById('detail-proj-chips');
+  dChips.innerHTML=
+    `<div class="proj-chip${!todo.project_id?' sel':''}" data-proj-id="" onclick="selDetailProj(this)" style="color:#888;border-color:${!todo.project_id?'#888':'transparent'}">미분류</div>`+
+    projects.filter(p=>!p.archived).map(p=>
+      `<div class="proj-chip${todo.project_id===p.id?' sel':''}" data-proj-id="${p.id}" onclick="selDetailProj(this)" style="color:${p.color};border-color:${todo.project_id===p.id?p.color:'transparent'}">
+        <div class="proj-chip-dot" style="background:${p.color}"></div>${escHtml(p.name)}
+      </div>`
+    ).join('');
+  document.getElementById('detail-memo').value=todo.note||'';
+  // 시간 피커 초기화
+  if(todo.due_date&&todo.due_date.length>10){
+    const tp=todo.due_date.slice(11,16).split(':');
+    tpState['detail-tp']={h:parseInt(tp[0]),m:parseInt(tp[1])};
+    document.getElementById('detail-time-text').textContent=todo.due_date.slice(11,16);
+    document.getElementById('detail-time-text').style.color='#333';
+  } else {
+    tpState['detail-tp']={h:null,m:null};
+    document.getElementById('detail-time-text').textContent='시간 선택';
+    document.getElementById('detail-time-text').style.color='#bbb';
+  }
+  if(todo.due_date){
+    document.getElementById('detail-date-text').textContent=todo.due_date.slice(0,10).replace(/-/g,'.');
+    document.getElementById('detail-date-text').style.color='#333';
+  } else {
+    document.getElementById('detail-date-text').textContent='날짜 선택';
+    document.getElementById('detail-date-text').style.color='#bbb';
+  }
+  // 우선순위
+  document.querySelectorAll('#modal-task-detail .prio-btn').forEach(b=>{
+    const on=parseInt(b.dataset.prio)===todo.priority;
+    b.classList.toggle('sel',on);
+    const colors={2:'#EF4444',1:'#F59E0B',0:'#10B981'};
+    const bgs={2:'#FFF5F5',1:'#FFFBEB',0:'#F0FDF4'};
+    b.style.background=on?bgs[b.dataset.prio]:'#fafafa';
+    b.style.borderColor=on?colors[b.dataset.prio]:'#eee';
+  });
+  document.getElementById('modal-task-detail').classList.add('show');
+}
+async function saveTaskDetail(){
+  if(!currentDetailTodoId) return;
+  const todo=todos.find(t=>t.id===currentDetailTodoId); if(!todo) return;
+  const note=document.getElementById('detail-memo').value;
+  const time=getTimeValue('detail-tp');
+  const dateText=document.getElementById('detail-date-text').textContent;
+  let due_date=null;
+  if(dateText!=='날짜 선택'){ due_date=dateText.replace(/\./g,'-')+(time?'T'+time:'T00:00'); }
+  const prio=document.querySelector('#modal-task-detail .prio-btn.sel');
+  const priority=prio?parseInt(prio.dataset.prio):1;
+  try{
+    await invoke('update_todo',{id:currentDetailTodoId,title:todo.title,note,due_date,category:todo.category||'작업',priority});
+    todo.note=note; todo.due_date=due_date; todo.priority=priority;
+    if(currentDetailProjectId !== todo.project_id){
+      // 0 = 미부여(NULL), 양수 = 프로젝트 ID
+      await invoke('set_todo_project',{id:currentDetailTodoId,project_id:currentDetailProjectId??0});
+      todo.project_id=currentDetailProjectId;
+    }
+    renderExTasks(); renderCpTodos();
+  }catch(e){ console.error(e); }
+  closeModal('task-detail');
+}
+async function deleteFromDetail(){
+  if(!currentDetailTodoId) return;
+  const todo=todos.find(t=>t.id===currentDetailTodoId); if(!todo) return;
+  try{
+    await invoke('delete_todo',{id:currentDetailTodoId});
+    todos=todos.filter(t=>t.id!==currentDetailTodoId);
+    renderExTasks(); renderCpTodos(); renderCpStats();
+    showToast(`"${todo.title}" 삭제됨`, {undo:true});
+  }catch(e){}
+  closeModal('task-detail');
+}
+async function submitTask(){
+  const title=document.getElementById('task-title-input').value.trim();
+  if(!title) return;
+  const projChip=document.querySelector('#task-proj-chips .proj-chip.sel:not(.proj-chip-new)');
+  const project_id=projChip?parseInt(projChip.dataset.projId):0; // 0 = 미부여
+  const prio=document.querySelector('#modal-task .prio-btn.sel');
+  const priority=prio?parseInt(prio.dataset.prio):1;
+  const time=getTimeValue('task-tp');
+  const dateText=document.getElementById('task-date-text').textContent;
+  let due_date=null;
+  if(dateText!=='날짜 선택'){ due_date=dateText.replace(/\./g,'-')+(time?'T'+time:'T00:00'); }
+  try{
+    const id=await invoke('create_todo',{title,note:'',due_date,recurrence:'none',category:'작업',priority,project_id});
+    // 로컬 상태에는 null/숫자로 저장 (0 = 미부여)
+    const localProjId = project_id > 0 ? project_id : null;
+    todos.push({id,title,note:'',done:false,due_date,recurrence:'none',recurrence_next:null,project_id:localProjId,category:'작업',priority,created_at:new Date().toISOString(),completed_at:null});
+    renderCpTodos(); renderExTasks(); renderCpStats();
+    renderExProjects();
+  }catch(e){ console.error(e); }
+  closeModal('task');
+}
+function selTaskProj(el){
+  document.querySelectorAll('#task-proj-chips .proj-chip').forEach(c=>c.classList.remove('sel'));
+  el.classList.add('sel');
+}
+function selPrio(el){
+  const colors={2:'#EF4444',1:'#F59E0B',0:'#10B981'};
+  const bgs={2:'#FFF5F5',1:'#FFFBEB',0:'#F0FDF4'};
+  const container=el.closest('.prio-btns');
+  container.querySelectorAll('.prio-btn').forEach(b=>{
+    const on=b===el;
+    b.classList.toggle('sel',on);
+    b.style.background=on?bgs[b.dataset.prio]:'#fafafa';
+    b.style.borderColor=on?colors[b.dataset.prio]:'#eee';
+  });
+}
+function selDetailPrio(el){ selPrio(el); }
+function selDetailProj(el){
+  document.querySelectorAll('#detail-proj-chips .proj-chip').forEach(c=>{
+    c.classList.remove('sel');
+    c.style.borderColor='transparent';
+  });
+  el.classList.add('sel');
+  el.style.borderColor=el.style.color||'#888';
+  currentDetailProjectId=el.dataset.projId?parseInt(el.dataset.projId):null;
+}
+function switchToProjectModal(){ closeModal('task'); openProjectModal(); }
+function closeModal(type){ document.getElementById('modal-'+type).classList.remove('show'); }
+
+// ── 프로젝트 모달 ──
+function openProjectModal(){
+  document.getElementById('proj-name-input').value='';
+  selectedColor='#7C3AED'; selectedType='personal';
+  document.querySelectorAll('.swatch').forEach((s,i)=>s.classList.toggle('sel',i===0));
+  document.getElementById('type-personal').classList.add('sel');
+  document.getElementById('type-work').classList.remove('sel');
+  document.getElementById('proj-start-text').textContent='시작일';
+  document.getElementById('proj-start-text').style.color='#bbb';
+  document.getElementById('proj-end-text').textContent='종료일';
+  document.getElementById('proj-end-text').style.color='#bbb';
+  dpState['proj-start-dp']={...dpStateInit()};
+  dpState['proj-end-dp']={...dpStateInit()};
+  document.getElementById('modal-project').classList.add('show');
+  setTimeout(()=>document.getElementById('proj-name-input').focus(),50);
+}
+async function submitProject(){
+  const name=document.getElementById('proj-name-input').value.trim();
+  if(!name) return;
+  const startText=document.getElementById('proj-start-text').textContent;
+  const endText=document.getElementById('proj-end-text').textContent;
+  const start_date=startText==='시작일'?null:startText.replace(/\./g,'-');
+  const end_date=endText==='종료일'?null:endText.replace(/\./g,'-');
+  try{
+    const id=await invoke('create_project',{name,color:selectedColor,category:selectedType,start_date,end_date});
+    projects.push({id,name,color:selectedColor,category:selectedType,archived:false,start_date,end_date,created_at:new Date().toISOString()});
+    renderExProjects(); renderCpStats();
+  }catch(e){ console.error(e); }
+  closeModal('project');
+}
+function selColor(el){
+  document.querySelectorAll('.swatch').forEach(s=>s.classList.remove('sel'));
+  el.classList.add('sel');
+  selectedColor=el.style.background;
+}
+function selType(t){
+  selectedType=t;
+  document.getElementById('type-personal').classList.toggle('sel',t==='personal');
+  document.getElementById('type-work').classList.toggle('sel',t==='work');
+}
+
+// ── 커스텀 날짜 피커 ──
+const dpState={};
+function dpStateInit(){ const n=new Date(); return {y:n.getFullYear(),m:n.getMonth()+1,sel:null}; }
+const DP_TEXT_MAP={'task-dp':'task-date-text','detail-dp':'detail-date-text','proj-start-dp':'proj-start-text','proj-end-dp':'proj-end-text'};
+const DP_TRIGGER_MAP={'task-dp':'task-dp-trigger','detail-dp':'detail-dp-trigger','proj-start-dp':'proj-start-dp-trigger','proj-end-dp':'proj-end-dp-trigger'};
+function closeAllPickers(exceptId){
+  document.querySelectorAll('.date-picker-pop.open,.time-picker-pop.open').forEach(p=>{if(p.id!==exceptId)p.classList.remove('open');});
+}
+function positionPop(pop, triggerId){
+  const trigger=document.getElementById(triggerId);
+  if(!trigger) return;
+  const rect=trigger.getBoundingClientRect();
+  pop.style.top=(rect.bottom+4)+'px';
+  pop.style.left=rect.left+'px';
+  // 화면 넘침 방지
+  const pw=parseInt(pop.style.width||pop.offsetWidth||220);
+  if(rect.left+pw>window.innerWidth) pop.style.left=(window.innerWidth-pw-8)+'px';
+}
+function toggleDatePicker(id){
+  if(!dpState[id]) dpState[id]=dpStateInit();
+  closeAllPickers(id);
+  const pop=document.getElementById(id);
+  if(!pop.classList.contains('open')){
+    renderDp(id);
+    positionPop(pop, DP_TRIGGER_MAP[id]||id.replace('-dp','-dp-trigger'));
+    pop.classList.add('open');
+  } else pop.classList.remove('open');
+}
+
+// ── 커스텀 시간 피커 ──
+const tpState={};
+const TP_TEXT_MAP={'task-tp':'task-time-text','detail-tp':'detail-time-text'};
+function renderTp(id){
+  if(!tpState[id]) tpState[id]={h:null,m:null};
+  const s=tpState[id];
+  const pop=document.getElementById(id);
+  const hours=Array.from({length:24},(_,i)=>i);
+  const mins=[0,5,10,15,20,25,30,35,40,45,50,55];
+  pop.innerHTML=`
+    <div class="tp-col">
+      <div class="tp-col-lbl">시</div>
+      ${hours.map(h=>`<div class="tp-item${s.h===h?' sel':''}" onclick="selectHour('${id}',${h})">${String(h).padStart(2,'0')}</div>`).join('')}
+    </div>
+    <div class="tp-col">
+      <div class="tp-col-lbl">분</div>
+      ${mins.map(m=>`<div class="tp-item${s.m===m?' sel':''}" onclick="selectMinute('${id}',${m})">${String(m).padStart(2,'0')}</div>`).join('')}
+    </div>`;
+  // 선택된 항목으로 스크롤
+  setTimeout(()=>{
+    const cols=pop.querySelectorAll('.tp-col');
+    cols.forEach(col=>{const sel=col.querySelector('.sel');if(sel)sel.scrollIntoView({block:'center',behavior:'smooth'});});
+  },50);
+}
+function toggleTimePicker(id){
+  closeAllPickers(id);
+  const pop=document.getElementById(id);
+  if(!pop.classList.contains('open')){
+    renderTp(id);
+    positionPop(pop, id+'-trigger');
+    pop.classList.add('open');
+  } else pop.classList.remove('open');
+}
+function selectHour(id,h){
+  if(!tpState[id]) tpState[id]={h:null,m:null};
+  tpState[id].h=h;
+  renderTp(id);
+  updateTimeDisplay(id);
+}
+function selectMinute(id,m){
+  if(!tpState[id]) tpState[id]={h:null,m:null};
+  tpState[id].m=m;
+  renderTp(id);
+  updateTimeDisplay(id);
+  // 시간도 선택됐으면 닫기
+  if(tpState[id].h!==null) setTimeout(()=>document.getElementById(id)?.classList.remove('open'),150);
+}
+function updateTimeDisplay(id){
+  const s=tpState[id]; if(!s) return;
+  const textEl=document.getElementById(TP_TEXT_MAP[id]); if(!textEl) return;
+  if(s.h!==null&&s.m!==null){
+    textEl.textContent=`${String(s.h).padStart(2,'0')}:${String(s.m).padStart(2,'0')}`;
+    textEl.style.color='#333';
+  } else if(s.h!==null){
+    textEl.textContent=`${String(s.h).padStart(2,'0')}:--`;
+    textEl.style.color='#888';
+  }
+}
+function getTimeValue(tpId){
+  const s=tpState[tpId];
+  if(s&&s.h!==null&&s.m!==null) return `${String(s.h).padStart(2,'0')}:${String(s.m).padStart(2,'0')}`;
+  return null;
+}
+function dpNav(id,dir){
+  if(!dpState[id]) dpState[id]=dpStateInit();
+  dpState[id].m+=dir;
+  if(dpState[id].m>12){dpState[id].m=1;dpState[id].y++;}
+  if(dpState[id].m<1){dpState[id].m=12;dpState[id].y--;}
+  renderDp(id);
+}
+function renderDp(id){
+  const s=dpState[id]; const lbl=document.getElementById(id+'-lbl'); const grid=document.getElementById(id+'-grid');
+  if(lbl) lbl.textContent=`${s.y}년 ${s.m}월`;
+  const days=new Date(s.y,s.m,0).getDate(), dow=new Date(s.y,s.m-1,1).getDay(), today=new Date();
+  let h=['일','월','화','수','목','금','토'].map(d=>`<div class="dp-dow">${d}</div>`).join('');
+  const prev=new Date(s.y,s.m-1,0).getDate();
+  for(let i=0;i<dow;i++) h+=`<div class="dp-day other">${prev-(dow-1-i)}</div>`;
+  for(let d=1;d<=days;d++){
+    const isT=today.getFullYear()===s.y&&today.getMonth()+1===s.m&&d===today.getDate();
+    const sun=(dow+d-1)%7===0;
+    h+=`<div class="dp-day${isT?' today':''}${s.sel===d?' sel':''}${sun?' sun':''}" onclick="selectDay('${id}',${d})">${d}</div>`;
+  }
+  if(grid) grid.innerHTML=h;
+}
+function selectDay(id,d){
+  if(!dpState[id]) dpState[id]=dpStateInit();
+  dpState[id].sel=d;
+  const {y,m}=dpState[id];
+  const str=`${y}.${String(m).padStart(2,'0')}.${String(d).padStart(2,'0')}`;
+  const textEl=document.getElementById(DP_TEXT_MAP[id]);
+  if(textEl){textEl.textContent=str;textEl.style.color='#333';}
+  renderDp(id);
+  setTimeout(()=>document.getElementById(id)?.classList.remove('open'),150);
+}
+document.addEventListener('click',e=>{
+  if(!e.target.closest('.date-picker-wrap'))
+    document.querySelectorAll('.date-picker-pop.open,.time-picker-pop.open').forEach(p=>p.classList.remove('open'));
+});
+
+// ── 토스트 ──
+function showToast(msg, {undo=false}={}){
+  if(deleteTimer) clearTimeout(deleteTimer);
+  const t=document.getElementById('del-toast');
+  document.getElementById('del-toast-msg').textContent=msg;
+  document.querySelector('.del-toast-undo').style.display=undo?'':'none';
+  // 현재 열린 패널 바로 아래에 토스트 위치
+  const ex=document.getElementById('expanel'), cp=document.getElementById('cpanel');
+  const panel=ex.classList.contains('open')?ex:cp;
+  const r=panel.getBoundingClientRect();
+  t.style.top=(r.bottom+8)+'px';
+  t.style.left=(r.left+r.width/2)+'px';
+  t.classList.add('show');
+  deleteTimer=setTimeout(async()=>{
+    t.classList.remove('show');
+    if(deletedTask){
+      try{ await invoke('delete_todo',{id:deletedTask.id}); }catch(e){}
+      deletedTask=null;
+    }
+  },5000);
+}
+function undoDelete(){
+  if(!deletedTask) return;
+  clearTimeout(deleteTimer);
+  document.getElementById('del-toast').classList.remove('show');
+  // 로컬 상태 복원
+  todos.push(deletedTask.todo);
+  deletedTask=null;
+  renderCpTodos();
+  renderCpStats();
+}
+
+// ══════════════════════════════════════════════════════
+//  확장 패널 리사이즈 핸들
+// ══════════════════════════════════════════════════════
+(function(){
+  const PILL_W=62, MAX_W=1400, MAX_H=1000;
+  let dragging=false, startX=0, startY=0, startW=0, startH=0;
+
+  document.getElementById('resize-handle').addEventListener('mousedown', e=>{
+    e.preventDefault();
+    const ep=document.getElementById('expanel');
+    const epRect=ep.getBoundingClientRect();
+    // ep에만 현재 높이 명시 고정 → app/window 높이는 건드리지 않음 (뷰 이동 방지)
+    const epH=Math.round(epRect.height);
+    const epW=Math.round(epRect.width);
+    ep.style.height=epH+'px';
+    ep.style.maxHeight=epH+'px';
+    startX=e.screenX; startY=e.screenY;
+    startW=epW+PILL_W;  // 창 폭 기준
+    startH=epH;         // ep 높이 기준 (app 높이 아님)
+    dragging=true;
+    ep.style.transition='none';
+    document.body.style.cursor='nwse-resize';
+    document.body.style.userSelect='none';
+  });
+
+  document.addEventListener('mousemove', e=>{
+    if(!dragging) return;
+    const dw=e.screenX-startX, dh=e.screenY-startY;
+    startX=e.screenX; startY=e.screenY;
+    // ep 크기 계산
+    const newEpW=Math.min(MAX_W-PILL_W, Math.max(100, startW-PILL_W+dw));
+    const newEpH=Math.min(MAX_H-20, Math.max(60, startH+dh));
+    startW=newEpW+PILL_W; startH=newEpH;
+    // 창 크기: 폭은 ep+pill, 높이는 ep가 현재 창보다 클 때만 확장
+    const newWinW=Math.round(newEpW)+PILL_W;
+    const newWinH=Math.max(exSize().h, Math.round(newEpH)+20);
+    exSize().w=newWinW; exSize().h=newWinH;
+    const ep=document.getElementById('expanel');
+    const app=document.getElementById('app');
+    app.style.width=newWinW+'px';
+    app.style.height=newWinH+'px';
+    ep.style.width=Math.round(newEpW)+'px';
+    ep.style.height=Math.round(newEpH)+'px';
+    ep.style.maxHeight=Math.round(newEpH)+'px';
+    if(getCurrentWindow) getCurrentWindow().setSize(new LogicalSize(newWinW,newWinH)).catch(()=>{});
+  });
+
+  document.addEventListener('mouseup', ()=>{
+    if(!dragging) return;
+    dragging=false;
+    document.body.style.cursor='';
+    document.body.style.userSelect='';
+    document.getElementById('expanel').style.transition='';
+  });
+})();
+
+// ── 유틸 ──
+function escHtml(s){ if(!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+
+// ── 시작 ──
+initCal();
+
+// Tauri IPC가 준비될 때까지 대기 후 init
+// invoke는 이제 함수라 재할당 불필요 — 준비 여부만 확인
+function waitAndInit(retries){
+  dbg(`waitAndInit: retries=${retries}, TAURI=${!!window.__TAURI__?.core?.invoke}`);
+  if(window.__TAURI__?.core?.invoke){
+    resizeWindow('pill').then(async()=>{
+      await init();
+      attachShelfWindowMetricsDebug();
+    });
+    return;
+  } else if(retries > 0){
+    setTimeout(()=>waitAndInit(retries-1), 150);
+  } else {
+    // 브라우저 미리보기 모드 (Tauri 없음) — 레이아웃·shell-fold 동기화만
+    resizeWindow('pill').then(()=>init());
+  }
+}
+waitAndInit(10);
+</script>
+</body>
+</html>
