@@ -235,6 +235,10 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
 .ex-cal-layout{display:flex;position:absolute;top:0;left:0;right:0;bottom:0;overflow:hidden}
 .ex-left{padding:14px 14px 24px;border-right:.5px solid #F0F0F0;flex:1;overflow-y:auto;min-height:0}
 .ex-right{padding:14px 14px 24px;width:190px;overflow-y:auto;min-height:0}
+/* 확장 캘린더 우측: 날짜 제목과「완료 포함」을 세로로 나눠 한글 이상 줄바꿈 방지 */
+.ex-cal-detail-hdr{display:flex;flex-direction:column;align-items:stretch;gap:5px;margin-bottom:7px;min-width:0}
+.ex-cal-detail-lbl-txt{font-size:10px;font-weight:600;color:#aaa;line-height:1.35;word-break:keep-all}
+.ex-cal-done-toggle{font-size:10px;color:#888;display:flex;align-items:center;gap:5px;cursor:pointer;user-select:none;white-space:nowrap;align-self:flex-end}
 .exgrid-root{display:flex;flex-direction:column;gap:3px;font-size:10px}
 .exdow{text-align:center;color:#bbb;padding:3px 0;font-size:9px}
 .exdow:first-child{color:#E53935}
@@ -543,9 +547,9 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
           <div class="ex-chips" id="ex-cal-chips"></div>
         </div>
         <div class="ex-right">
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:7px;min-width:0">
-            <div style="font-size:10px;font-weight:600;color:#aaa;flex:1;min-width:0" id="ex-cal-detail-lbl">선택한 날 일정</div>
-            <label class="ex-cal-done-toggle" style="font-size:10px;color:#888;display:flex;align-items:center;gap:5px;cursor:pointer;flex-shrink:0;user-select:none;white-space:nowrap">
+          <div class="ex-cal-detail-hdr">
+            <div class="ex-cal-detail-lbl-txt" id="ex-cal-detail-lbl">선택한 날 일정</div>
+            <label class="ex-cal-done-toggle">
               <input type="checkbox" id="ex-cal-show-done" onchange="toggleExCalShowDone()">
               완료 포함
             </label>
