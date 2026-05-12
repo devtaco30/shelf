@@ -3,3 +3,4 @@ pub mod event;
 pub mod vault;
 pub mod project;
 pub mod settings;
+pub mod memo;

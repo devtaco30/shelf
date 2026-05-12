@@ -3,6 +3,7 @@ pub mod events;
 pub mod vault;
 pub mod settings;
 pub mod projects;
+pub mod memos;
 
 use once_cell::sync::OnceCell;
 use rusqlite::{Connection, Result};
@@ -97,6 +98,20 @@ fn run_migrations(conn: &Connection) -> Result<()> {
         conn.execute_batch("
             ALTER TABLE vault_items ADD COLUMN item_type TEXT NOT NULL DEFAULT 'memo';
             PRAGMA user_version = 5;
+        ")?;
+    }
+
+    if version < 6 {
+        conn.execute_batch("
+            CREATE TABLE IF NOT EXISTS memos (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                title TEXT NOT NULL DEFAULT '',
+                body TEXT NOT NULL DEFAULT '',
+                created_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+                updated_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
+            );
+            CREATE INDEX IF NOT EXISTS idx_memos_updated_at ON memos(updated_at);
+            PRAGMA user_version = 6;
         ")?;
     }
 

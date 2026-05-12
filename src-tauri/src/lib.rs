@@ -76,6 +76,12 @@ pub fn run() {
             commands::project::archive_project,
             commands::settings::get_settings,
             commands::settings::set_setting,
+            commands::memo::get_memos,
+            commands::memo::get_memo,
+            commands::memo::get_memo_count,
+            commands::memo::create_memo,
+            commands::memo::update_memo,
+            commands::memo::delete_memo,
             get_platform,
         ])
         .run(tauri::generate_context!())
