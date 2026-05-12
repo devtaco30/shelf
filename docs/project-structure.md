@@ -73,9 +73,9 @@ CLI는 **`npm`/프로젝트 로컬**을 쓰면 `package-lock.json`과 버전이 
 
 | 용어 | 코드 상 `curState` / 동작 | 창 크기 소스 |
 |------|---------------------------|--------------|
-| **폴드 상태** | `pill` — 필만 보이고 컴팩트·확장 패널 닫힘 | `SIZES.pill` (고정) |
-| **컴팩트 상태** | `panel` — 좁은 패널만 열림 | `SIZES.panel` (고정) |
-| **익스팬드(확장) 상태** | `expanded` — 넓은 패널 | `SIZES.expanded[탭]` (탭별 + 우하단 핸들로 **높이·폭 변경 가능**) |
+| **폴드 상태** | `pill` — 필만 보이고 컴팩트·확장 패널 닫힘 | `SIZES.pill` — 기본 **420×52** (`SHELL_DIMS.foldLogicalHeight`) |
+| **컴팩트 상태** | `panel` — 좁은 패널만 열림 | `SIZES.panel` — 기본 **600×342** (`compactLogicalHeight`) |
+| **익스팬드(확장) 상태** | `expanded` — 넓은 패널 | `SIZES.expanded[탭]` — 기본 높이 **600** + 우하단 핸들로 **높이·폭 변경 가능** |
 
 `resizeWindow(state)`는 OS 창에 **`LogicalSize(w,h)`** 를 적용한다. **폴드/컴팩트에서는 반드시 `SIZES.pill` / `SIZES.panel`만 쓰고**, 확장에서만 `SIZES.expanded`를 쓴다.  
 (과거 버그: 폴드/컴팩트일 때 `exSize()`(확장 크기)를 참조해, 확장을 키운 뒤 접으면 **창 높이가 확장 때와 같게 남는** 문제가 있었다.)
