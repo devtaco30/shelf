@@ -3,7 +3,35 @@ mod db;
 mod recurrence;
 mod vault;
 
+use tauri::Emitter;
 use tauri::Manager;
+
+#[cfg(target_os = "macos")]
+fn shelf_macos_append_settings_menu_item(handle: &tauri::AppHandle) -> Result<(), String> {
+    use tauri::menu::{Menu, MenuItem, MenuItemKind};
+
+    let menu = Menu::default(handle).map_err(|e| e.to_string())?;
+    let items = menu.items().map_err(|e| e.to_string())?;
+    let Some(MenuItemKind::Submenu(app_menu)) = items.first() else {
+        menu.set_as_app_menu().map_err(|e| e.to_string())?;
+        return Ok(());
+    };
+    let settings_item = MenuItem::with_id(
+        handle,
+        "open-settings",
+        "설정...",
+        true,
+        Some("CmdOrCtrl+,"),
+    )
+    .map_err(|e| e.to_string())?;
+    let n = app_menu.items().map_err(|e| e.to_string())?.len();
+    let insert_pos = n.saturating_sub(1);
+    app_menu
+        .insert(&settings_item, insert_pos)
+        .map_err(|e| e.to_string())?;
+    menu.set_as_app_menu().map_err(|e| e.to_string())?;
+    Ok(())
+}
 
 #[tauri::command]
 fn get_platform() -> String {
@@ -24,6 +52,11 @@ pub fn run() {
                 .to_string();
             std::fs::create_dir_all(&app_dir).ok();
             db::init(&app_dir).expect("DB 초기화 실패");
+
+            #[cfg(target_os = "macos")]
+            if let Err(e) = shelf_macos_append_settings_menu_item(app.handle()) {
+                eprintln!("[Shelf] 앱 메뉴(설정…) 추가 실패: {}", e);
+            }
 
             // macOS 창 그림자 제거 (transparent window에서 외곽 테두리 방지)
             #[cfg(target_os = "macos")]
@@ -48,6 +81,12 @@ pub fn run() {
             });
 
             Ok(())
+        })
+        .on_menu_event(|app, event| {
+            #[cfg(target_os = "macos")]
+            if event.id() == "open-settings" {
+                let _ = app.emit("open-settings", ());
+            }
         })
         .invoke_handler(tauri::generate_handler![
             commands::todo::get_todos,
@@ -75,6 +114,7 @@ pub fn run() {
             commands::project::delete_project,
             commands::project::archive_project,
             commands::settings::get_settings,
+            commands::settings::get_setting,
             commands::settings::set_setting,
             commands::memo::get_memos,
             commands::memo::get_memo,

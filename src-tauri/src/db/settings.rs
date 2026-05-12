@@ -1,5 +1,5 @@
 use crate::db::DB;
-use rusqlite::{Connection, Result};
+use rusqlite::{Connection, OptionalExtension, Result};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -45,6 +45,17 @@ pub fn set(key: &str, value: &str) -> Result<()> {
     set_with(&conn, key, value)
 }
 
+/// 단일 키의 저장 값. 없으면 `None`.
+pub fn get_value(key: &str) -> Result<Option<String>> {
+    let conn = DB.get().unwrap().lock().unwrap();
+    conn.query_row(
+        "SELECT value FROM settings WHERE key = ?1",
+        [key],
+        |row| row.get::<_, String>(0),
+    )
+    .optional()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -83,5 +94,34 @@ mod tests {
         set_with(&conn, "name", "Second").unwrap();
         let s = get_with(&conn).unwrap();
         assert_eq!(s.name, "Second");
+    }
+
+    #[test]
+    fn get_value_returns_none_for_missing_key() {
+        let conn = setup();
+        let v = conn
+            .query_row(
+                "SELECT value FROM settings WHERE key = ?1",
+                ["theme"],
+                |row| row.get::<_, String>(0),
+            )
+            .optional()
+            .unwrap();
+        assert!(v.is_none());
+    }
+
+    #[test]
+    fn get_value_returns_some_after_set() {
+        let conn = setup();
+        set_with(&conn, "theme", "soft").unwrap();
+        let v = conn
+            .query_row(
+                "SELECT value FROM settings WHERE key = ?1",
+                ["theme"],
+                |row| row.get::<_, String>(0),
+            )
+            .optional()
+            .unwrap();
+        assert_eq!(v.as_deref(), Some("soft"));
     }
 }
