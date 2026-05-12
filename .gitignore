@@ -6,3 +6,6 @@ node_modules
 
 # Claude Code 로컬 설정 (저장소에 포함하지 않음)
 .claude/
+
+# 로컬 목업·계획 초안 (mockup 등)
+docs/plan/
