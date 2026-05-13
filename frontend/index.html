@@ -1581,6 +1581,13 @@ function shelfDismissVaultFormUiWhenLeavingVaultSurface(){
   }
 }
 
+/** 메모 탭 이탈 시 네이티브 메모 추가·수정 창만 닫음(완료 이벤트 없음 — Vault와 동일). */
+function shelfDismissMemoFormUiWhenLeavingMemoSurface(){
+  if(window.__TAURI__?.core?.invoke){
+    void invoke('shelf_close_memo_form_window').catch(()=>{});
+  }
+}
+
 let shelfNativeVaultFormBridgeInited=false;
 function shelfInitNativeVaultFormWindowBridge(){
   if(shelfNativeVaultFormBridgeInited) return;
@@ -2189,6 +2196,7 @@ async function setState(s){
   if(s==='pill'){
     shelfDismissTaskAddUiWhenLeavingTodoSurface();
     shelfDismissVaultFormUiWhenLeavingVaultSurface();
+    shelfDismissMemoFormUiWhenLeavingMemoSurface();
     cp.classList.remove('open'); ex.classList.remove('open');
     cp.classList.remove('cp-shell-memo-list','cp-body-scroll-capped');
     SHELF_SHELL_TAB_IDS.forEach(k=>document.getElementById('ico-'+k).classList.remove('active'));
@@ -2218,6 +2226,7 @@ async function showExpandSub(ctx){
   curTab=ctx;
   if(ctx!=='todo') shelfDismissTaskAddUiWhenLeavingTodoSurface();
   if(ctx!=='vault') shelfDismissVaultFormUiWhenLeavingVaultSurface();
+  if(ctx!=='memo') shelfDismissMemoFormUiWhenLeavingMemoSurface();
   SHELF_SHELL_TAB_IDS.forEach(k=>{
     document.getElementById('ex-sub-'+k).classList.toggle('active',k===ctx);
     document.getElementById('ico-'+k).classList.toggle('active',k===ctx);
@@ -2423,8 +2432,14 @@ async function shelfMemoExpandedEnter(){
   }
   await shelfMemoLoadSummaries();
   await shelfMemoUpdateHeaderCount();
+  /* 메모 0건이어도 확장 탭만 연 것 — 네이티브 새 메모 창은 자동으로 띄우지 않음(사용자가 ＋ 새 메모 또는 컴팩트 ＋에서만) */
   if(memoSummaries.length===0){
-    await shelfMemoStartNew('ex');
+    memoSelectedId=null;
+    const ext=document.getElementById('ex-memo-title');
+    const exb=document.getElementById('ex-memo-body');
+    if(ext) ext.value='';
+    if(exb) exb.value='';
+    shelfMemoRenderLists();
     return;
   }
   const keep=memoSelectedId!=null&&memoSummaries.some(m=>Number(m.id)===Number(memoSelectedId));
@@ -2571,6 +2586,7 @@ function shelfMemoBindToolbar(){
 function shelfApplyCompactTab(id){
   if(id!=='todo') shelfDismissTaskAddUiWhenLeavingTodoSurface();
   if(id!=='vault') shelfDismissVaultFormUiWhenLeavingVaultSurface();
+  if(id!=='memo') shelfDismissMemoFormUiWhenLeavingMemoSurface();
   curTab=id;
   SHELF_SHELL_TAB_IDS.forEach(k=>{
     const cpEl=document.getElementById('cp-'+k);

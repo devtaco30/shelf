@@ -156,6 +156,7 @@ pub fn run() {
             commands::vault_add_window::shelf_finish_vault_form_window,
             commands::memo_add_window::shelf_consume_memo_form_bootstrap,
             commands::memo_add_window::shelf_open_memo_form_window,
+            commands::memo_add_window::shelf_close_memo_form_window,
             commands::memo_add_window::shelf_finish_memo_form_window,
             commands::memo_add_window::shelf_memo_form_trace,
         ])

@@ -94,6 +94,15 @@ pub async fn shelf_open_memo_form_window(
     Ok(())
 }
 
+/// 메모 탭 이탈·앱 접기 등 — 완료 이벤트 없이 보조 창만 닫음 (`shelf-vault-form`과 동일 패턴).
+#[tauri::command]
+pub fn shelf_close_memo_form_window(app: AppHandle) -> Result<(), String> {
+    if let Some(w) = app.get_webview_window(SHELF_MEMO_FORM_WEBVIEW_LABEL) {
+        w.close().map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
 #[tauri::command]
 pub async fn shelf_finish_memo_form_window(
     app: AppHandle,
