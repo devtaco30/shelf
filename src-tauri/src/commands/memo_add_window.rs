@@ -18,6 +18,13 @@ pub struct ShelfMemoFormDone {
     pub saved_memo_id: Option<i64>,
 }
 
+/// 보조 웹뷰 콘솔은 메인 DevTools에 안 보일 때가 많음 — `npm run tauri dev` 터미널로 동일 줄 출력
+#[tauri::command]
+pub fn shelf_memo_form_trace(line: String) -> Result<(), String> {
+    eprintln!("[ShelfMemoFormWin] {}", line);
+    Ok(())
+}
+
 #[tauri::command]
 pub fn shelf_consume_memo_form_bootstrap(
     state: State<'_, ShelfMemoFormBootstrap>,

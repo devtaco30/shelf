@@ -150,10 +150,14 @@ pub fn run() {
             commands::task_edit_window::shelf_commit_task_edit_from_window,
             commands::vault_add_window::shelf_consume_vault_form_bootstrap,
             commands::vault_add_window::shelf_open_vault_form_window,
+            commands::vault_add_window::shelf_close_vault_form_window,
+            commands::vault_add_window::shelf_create_vault_item_from_window,
+            commands::vault_add_window::shelf_commit_vault_edit_from_window,
             commands::vault_add_window::shelf_finish_vault_form_window,
             commands::memo_add_window::shelf_consume_memo_form_bootstrap,
             commands::memo_add_window::shelf_open_memo_form_window,
             commands::memo_add_window::shelf_finish_memo_form_window,
+            commands::memo_add_window::shelf_memo_form_trace,
         ])
         .run(tauri::generate_context!())
         .expect("Tauri 실행 오류");

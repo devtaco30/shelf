@@ -1,5 +1,6 @@
 //! 메인 웹뷰와 분리된 **보안 항목 추가·수정 전용 창** — Vault 폼을 OS 창 단위로 띄운다.
 
+use crate::commands::vault as vault_items_cmd;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::sync::Mutex;
@@ -17,6 +18,8 @@ pub struct ShelfVaultFormDone {
     /// 생성·수정 성공 시 해당 항목 id (취소면 None)
     #[serde(default)]
     pub saved_item_id: Option<i64>,
+    #[serde(default)]
+    pub deleted: Option<bool>,
 }
 
 #[tauri::command]
@@ -88,16 +91,74 @@ pub async fn shelf_open_vault_form_window(
     Ok(())
 }
 
+/// Vault 탭 이탈·앱 접기 등 — 부트스트랩 없이 창만 닫을 때 (완료 이벤트 없음).
+#[tauri::command]
+pub fn shelf_close_vault_form_window(app: AppHandle) -> Result<(), String> {
+    if let Some(w) = app.get_webview_window(SHELF_VAULT_FORM_WEBVIEW_LABEL) {
+        w.close().map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+/// 신규 항목: DB 저장 → 메인에 `shelf-vault-form-window-done` emit (**창 유지** — 연속 추가).
+#[tauri::command(rename_all = "snake_case")]
+pub fn shelf_create_vault_item_from_window(
+    app: AppHandle,
+    title: String,
+    content: String,
+    item_type: String,
+) -> Result<i64, String> {
+    let id = vault_items_cmd::create_vault_item(title, content, item_type)?;
+    let payload = ShelfVaultFormDone {
+        cancelled: false,
+        saved_item_id: Some(id),
+        deleted: None,
+    };
+    let v = serde_json::to_value(&payload).map_err(|e| e.to_string())?;
+    app.emit("shelf-vault-form-window-done", v)
+        .map_err(|e| e.to_string())?;
+    Ok(id)
+}
+
+/// 수정 반영 또는 삭제: 단일 IPC → emit → 지연 후 창 닫기 (`delete_vault_item == true` 면 삭제만 수행).
+#[tauri::command(rename_all = "snake_case")]
+pub fn shelf_commit_vault_edit_from_window(
+    app: AppHandle,
+    delete_vault_item: bool,
+    id: i64,
+    title: String,
+    content: String,
+) -> Result<(), String> {
+    if delete_vault_item {
+        vault_items_cmd::delete_vault_item(id)?;
+    } else {
+        vault_items_cmd::update_vault_item(id, title, content)?;
+    }
+    let payload = ShelfVaultFormDone {
+        cancelled: false,
+        saved_item_id: Some(id),
+        deleted: Some(delete_vault_item),
+    };
+    let v = serde_json::to_value(&payload).map_err(|e| e.to_string())?;
+    app.emit("shelf-vault-form-window-done", v)
+        .map_err(|e| e.to_string())?;
+    let app_for_close = app.clone();
+    std::thread::spawn(move || {
+        std::thread::sleep(std::time::Duration::from_millis(80));
+        if let Some(w) = app_for_close.get_webview_window(SHELF_VAULT_FORM_WEBVIEW_LABEL) {
+            let _ = w.close();
+        }
+    });
+    Ok(())
+}
+
 #[tauri::command]
 pub async fn shelf_finish_vault_form_window(
     app: AppHandle,
     payload: ShelfVaultFormDone,
 ) -> Result<(), String> {
-    let main = app
-        .get_webview_window("main")
-        .ok_or_else(|| "main webview 없음".to_string())?;
     let v = serde_json::to_value(&payload).map_err(|e| e.to_string())?;
-    main.emit("shelf-vault-form-window-done", v)
+    app.emit("shelf-vault-form-window-done", v)
         .map_err(|e| e.to_string())?;
     if let Some(w) = app.get_webview_window(SHELF_VAULT_FORM_WEBVIEW_LABEL) {
         w.close().map_err(|e| e.to_string())?;
