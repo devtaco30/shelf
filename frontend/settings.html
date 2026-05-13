@@ -43,15 +43,37 @@ body{padding:14px 16px 16px}
 [data-theme="soft"] .settings-card{
   background:rgb(255 255 255 / var(--shelf-panel-fill-opacity,1));
 }
+.settings-header-row{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin:-18px -20px 14px -20px;
+  padding:12px 14px 10px;
+  border-radius:16px 16px 0 0;
+}
+.traffic-close{
+  width:12px;height:12px;border-radius:50%;
+  border:none;
+  background:#FF5F57;
+  cursor:pointer;
+  flex-shrink:0;
+  padding:0;
+  -webkit-app-region:no-drag;
+  box-shadow:inset 0 0 0 0.5px rgba(0,0,0,0.15);
+}
+.traffic-close:hover{ filter:brightness(1.08); }
 .settings-drag{
+  flex:1;
+  min-width:0;
   cursor:grab;
   user-select:none;
-  font-size:15px;
-  font-weight:700;
-  margin-bottom:14px;
-  padding:4px 0;
+  touch-action:none;
+  padding:4px 2px;
+  display:flex;
+  align-items:center;
 }
 .settings-drag:active{cursor:grabbing}
+.settings-title{font-size:15px;font-weight:700;padding:0 2px}
 .lbl{font-size:10px;font-weight:600;color:var(--panel-text-sub);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px}
 .theme-cards{display:flex;flex-direction:column;gap:8px;margin-bottom:4px}
 /* 테마 카드 = 미리보기 스와치 — 글로벌 data-theme와 무관하게 대비·테두리 유지 */
@@ -95,7 +117,10 @@ body{padding:14px 16px 16px}
 </head>
 <body>
   <div class="settings-card">
-    <div class="settings-drag" data-tauri-drag-region>설정</div>
+    <div class="settings-header-row">
+      <button type="button" class="traffic-close" id="btn-close-settings-window" title="닫기" aria-label="창 닫기"></button>
+      <div class="settings-drag" data-tauri-drag-region><span class="settings-title">설정</span></div>
+    </div>
     <div class="lbl">테마</div>
     <div class="theme-cards">
       <button type="button" class="theme-btn" data-theme="dark" id="btn-theme-dark">
@@ -117,7 +142,7 @@ body{padding:14px 16px 16px}
         <span>강도</span>
         <input type="range" id="rng-opacity" min="0.55" max="1" step="0.01" value="1" aria-label="패널 불투명 강도">
       </div>
-      <p class="fill-hint" id="hint-opacity">슬라이더는 메인 패널과 이 설정 창 카드 면에 같이 반영됩니다.</p>
+      <p class="fill-hint" id="hint-opacity">테마·투명도는 메인 앱에도 바로 미리보기됩니다. 창을 닫거나 취소하면 열기 직전 설정으로 돌아갑니다.</p>
     </div>
     <div class="footer">
       <button type="button" class="btn" id="btn-cancel">취소</button>
@@ -143,7 +168,7 @@ body{padding:14px 16px 16px}
     return invoke('shelf_emit_to_main_window',{ channel, payload });
   }
   function finish(payload){
-    return invoke('shelf_finish_settings_window', payload);
+    return invoke('shelf_finish_settings_window',{ payload });
   }
 
   function shelfSettingsWinTrace(tag, detail){
@@ -184,8 +209,8 @@ body{padding:14px 16px 16px}
     rng.disabled=!cb.checked;
     const pct=Math.round(Number(rng.value)*100);
     hint.textContent=cb.checked
-      ? `메인·설정 창 카드 면 · 불투명 ${pct}%`
-      : '반투명 끔 = 메인·설정 창 패널 면 완전 불투명.';
+      ? `메인·이 창 미리보기 · 불투명 ${pct}% (취소·닫기 시 원래대로)`
+      : '반투명 끔 미리보기 — 취소·닫기 시 열 때 설정으로 복구.';
   }
 
   let choiceTheme=THEME_DARK;
@@ -205,15 +230,28 @@ body{padding:14px 16px 16px}
 
   const cbTr=document.getElementById('cb-translucent');
   const rngOp=document.getElementById('rng-opacity');
-  function pushPanelPreview(){
+  /** 이 창 + 메인 동시 미리보기 — 취소·창 닫기 시 메인은 열 때 baseline 으로 복구 */
+  function pushPanelPreviewWithMain(){
     const tr=!!cbTr.checked;
     const op=coerceOpacity(rngOp.value);
     applyLocalPanelFillOpacity(tr, op);
-    void emitToMain('shelf-settings-preview-panel',{ translucent: tr, opacity: op });
     syncHint();
+    void emitToMain('shelf-settings-preview-panel',{ translucent: tr, opacity: op });
   }
-  cbTr.addEventListener('change', pushPanelPreview);
-  rngOp.addEventListener('input', pushPanelPreview);
+  cbTr.addEventListener('change', pushPanelPreviewWithMain);
+  rngOp.addEventListener('input', pushPanelPreviewWithMain);
+
+  function dismissSettingsWindowWithoutApply(){
+    shelfSettingsWinTrace('close.traffic.click',{});
+    finish({ confirmed: false })
+      .then(()=>shelfSettingsWinTrace('close.traffic.finish.ok',{}))
+      .catch(e=>{
+        shelfSettingsWinTrace('close.traffic.finish.error', String(e));
+        alert('닫기 처리에 실패했습니다: '+e);
+      });
+  }
+
+  document.getElementById('btn-close-settings-window').addEventListener('click', dismissSettingsWindowWithoutApply);
 
   document.getElementById('btn-cancel').addEventListener('click',()=>{
     shelfSettingsWinTrace('cancel.click',{});
@@ -259,7 +297,7 @@ body{padding:14px 16px 16px}
       rngOp.value=String(coerceOpacity(opRaw));
       rngOp.disabled=!translucent;
       syncHint();
-      pushPanelPreview();
+      pushPanelPreviewWithMain();
     }catch(e){
       console.error(e);
       syncHint();
