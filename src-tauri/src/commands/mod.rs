@@ -5,6 +5,7 @@ pub mod project;
 pub mod settings;
 pub mod settings_window;
 pub mod task_add_window;
+pub mod task_edit_window;
 pub mod vault_add_window;
 pub mod memo_add_window;
 pub mod memo;

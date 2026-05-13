@@ -100,7 +100,7 @@ pub fn shelf_close_task_add_form_window(app: AppHandle) -> Result<(), String> {
     Ok(())
 }
 
-/// `task-add-window` 전용: DB 저장 → 메인에 `shelf-task-add-form-window-done` → 창 닫기까지 **한 IPC**로 처리.
+/// `task-add-window` 전용: DB 저장 → 메인에 `shelf-task-add-form-window-done` emit (**창은 닫지 않음** — 연속 추가 시 폼만 클라이언트에서 초기화).
 /// 보조 웹뷰에서 `create_todo` 직후 두 번째 `invoke(shelf_finish_…)` 가 Rust까지 안 오는 환경이 있어 단일 커맨드로 통합.
 #[tauri::command(rename_all = "snake_case")]
 pub fn shelf_create_task_from_add_window(
@@ -140,15 +140,8 @@ pub fn shelf_create_task_from_add_window(
     let v = serde_json::to_value(&payload).map_err(|e| e.to_string())?;
     app.emit("shelf-task-add-form-window-done", v)
         .map_err(|e| e.to_string())?;
-    eprintln!("[Shelf][shelf_create_task_from_add_window] emit OK → 메인 리로드 예정");
+    eprintln!("[Shelf][shelf_create_task_from_add_window] emit OK → 메인 리로드 (창 유지)");
 
-    let app_for_close = app.clone();
-    std::thread::spawn(move || {
-        std::thread::sleep(std::time::Duration::from_millis(80));
-        if let Some(w) = app_for_close.get_webview_window(SHELF_TASK_ADD_WEBVIEW_LABEL) {
-            let _ = w.close();
-        }
-    });
     Ok(id)
 }
 

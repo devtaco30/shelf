@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>새 태스크</title>
+<title>태스크 수정</title>
 <style>
 :root{ --shelf-panel-fill-opacity:1; }
 :root,[data-theme="dark"]{
@@ -120,6 +120,10 @@ body{padding:14px 16px 16px}
 .btn:hover{background:var(--panel-item-hover)}
 .btn-primary{border:none;background:var(--accent);color:var(--accent-fg);font-weight:600}
 .btn-primary:hover{filter:brightness(1.05)}
+.btn-del{border-color:rgba(248,113,113,.45);color:#F87171;background:rgba(248,113,113,.1)}
+.btn-del:hover{background:rgba(248,113,113,.2)}
+.memo-inp{width:100%;min-height:72px;border:1px solid var(--input-border);border-radius:8px;padding:9px 11px;font-size:13px;line-height:1.45;resize:vertical;outline:none;background:var(--input-bg);color:var(--panel-text);font-family:inherit}
+.memo-inp:focus{border-color:var(--accent);background:var(--panel-bg)}
 .err{font-size:12px;color:#F87171;line-height:1.45;margin-bottom:10px}
 
 /* 메인 index.html 과 동일 — 커스텀 날짜·시간 피커 */
@@ -150,13 +154,6 @@ body{padding:14px 16px 16px}
 .dp-day.other{color:var(--panel-text-sub)}
 .dp-day.sun{color:#E53935}
 .dp-day.sel.sun{color:#fff}
-.add-task-toast{
-  position:fixed;left:50%;bottom:50px;transform:translateX(-50%) translateY(10px);
-  padding:9px 18px;border-radius:10px;font-size:12px;font-weight:600;z-index:500;
-  background:var(--accent);color:var(--accent-fg);box-shadow:var(--modal-shadow);
-  opacity:0;pointer-events:none;transition:opacity .22s ease,transform .22s ease;
-}
-.add-task-toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 </style>
 </head>
 <body>
@@ -165,13 +162,17 @@ body{padding:14px 16px 16px}
     <div class="grab-row">
       <button type="button" class="traffic-close" id="btn-close-window" title="닫기" aria-label="창 닫기"></button>
       <div class="grab-drag" data-tauri-drag-region>
-        <span class="grab-title">새 태스크</span>
+        <span class="grab-title">태스크 수정</span>
       </div>
     </div>
     <div id="boot-err" class="err" style="display:none"></div>
     <div id="form-root" style="display:none">
       <div class="field">
         <input type="text" class="inp" id="task-title" placeholder="태스크 제목…" autocomplete="off">
+      </div>
+      <div class="field">
+        <div class="lbl">메모</div>
+        <textarea class="memo-inp" id="task-note" placeholder="메모…" spellcheck="false" autocomplete="off"></textarea>
       </div>
       <div class="field">
         <div class="lbl">프로젝트</div>
@@ -189,30 +190,30 @@ body{padding:14px 16px 16px}
         <div class="lbl">마감일 / 시간 (선택)</div>
         <div style="display:flex;gap:6px;align-items:flex-start">
           <div class="date-picker-wrap" style="flex:1">
-            <div class="date-display" id="add-task-dp-trigger" onclick="toggleDatePicker('add-task-dp')">
-              <span id="add-task-date-text" style="color:var(--panel-text-sub);font-size:11px">날짜 선택</span>
+            <div class="date-display" id="edit-task-dp-trigger" onclick="toggleDatePicker('edit-task-dp')">
+              <span id="edit-task-date-text" style="color:var(--panel-text-sub);font-size:11px">날짜 선택</span>
               <span style="color:var(--panel-text-sub);font-size:10px">▾</span>
             </div>
-            <div class="date-picker-pop" id="add-task-dp">
-              <div class="dp-hdr"><button type="button" class="dp-nav" onclick="dpNav('add-task-dp',-1)">◀</button><span class="m" id="add-task-dp-lbl"></span><button type="button" class="dp-nav" onclick="dpNav('add-task-dp',1)">▶</button></div>
-              <div class="dp-grid" id="add-task-dp-grid"></div>
+            <div class="date-picker-pop" id="edit-task-dp">
+              <div class="dp-hdr"><button type="button" class="dp-nav" onclick="dpNav('edit-task-dp',-1)">◀</button><span class="m" id="edit-task-dp-lbl"></span><button type="button" class="dp-nav" onclick="dpNav('edit-task-dp',1)">▶</button></div>
+              <div class="dp-grid" id="edit-task-dp-grid"></div>
             </div>
           </div>
           <div class="date-picker-wrap" style="flex:1">
-            <div class="date-display" id="add-task-tp-trigger" onclick="toggleTimePicker('add-task-tp')">
-              <span id="add-task-time-text" style="color:var(--panel-text-sub);font-size:11px">시간 선택</span>
+            <div class="date-display" id="edit-task-tp-trigger" onclick="toggleTimePicker('edit-task-tp')">
+              <span id="edit-task-time-text" style="color:var(--panel-text-sub);font-size:11px">시간 선택</span>
               <span style="color:var(--panel-text-sub);font-size:10px">▾</span>
             </div>
-            <div class="time-picker-pop" id="add-task-tp"></div>
+            <div class="time-picker-pop" id="edit-task-tp"></div>
           </div>
         </div>
       </div>
       <div class="footer">
+        <button type="button" class="btn btn-del" id="btn-delete">삭제</button>
         <button type="button" class="btn" id="btn-cancel">취소</button>
-        <button type="button" class="btn btn-primary" id="btn-add">추가하기</button>
+        <button type="button" class="btn btn-primary" id="btn-save">저장</button>
       </div>
     </div>
-    <div id="add-task-toast" class="add-task-toast" role="status" aria-live="polite">추가했어요</div>
   </div>
 <script>
 const THEME_DARK='dark';
@@ -223,54 +224,39 @@ const KEY_OP='ui.panelFillOpacity';
 const OP_MIN=0.55;
 const OP_MAX=1;
 
-function shelfTaskAddTrace(step, detail){
+function shelfTaskEditTrace(step, detail){
   const tail=detail!==undefined?' '+JSON.stringify(detail):'';
-  console.info('[ShelfTaskAddWin] '+step+tail);
+  console.info('[ShelfTaskEditWin] '+step+tail);
 }
-function shelfCloseTaskAddWindowFallback(reason){
-  shelfTaskAddTrace('nativeWindow.closeFallback',{ reason:String(reason||'') });
+function shelfCloseTaskEditWindowFallback(reason){
+  shelfTaskEditTrace('nativeWindow.closeFallback',{ reason:String(reason||'') });
   try{
     const gw=window.__TAURI__?.window?.getCurrentWindow?.();
     if(gw) return gw.close();
   }catch(e){
-    shelfTaskAddTrace('nativeWindow.closeFallback.err',{ message:String(e&&e.message?e.message:e) });
+    shelfTaskEditTrace('nativeWindow.closeFallback.err',{ message:String(e&&e.message?e.message:e) });
   }
   return Promise.resolve();
 }
 function invoke(cmd, args){
   const core=window.__TAURI__?.core;
   if(!core?.invoke){
-    shelfTaskAddTrace('invoke.skip',{ cmd, reason:'no Tauri core.invoke' });
+    shelfTaskEditTrace('invoke.skip',{ cmd, reason:'no Tauri core.invoke' });
     return Promise.reject(new Error('Tauri 없음'));
   }
-  shelfTaskAddTrace('invoke→',{ cmd });
+  shelfTaskEditTrace('invoke→',{ cmd });
   return core.invoke(cmd, args).then(
-    out=>{ shelfTaskAddTrace('invoke✓',{ cmd }); return out; },
+    out=>{ shelfTaskEditTrace('invoke✓',{ cmd }); return out; },
     err=>{
-      shelfTaskAddTrace('invoke✗',{ cmd, message:String(err&&err.message?err.message:err) });
+      shelfTaskEditTrace('invoke✗',{ cmd, message:String(err&&err.message?err.message:err) });
       return Promise.reject(err);
     }
   );
 }
-function finish(payload){
-  return invoke('shelf_finish_task_add_form_window', payload);
-}
-async function dismissTaskAddWindowCancelled(){
-  shelfTaskAddTrace('userAction.dismiss');
-  try{
-    await finish({ cancelled: true, createdId: null });
-    shelfTaskAddTrace('finish.dismiss.ok');
-  }catch(e){
-    shelfTaskAddTrace('finish.dismiss.fail',{ message:String(e&&e.message?e.message:e) });
-    await shelfCloseTaskAddWindowFallback('finish_cancel_failed');
-  }
-}
-/** `create_todo` 등 SQLite rowid(i64) — JS에서 BigInt일 때 IPC 페이로드 직렬화 실패 방지 */
-function normalizeSqliteRowId(raw){
-  if(raw==null) return null;
-  if(typeof raw==='bigint') return Number(raw);
-  const n=Number(raw);
-  return Number.isFinite(n)?n:null;
+/** 취소·배경 클릭: 보조 웹뷰에서 두 번째 IPC가 불안정할 수 있어 네이티브 창만 닫음 */
+async function dismissTaskEditWindowCancelled(){
+  shelfTaskEditTrace('userAction.dismiss.closeOnly');
+  await shelfCloseTaskEditWindowFallback('cancel');
 }
 function coerceOpacity(raw){
   if(raw==null||raw==='') return OP_MAX;
@@ -303,39 +289,16 @@ function escHtml(s){
 }
 
 let selectedProjectId=null;
+let editingTodoId=null;
+let categoryDefault='작업';
 
-/* ── 메인 index.html 과 동일한 날짜·시간 피커 (id 만 add-task-* 로 분리) ── */
+/* ── 메인 index.html 과 동일한 날짜·시간 피커 (id 만 edit-task-* 로 분리) ── */
 const dpState={};
 function dpStateInit(){ const n=new Date(); return {y:n.getFullYear(),m:n.getMonth()+1,sel:null}; }
-const DP_TEXT_MAP={'add-task-dp':'add-task-date-text'};
-const DP_TRIGGER_MAP={'add-task-dp':'add-task-dp-trigger'};
+const DP_TEXT_MAP={'edit-task-dp':'edit-task-date-text'};
+const DP_TRIGGER_MAP={'edit-task-dp':'edit-task-dp-trigger'};
 function closeAllPickers(exceptId){
-  document.querySelectorAll('.date-picker-pop.open,.time-picker-pop.open').forEach(p=>{
-    if(exceptId==null||p.id!==exceptId)p.classList.remove('open');
-  });
-}
-let addTaskToastTimer=null;
-function showTaskAddSavedToast(){
-  const el=document.getElementById('add-task-toast');
-  if(!el) return;
-  el.classList.add('show');
-  clearTimeout(addTaskToastTimer);
-  addTaskToastTimer=setTimeout(()=>el.classList.remove('show'),2200);
-}
-/** 저장 성공 후 연속 입력: 제목·마감·시간·우선순위만 초기화, 프로젝트 칩 선택은 유지 */
-function resetTaskAddFormForNextEntry(){
-  document.getElementById('task-title').value='';
-  dpState['add-task-dp']=dpStateInit();
-  tpState['add-task-tp']={h:null,m:null};
-  document.getElementById('add-task-date-text').textContent='날짜 선택';
-  document.getElementById('add-task-date-text').style.color='var(--panel-text-sub)';
-  document.getElementById('add-task-time-text').textContent='시간 선택';
-  document.getElementById('add-task-time-text').style.color='var(--panel-text-sub)';
-  closeAllPickers(null);
-  document.querySelectorAll('#prio-btns .prio-btn').forEach(b=>b.classList.remove('sel'));
-  const defPrio=document.getElementById('prio-2');
-  if(defPrio) defPrio.classList.add('sel');
-  syncPrioUi();
+  document.querySelectorAll('.date-picker-pop.open,.time-picker-pop.open').forEach(p=>{if(p.id!==exceptId)p.classList.remove('open');});
 }
 function positionPop(pop, triggerId){
   const trigger=document.getElementById(triggerId);
@@ -357,7 +320,7 @@ function toggleDatePicker(id){
   } else pop.classList.remove('open');
 }
 const tpState={};
-const TP_TEXT_MAP={'add-task-tp':'add-task-time-text'};
+const TP_TEXT_MAP={'edit-task-tp':'edit-task-time-text'};
 function renderTp(id){
   if(!tpState[id]) tpState[id]={h:null,m:null};
   const s=tpState[id];
@@ -460,67 +423,91 @@ document.getElementById('prio-btns').addEventListener('click', ev=>{
   syncPrioUi();
 });
 
-document.getElementById('backdrop-hit').addEventListener('click',()=>{ void dismissTaskAddWindowCancelled(); });
-document.getElementById('btn-close-window').addEventListener('click',()=>{ void dismissTaskAddWindowCancelled(); });
+document.getElementById('backdrop-hit').addEventListener('click',()=>{ void dismissTaskEditWindowCancelled(); });
+document.getElementById('btn-close-window').addEventListener('click',()=>{ void dismissTaskEditWindowCancelled(); });
 document.addEventListener('keydown',e=>{
   if(e.key==='Escape'){
     e.preventDefault();
-    void dismissTaskAddWindowCancelled();
+    void dismissTaskEditWindowCancelled();
   }
 });
 document.getElementById('btn-cancel').addEventListener('click',()=>{
-  shelfTaskAddTrace('userAction.cancelButton');
-  void dismissTaskAddWindowCancelled();
+  shelfTaskEditTrace('userAction.cancelButton');
+  void dismissTaskEditWindowCancelled();
 });
 
-document.getElementById('btn-add').addEventListener('click', async ()=>{
-  shelfTaskAddTrace('userAction.addButton');
+document.getElementById('btn-save').addEventListener('click', async ()=>{
+  shelfTaskEditTrace('userAction.saveClick',{ editingTodoId });
   const title=document.getElementById('task-title').value.trim();
   if(!title){
     document.getElementById('task-title').focus();
     return;
   }
+  if(editingTodoId==null||!Number.isFinite(editingTodoId)){
+    shelfTaskEditTrace('save.abort',{ reason:'no todo id' });
+    return;
+  }
+  const note=document.getElementById('task-note').value;
   const prioEl=document.querySelector('#prio-btns .prio-btn.sel');
   const priority=prioEl?parseInt(prioEl.dataset.prio,10):1;
-  const time=getTimeValue('add-task-tp');
-  const dateText=document.getElementById('add-task-date-text').textContent;
+  const time=getTimeValue('edit-task-tp');
+  const dateText=document.getElementById('edit-task-date-text').textContent;
   let due_date=null;
   if(dateText!=='날짜 선택'){ due_date=dateText.replace(/\./g,'-')+(time?'T'+time:'T00:00'); }
   const project_id=selectedProjectId!=null&&selectedProjectId>0?selectedProjectId:0;
-  const createPayload={
+  const payload={
+    delete_todo:false,
+    todo_id:editingTodoId,
     title,
-    note:'',
+    note,
     due_date,
-    recurrence:'none',
-    category:'작업',
+    category:categoryDefault,
     priority,
     project_id,
   };
-  shelfTaskAddTrace('submit→shelf_create_task_from_add_window (단일 IPC: DB+emit, 창 유지)', createPayload);
-  const addBtn=document.getElementById('btn-add');
-  addBtn.disabled=true;
-  addBtn.textContent='추가 중…';
+  shelfTaskEditTrace('submit→shelf_commit_task_edit_from_window', payload);
+  const saveBtn=document.getElementById('btn-save');
+  saveBtn.disabled=true;
+  saveBtn.textContent='저장 중…';
   try{
-    const rawRowId=await invoke('shelf_create_task_from_add_window', createPayload);
-    shelfTaskAddTrace('shelf_create_task_from_add_window←rawRowId',{ rawRowId, type: typeof rawRowId });
-    const createdRowId=normalizeSqliteRowId(rawRowId);
-    if(createdRowId==null) throw new Error('태스크 ID를 받지 못했습니다');
-    shelfTaskAddTrace('task_add.success',{ createdRowId, note:'toast·폼초기화·제목포커스' });
-    showTaskAddSavedToast();
-    resetTaskAddFormForNextEntry();
-    document.getElementById('task-title').focus();
+    await invoke('shelf_commit_task_edit_from_window', payload);
+    shelfTaskEditTrace('task_edit.commit.ok',{ todoId:editingTodoId });
   }catch(e){
-    shelfTaskAddTrace('submit.chain.fail',{ message:String(e&&e.message?e.message:e) });
+    shelfTaskEditTrace('submit.chain.fail',{ message:String(e&&e.message?e.message:e) });
     alert('저장 실패: '+e);
-    await shelfCloseTaskAddWindowFallback('submit_failed');
+    await shelfCloseTaskEditWindowFallback('submit_failed');
   }finally{
-    addBtn.disabled=false;
-    addBtn.textContent='추가하기';
+    saveBtn.disabled=false;
+    saveBtn.textContent='저장';
+  }
+});
+
+document.getElementById('btn-delete').addEventListener('click', async ()=>{
+  shelfTaskEditTrace('userAction.deleteClick',{ editingTodoId });
+  if(editingTodoId==null||!Number.isFinite(editingTodoId)) return;
+  if(!confirm('이 태스크를 삭제할까요?')) return;
+  const payload={
+    delete_todo:true,
+    todo_id:editingTodoId,
+    title:'',
+    note:'',
+    due_date:null,
+    category:'',
+    priority:0,
+    project_id:0,
+  };
+  shelfTaskEditTrace('submit→shelf_commit_task_edit_from_window DELETE', payload);
+  try{
+    await invoke('shelf_commit_task_edit_from_window', payload);
+    shelfTaskEditTrace('task_edit.delete.ok',{ todoId:editingTodoId });
+  }catch(e){
+    shelfTaskEditTrace('delete.fail',{ message:String(e&&e.message?e.message:e) });
+    alert('삭제 실패: '+e);
   }
 });
 
 (async function init(){
-  shelfTaskAddTrace('init.start',{ href:String(location.href||'') });
+  shelfTaskEditTrace('init.start',{ href:String(location.href||'') });
   try{
     const savedTheme=await invoke('get_setting',{ key: KEY_THEME });
     const token=savedTheme===THEME_SOFT?THEME_SOFT:THEME_DARK;
@@ -529,13 +516,13 @@ document.getElementById('btn-add').addEventListener('click', async ()=>{
     const translucent=trRaw==='1'||trRaw===1||trRaw===true||trRaw==='true';
     const opRaw=await invoke('get_setting',{ key: KEY_OP });
     applyLocalPanelFillOpacity(translucent, coerceOpacity(opRaw));
-  }catch(e){ shelfTaskAddTrace('init.theme.fail',{ message:String(e&&e.message?e.message:e) }); }
+  }catch(e){ shelfTaskEditTrace('init.theme.fail',{ message:String(e&&e.message?e.message:e) }); }
 
   let boot=null;
   try{
-    boot=await invoke('shelf_consume_task_add_bootstrap');
+    boot=await invoke('shelf_consume_task_edit_bootstrap');
   }catch(e){
-    shelfTaskAddTrace('bootstrap.consume.fail',{ message:String(e&&e.message?e.message:e) });
+    shelfTaskEditTrace('bootstrap.consume.fail',{ message:String(e&&e.message?e.message:e) });
   }
   if(!boot||typeof boot!=='object'){
     document.getElementById('boot-err').style.display='block';
@@ -543,38 +530,98 @@ document.getElementById('btn-add').addEventListener('click', async ()=>{
     return;
   }
   const projects=Array.isArray(boot.projects)?boot.projects:[];
-  const selId=boot.selectedProjectId!=null?Number(boot.selectedProjectId):null;
-  selectedProjectId=null;
-  if(selId!=null&&projects.some(p=>p.id===selId)) selectedProjectId=selId;
-  else if(projects.length>0) selectedProjectId=projects[0].id;
+  editingTodoId=boot.todoId!=null?Number(boot.todoId):null;
+  if(editingTodoId==null||!Number.isFinite(editingTodoId)){
+    document.getElementById('boot-err').style.display='block';
+    document.getElementById('boot-err').textContent='태스크 ID가 없습니다.';
+    return;
+  }
+  categoryDefault=String(boot.category||'작업');
+  document.getElementById('task-title').value=String(boot.title||'');
+  document.getElementById('task-note').value=String(boot.note||'');
+
+  const bootPid=boot.projectId!=null&&boot.projectId!==''?Number(boot.projectId):null;
+  selectedProjectId=(bootPid!=null&&Number.isFinite(bootPid)&&bootPid>0)?bootPid:null;
 
   const chips=document.getElementById('proj-chips');
-  chips.innerHTML=projects.map(p=>{
-    const on=p.id===selectedProjectId;
-    return `<button type="button" class="proj-chip${on?' sel':''}" data-proj-id="${p.id}" style="color:${escHtml(p.color)}">
+  const uncatOn=selectedProjectId===null;
+  chips.innerHTML=
+    `<button type="button" class="proj-chip${uncatOn?' sel':''}" data-proj-id="" style="color:var(--panel-text-sub);border-color:${uncatOn?'var(--panel-text-sub)':'transparent'}">미분류</button>`+
+    projects.map(p=>{
+      const on=selectedProjectId===p.id;
+      return `<button type="button" class="proj-chip${on?' sel':''}" data-proj-id="${p.id}" style="color:${escHtml(p.color)};border-color:${on?escHtml(p.color):'transparent'}">
       <span class="proj-chip-dot" style="background:${escHtml(p.color)}"></span>${escHtml(p.name)}
     </button>`;
-  }).join('');
+    }).join('');
   chips.addEventListener('click', ev=>{
     const b=ev.target.closest('.proj-chip');
     if(!b) return;
-    const id=parseInt(b.dataset.projId,10);
-    if(!Number.isFinite(id)) return;
-    selectedProjectId=id;
+    const raw=b.dataset.projId;
+    if(raw===''||raw===undefined){
+      selectedProjectId=null;
+    }else{
+      const id=parseInt(raw,10);
+      if(!Number.isFinite(id)) return;
+      selectedProjectId=id;
+    }
     chips.querySelectorAll('.proj-chip').forEach(x=>{
-      x.classList.toggle('sel', parseInt(x.dataset.projId,10)===id);
+      const px=x.dataset.projId;
+      const noProj=(px===''||px===undefined);
+      const match=noProj?(selectedProjectId===null):(parseInt(px,10)===selectedProjectId);
+      x.classList.toggle('sel',match);
+      if(noProj){
+        x.style.borderColor=match?'var(--panel-text-sub)':'transparent';
+      }else{
+        const col=x.style.color;
+        x.style.borderColor=match?col:'transparent';
+      }
     });
   });
 
-  dpState['add-task-dp']={...dpStateInit()};
-  tpState['add-task-tp']={h:null,m:null};
-  document.getElementById('add-task-date-text').textContent='날짜 선택';
-  document.getElementById('add-task-date-text').style.color='var(--panel-text-sub)';
-  document.getElementById('add-task-time-text').textContent='시간 선택';
-  document.getElementById('add-task-time-text').style.color='var(--panel-text-sub)';
+  const pri=boot.priority!=null?Number(boot.priority):1;
+  document.querySelectorAll('#prio-btns .prio-btn').forEach(b=>{
+    const pr=parseInt(b.dataset.prio,10);
+    b.classList.toggle('sel', pr===pri);
+  });
+  syncPrioUi();
+
+  dpState['edit-task-dp']=dpStateInit();
+  tpState['edit-task-tp']={h:null,m:null};
+  const dd=boot.dueDate;
+  if(dd!=null&&String(dd).length>=10){
+    const ds=String(dd).replace(' ','T');
+    const datePart=ds.slice(0,10);
+    const [y,m,d]=datePart.split('-').map(x=>parseInt(x,10));
+    if(Number.isFinite(y)&&Number.isFinite(m)&&Number.isFinite(d)){
+      dpState['edit-task-dp']={y,m,sel:d};
+      document.getElementById('edit-task-date-text').textContent=`${y}.${String(m).padStart(2,'0')}.${String(d).padStart(2,'0')}`;
+      document.getElementById('edit-task-date-text').style.color='var(--panel-text)';
+      renderDp('edit-task-dp');
+    }
+  }else{
+    document.getElementById('edit-task-date-text').textContent='날짜 선택';
+    document.getElementById('edit-task-date-text').style.color='var(--panel-text-sub)';
+  }
+  if(dd!=null&&String(dd).length>12){
+    const ds=String(dd).replace(' ','T');
+    const tail=ds.includes('T')?ds.split('T')[1]:ds.slice(11);
+    const hm=tail.slice(0,5).split(':');
+    if(hm.length>=2){
+      const hh=parseInt(hm[0],10), mm=parseInt(hm[1],10);
+      if(Number.isFinite(hh)&&Number.isFinite(mm)){
+        tpState['edit-task-tp']={h:hh,m:mm};
+        document.getElementById('edit-task-time-text').textContent=`${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}`;
+        document.getElementById('edit-task-time-text').style.color='var(--panel-text)';
+      }
+    }
+  }else{
+    document.getElementById('edit-task-time-text').textContent='시간 선택';
+    document.getElementById('edit-task-time-text').style.color='var(--panel-text-sub)';
+  }
+
+  shelfTaskEditTrace('bootstrap.prefill',{ editingTodoId, selectedProjectId, categoryDefault });
 
   document.getElementById('form-root').style.display='block';
-  syncPrioUi();
   setTimeout(()=>document.getElementById('task-title').focus(),60);
 })();
 </script>

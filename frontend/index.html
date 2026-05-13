@@ -1452,12 +1452,57 @@ function shelfInitNativeTaskAddFormWindowBridge(subAttempt){
   });
 }
 
-/** 할 일 탭이 아닌 곳으로 전환하거나 패널을 접을 때 — 네이티브 새 태스크 창·DOM 추가 모달 정리 */
+let shelfNativeTaskEditFormBridgeInited=false;
+function shelfInitNativeTaskEditFormWindowBridge(subAttempt){
+  if(shelfNativeTaskEditFormBridgeInited) return;
+  const ev=window.__TAURI__?.event;
+  const n=subAttempt|0;
+  if(!ev?.listen){
+    if(n<100) setTimeout(()=>shelfInitNativeTaskEditFormWindowBridge(n+1),40);
+    return;
+  }
+  shelfNativeTaskEditFormBridgeInited=true;
+  ev.listen('shelf-task-edit-form-window-done', async e=>{
+    const p=e?.payload;
+    console.info('[Shelf][task-edit-done] 이벤트 수신 (main)', {
+      payload:p,
+      cancelled:p?.cancelled,
+      todoId:p?.todoId ?? p?.todo_id,
+      deleted:p?.deleted,
+    });
+    const cancelled=p&&(p.cancelled===true||p.cancelled==='true');
+    if(!p||cancelled){
+      console.info('[Shelf][task-edit-done] 취소·무페이로드 → 갱신 스킵');
+      return;
+    }
+    try{
+      const beforeLen=Array.isArray(todos)?todos.length:-1;
+      todos=await invoke('get_todos');
+      const afterLen=Array.isArray(todos)?todos.length:-1;
+      console.info('[Shelf][task-edit-done] get_todos', { beforeLen, afterLen });
+      renderCpTodos();
+      renderExTasks();
+      renderCpStats();
+      renderExProjects();
+      shelfRefreshCalendars();
+      const deleted=p?.deleted===true||p?.deleted==='true';
+      console.info('[Shelf][task-edit-done] 렌더 완료', { deleted });
+    }catch(err){
+      console.error('[Shelf][task-edit-done] refresh 실패', err);
+    }
+  }).catch(err=>{
+    console.error('[Shelf] listen shelf-task-edit-form-window-done', err);
+    shelfNativeTaskEditFormBridgeInited=false;
+  });
+}
+
+/** 할 일 탭이 아닌 곳으로 전환하거나 패널을 접을 때 — 네이티브 새 태스크·수정 창·DOM 추가 모달 정리 */
 function shelfDismissTaskAddUiWhenLeavingTodoSurface(){
   const mt=document.getElementById('modal-task');
   if(mt?.classList.contains('show')) closeModal('task');
   if(window.__TAURI__?.core?.invoke){
     void invoke('shelf_close_task_add_form_window').catch(()=>{});
+    void invoke('shelf_close_task_edit_form_window').catch(()=>{});
   }
 }
 
@@ -3511,7 +3556,37 @@ function openTaskModal(ctx){
   }
   shelfOpenTaskModalDomFallback(ctx);
 }
+async function shelfOpenTaskEditFormWindow(todoId){
+  const todo=todos.find(t=>t.id===todoId); if(!todo) return;
+  shelfUiTrace('task-edit.native.open',{ id:todoId });
+  const projectsPayload=projects.filter(p=>!p.archived).map(p=>({id:p.id,name:p.name,color:p.color}));
+  try{
+    await invoke('shelf_open_task_edit_form_window',{
+      bootstrap:{
+        todoId:todo.id,
+        title:todo.title,
+        note:todo.note||'',
+        dueDate:todo.due_date,
+        priority:todo.priority,
+        projectId:todo.project_id??null,
+        category:todo.category||'작업',
+        projects:projectsPayload,
+      },
+    });
+  }catch(err){
+    console.error('[Shelf] shelf_open_task_edit_form_window', err);
+    openTaskDetailModalDom(todoId);
+  }
+}
 function openTaskDetailModal(id){
+  const todo=todos.find(t=>t.id===id); if(!todo) return;
+  if(window.__TAURI__?.core?.invoke){
+    void shelfOpenTaskEditFormWindow(id);
+    return;
+  }
+  openTaskDetailModalDom(id);
+}
+function openTaskDetailModalDom(id){
   const todo=todos.find(t=>t.id===id); if(!todo) return;
   currentDetailTodoId=id;
   currentDetailProjectId = todo.project_id ?? null;
@@ -3557,6 +3632,7 @@ function openTaskDetailModal(id){
   document.getElementById('modal-task-detail').classList.add('show');
   shelfScheduleFloatingFormModalLayout('modal-task-detail');
 }
+
 async function saveTaskDetail(){
   if(!currentDetailTodoId) return;
   const todo=todos.find(t=>t.id===currentDetailTodoId); if(!todo) return;
@@ -4120,6 +4196,7 @@ function waitAndInit(retries){
 }
 shelfInitNativeSettingsWindowBridge();
 shelfInitNativeTaskAddFormWindowBridge();
+shelfInitNativeTaskEditFormWindowBridge();
 shelfInitNativeVaultFormWindowBridge();
 shelfInitNativeMemoFormWindowBridge();
 shelfInitSettingsModalInteraction();

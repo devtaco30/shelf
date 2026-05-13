@@ -56,6 +56,9 @@ pub fn run() {
             app.manage(commands::task_add_window::ShelfTaskAddBootstrap(std::sync::Mutex::new(
                 None,
             )));
+            app.manage(commands::task_edit_window::ShelfTaskEditBootstrap(std::sync::Mutex::new(
+                None,
+            )));
             app.manage(commands::vault_add_window::ShelfVaultFormBootstrap(
                 std::sync::Mutex::new(None),
             ));
@@ -141,6 +144,10 @@ pub fn run() {
             commands::task_add_window::shelf_close_task_add_form_window,
             commands::task_add_window::shelf_create_task_from_add_window,
             commands::task_add_window::shelf_finish_task_add_form_window,
+            commands::task_edit_window::shelf_consume_task_edit_bootstrap,
+            commands::task_edit_window::shelf_open_task_edit_form_window,
+            commands::task_edit_window::shelf_close_task_edit_form_window,
+            commands::task_edit_window::shelf_commit_task_edit_from_window,
             commands::vault_add_window::shelf_consume_vault_form_bootstrap,
             commands::vault_add_window::shelf_open_vault_form_window,
             commands::vault_add_window::shelf_finish_vault_form_window,

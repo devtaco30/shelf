@@ -6,6 +6,7 @@
     "main",
     "settings",
     "shelf-task-add",
+    "shelf-task-edit",
     "shelf-vault-form",
     "shelf-memo-form"
   ],
