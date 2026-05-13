@@ -478,7 +478,8 @@ button.ex-proj-add{width:100%;font:inherit;text-align:left;background:transparen
 .vd-val{font-size:12px;background:var(--input-bg);border-radius:8px;padding:8px 11px;display:flex;align-items:center;justify-content:space-between;gap:8px;border:.5px solid var(--input-border)}
 .vd-masked{font-family:monospace;letter-spacing:2px;color:var(--panel-text);flex:1}
 .vd-toggle{background:none;border:.5px solid var(--input-border);border-radius:5px;padding:2px 7px;font-size:10px;cursor:pointer;color:var(--panel-text-sub);white-space:nowrap}
-.vd-copy{background:var(--accent-fg);color:var(--panel-bg);border:none;border-radius:6px;padding:5px 11px;font-size:11px;cursor:pointer;margin-top:6px;width:100%}
+.vd-copy{background:var(--accent);color:var(--accent-fg);border:none;border-radius:8px;padding:7px;font-size:11px;font-weight:600;cursor:pointer;margin-top:6px;width:100%}
+.vd-copy:hover{filter:brightness(1.05)}
 .vd-edit{background:var(--input-bg);color:var(--panel-text);border:.5px solid var(--input-border);border-radius:6px;padding:5px 11px;font-size:11px;cursor:pointer;margin-top:4px;width:100%}
 .vd-edit:hover{background:var(--panel-item-hover)}
 .vd-copy-field{background:none;border:.5px solid var(--input-border);border-radius:5px;padding:2px 7px;font-size:10px;cursor:pointer;color:var(--panel-text-sub);white-space:nowrap}
@@ -832,7 +833,7 @@ button.ex-proj-add{width:100%;font:inherit;text-align:left;background:transparen
               </div>
             </div>
             <div id="cp-vault-detail-fields" style="max-height:200px;overflow-y:auto"></div>
-            <button onclick="cpVaultCopy()" style="width:100%;margin-top:6px;padding:7px;border-radius:8px;border:none;background:var(--accent-fg);color:var(--panel-bg);font-size:11px;font-weight:600;cursor:pointer">📋 전체 복사 (30초 후 삭제)</button>
+            <button type="button" class="vd-copy" onclick="cpVaultCopy()">📋 전체 복사 (30초 후 삭제)</button>
           </div>
         </div>
       </div>
