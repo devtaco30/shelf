@@ -8,7 +8,8 @@ use tauri::Manager;
 
 #[cfg(target_os = "macos")]
 fn shelf_macos_append_settings_menu_item(handle: &tauri::AppHandle) -> Result<(), String> {
-    use tauri::menu::{Menu, MenuItem, MenuItemKind};
+    use tauri::image::Image;
+    use tauri::menu::{AboutMetadata, Menu, MenuItem, MenuItemKind, PredefinedMenuItem};
 
     let menu = Menu::default(handle).map_err(|e| e.to_string())?;
     let items = menu.items().map_err(|e| e.to_string())?;
@@ -16,6 +17,31 @@ fn shelf_macos_append_settings_menu_item(handle: &tauri::AppHandle) -> Result<()
         menu.set_as_app_menu().map_err(|e| e.to_string())?;
         return Ok(());
     };
+
+    // `Menu::default`의 첫 항목은 About이며, 번들 아이콘과 다를 수 있어 임베드 PNG로 교체한다.
+    app_menu.remove_at(0).map_err(|e| e.to_string())?;
+    let pkg_info = handle.package_info();
+    let config = handle.config();
+    let about_panel_icon_png = include_bytes!("../icons/128x128.png");
+    let about_panel_icon = Image::from_bytes(about_panel_icon_png).map_err(|e| e.to_string())?;
+    let about_panel_metadata = AboutMetadata {
+        name: Some(pkg_info.name.clone()),
+        version: Some(pkg_info.version.to_string()),
+        copyright: config.bundle.copyright.clone(),
+        authors: config
+            .bundle
+            .publisher
+            .clone()
+            .map(|publisher_label| vec![publisher_label]),
+        icon: Some(about_panel_icon),
+        ..Default::default()
+    };
+    let about_menu_item =
+        PredefinedMenuItem::about(handle, None, Some(about_panel_metadata)).map_err(|e| e.to_string())?;
+    app_menu
+        .insert(&about_menu_item, 0)
+        .map_err(|e| e.to_string())?;
+
     let settings_item = MenuItem::with_id(
         handle,
         "open-settings",
