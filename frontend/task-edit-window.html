@@ -154,6 +154,20 @@ body{padding:14px 16px 16px}
 .dp-day.other{color:var(--panel-text-sub)}
 .dp-day.sun{color:#E53935}
 .dp-day.sel.sun{color:#fff}
+/* WKWebView 보조 창에서 window.confirm 미동작 — 프로젝트 삭제 모달과 동일 이유 */
+.shelf-native-confirm-overlay{
+  display:none;position:fixed;inset:0;z-index:600;
+  align-items:center;justify-content:center;padding:16px;
+  background:rgba(0,0,0,.42);-webkit-app-region:no-drag;
+}
+.shelf-native-confirm-overlay.open{display:flex;}
+.shelf-native-confirm-card{
+  width:100%;max-width:300px;border-radius:12px;padding:16px 16px 14px;
+  border:.5px solid var(--panel-border);background:var(--panel-bg);box-shadow:var(--modal-shadow);
+}
+.shelf-native-confirm-msg{font-size:13px;line-height:1.45;margin-bottom:14px;color:var(--panel-text);}
+.shelf-native-confirm-actions{display:flex;gap:8px;}
+.shelf-native-confirm-actions .btn{flex:1;padding:8px;}
 </style>
 </head>
 <body>
@@ -215,6 +229,15 @@ body{padding:14px 16px 16px}
       </div>
     </div>
   </div>
+  <div id="shelf-delete-confirm-overlay" class="shelf-native-confirm-overlay" aria-hidden="true">
+    <div class="shelf-native-confirm-card" onclick="event.stopPropagation()" role="dialog" aria-labelledby="shelf-delete-confirm-msg">
+      <div id="shelf-delete-confirm-msg" class="shelf-native-confirm-msg">삭제할까요?</div>
+      <div class="shelf-native-confirm-actions">
+        <button type="button" class="btn" id="shelf-delete-confirm-cancel">취소</button>
+        <button type="button" class="btn btn-del" id="shelf-delete-confirm-ok">삭제</button>
+      </div>
+    </div>
+  </div>
 <script>
 const THEME_DARK='dark';
 const THEME_SOFT='soft';
@@ -257,6 +280,35 @@ function invoke(cmd, args){
 async function dismissTaskEditWindowCancelled(){
   shelfTaskEditTrace('userAction.dismiss.closeOnly');
   await shelfCloseTaskEditWindowFallback('cancel');
+}
+function shelfNativeAskDeleteConfirm(message){
+  return new Promise(resolve=>{
+    const ov=document.getElementById('shelf-delete-confirm-overlay');
+    const msgEl=document.getElementById('shelf-delete-confirm-msg');
+    const btnOk=document.getElementById('shelf-delete-confirm-ok');
+    const btnCancel=document.getElementById('shelf-delete-confirm-cancel');
+    msgEl.textContent=message||'삭제할까요?';
+    ov.classList.add('open');
+    ov.setAttribute('aria-hidden','false');
+    function cleanup(){
+      ov.classList.remove('open');
+      ov.setAttribute('aria-hidden','true');
+      btnOk.removeEventListener('click', onOk);
+      btnCancel.removeEventListener('click', onCancel);
+      ov.removeEventListener('click', onBackdrop);
+      document.removeEventListener('keydown', onKey);
+    }
+    function onOk(){ cleanup(); resolve(true); }
+    function onCancel(){ cleanup(); resolve(false); }
+    function onBackdrop(e){ if(e.target===ov) onCancel(); }
+    function onKey(e){
+      if(e.key==='Escape'){ e.preventDefault(); onCancel(); }
+    }
+    btnOk.addEventListener('click', onOk);
+    btnCancel.addEventListener('click', onCancel);
+    ov.addEventListener('click', onBackdrop);
+    document.addEventListener('keydown', onKey);
+  });
 }
 function coerceOpacity(raw){
   if(raw==null||raw==='') return OP_MAX;
@@ -485,7 +537,8 @@ document.getElementById('btn-save').addEventListener('click', async ()=>{
 document.getElementById('btn-delete').addEventListener('click', async ()=>{
   shelfTaskEditTrace('userAction.deleteClick',{ editingTodoId });
   if(editingTodoId==null||!Number.isFinite(editingTodoId)) return;
-  if(!confirm('이 태스크를 삭제할까요?')) return;
+  const confirmed=await shelfNativeAskDeleteConfirm('이 태스크를 삭제할까요?');
+  if(!confirmed) return;
   const payload={
     delete_todo:true,
     todo_id:editingTodoId,

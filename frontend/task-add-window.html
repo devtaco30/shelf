@@ -5,7 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>새 태스크</title>
 <style>
-:root{ --shelf-panel-fill-opacity:1; }
+:root{
+  --shelf-panel-fill-opacity:1;
+  /* 카드 하단에서 위로 — 큰 투명 창에서도 추가하기 버튼 근처 */
+  --task-add-toast-bottom:72px;
+}
 :root,[data-theme="dark"]{
   --panel-bg:#16161F;
   --panel-border:rgba(255,255,255,0.08);
@@ -150,13 +154,13 @@ body{padding:14px 16px 16px}
 .dp-day.other{color:var(--panel-text-sub)}
 .dp-day.sun{color:#E53935}
 .dp-day.sel.sun{color:#fff}
-.add-task-toast{
-  position:fixed;left:50%;bottom:50px;transform:translateX(-50%) translateY(10px);
-  padding:9px 18px;border-radius:10px;font-size:12px;font-weight:600;z-index:500;
+#add-task-toast.add-task-toast{
+  position:absolute;left:50%;bottom:var(--task-add-toast-bottom);transform:translateX(-50%) translateY(10px);
+  padding:9px 18px;border-radius:10px;font-size:12px;font-weight:600;z-index:5;
   background:var(--accent);color:var(--accent-fg);box-shadow:var(--modal-shadow);
   opacity:0;pointer-events:none;transition:opacity .22s ease,transform .22s ease;
 }
-.add-task-toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+#add-task-toast.add-task-toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 </style>
 </head>
 <body>
