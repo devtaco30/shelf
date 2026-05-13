@@ -282,6 +282,69 @@ function applyLocalPanelFillOpacity(translucent, opacity01){
   const eff=translucent ? Math.min(OP_MAX, Math.max(OP_MIN, opacity01)) : 1;
   document.documentElement.style.setProperty('--shelf-panel-fill-opacity', String(eff));
 }
+function shelfApplyShellUiAppearanceFromBootstrapIfPresent(boot){
+  if(!boot||typeof boot!=='object') return false;
+  const ap=boot.shelfShellUiAppearance;
+  if(!ap||typeof ap!=='object') return false;
+  const token=ap.themeToken===THEME_SOFT?THEME_SOFT:THEME_DARK;
+  document.documentElement.setAttribute('data-theme', token);
+  applyLocalPanelFillOpacity(!!ap.panelTranslucent, coerceOpacity(ap.panelFillOpacity));
+  return true;
+}
+async function shelfHydrateShellUiAppearanceAfterBootstrap(boot){
+  if(shelfApplyShellUiAppearanceFromBootstrapIfPresent(boot)) return;
+  try{
+    const savedTheme=await invoke('get_setting',{ key: KEY_THEME });
+    const tok=savedTheme===THEME_SOFT?THEME_SOFT:THEME_DARK;
+    document.documentElement.setAttribute('data-theme', tok);
+    const trRaw=await invoke('get_setting',{ key: KEY_TR });
+    const translucent=trRaw==='1'||trRaw===1||trRaw===true||trRaw==='true';
+    const opRaw=await invoke('get_setting',{ key: KEY_OP });
+    applyLocalPanelFillOpacity(translucent, coerceOpacity(opRaw));
+  }catch(e){
+    trace('init.theme.fail', String(e&&e.message?e.message:e));
+  }
+}
+function shelfShellUiPreviewThemeFromPayload(p){
+  const token=(p&&typeof p==='object'&&p.token!=null)?String(p.token):String(p||'');
+  document.documentElement.setAttribute('data-theme', token===THEME_SOFT?THEME_SOFT:THEME_DARK);
+}
+function shelfShellUiPreviewPanelFromPayload(p){
+  if(!p||typeof p!=='object') return;
+  const v=p.translucent;
+  const tr=v===true||v===1||v==='1'||v==='true';
+  const fa=v===false||v===0||v==='0'||v==='false';
+  if(!tr&&!fa&&(v!==undefined&&v!==null)) return;
+  const op=typeof p.opacity==='number'&&Number.isFinite(p.opacity)
+    ? Math.min(OP_MAX, Math.max(OP_MIN, p.opacity))
+    : coerceOpacity(p.opacity);
+  applyLocalPanelFillOpacity(tr, op);
+}
+async function shelfShellUiOnSettingsWindowDonePayload(p){
+  if(!p||typeof p!=='object') return;
+  if(p.confirmed===true){
+    const th=p.theme===THEME_SOFT||p.theme==='soft'?THEME_SOFT:THEME_DARK;
+    document.documentElement.setAttribute('data-theme', th);
+    const tr=p.translucent===true||p.translucent===1||p.translucent==='1'||p.translucent==='true';
+    const op=typeof p.opacity==='number'&&Number.isFinite(p.opacity)
+      ? Math.min(OP_MAX, Math.max(OP_MIN, p.opacity))
+      : coerceOpacity(p.opacity);
+    applyLocalPanelFillOpacity(!!tr, op);
+  }else{
+    await shelfHydrateShellUiAppearanceAfterBootstrap(null);
+  }
+}
+async function shelfWireShellUiAppearanceBroadcasts(){
+  const ev=window.__TAURI__?.event;
+  if(!ev?.listen) return;
+  try{
+    await ev.listen('shelf-settings-preview-theme', e=>{ shelfShellUiPreviewThemeFromPayload(e?.payload); });
+    await ev.listen('shelf-settings-preview-panel', e=>{ shelfShellUiPreviewPanelFromPayload(e?.payload); });
+    await ev.listen('shelf-settings-window-done', async e=>{ await shelfShellUiOnSettingsWindowDonePayload(e?.payload); });
+  }catch(err){
+    trace('shellUi.broadcast.listen.fail', String(err&&err.message?err.message:err));
+  }
+}
 
 let currentVaultType='idpw';
 let editItemId=null;
@@ -451,22 +514,14 @@ document.getElementById('btn-save').addEventListener('click', async ()=>{
 });
 
 (async function init(){
-  try{
-    const savedTheme=await invoke('get_setting',{ key: KEY_THEME });
-    const token=savedTheme===THEME_SOFT?THEME_SOFT:THEME_DARK;
-    document.documentElement.setAttribute('data-theme', token);
-    const trRaw=await invoke('get_setting',{ key: KEY_TR });
-    const translucent=trRaw==='1'||trRaw===1||trRaw===true||trRaw==='true';
-    const opRaw=await invoke('get_setting',{ key: KEY_OP });
-    applyLocalPanelFillOpacity(translucent, coerceOpacity(opRaw));
-  }catch(_){}
-
+  await shelfWireShellUiAppearanceBroadcasts();
   let boot=null;
   try{
     boot=await invoke('shelf_consume_vault_form_bootstrap');
   }catch(e){
     console.error(e);
   }
+  await shelfHydrateShellUiAppearanceAfterBootstrap(boot);
   if(!boot||typeof boot!=='object'){
     document.getElementById('boot-err').style.display='block';
     document.getElementById('boot-err').textContent='창 데이터를 불러오지 못했습니다. 닫고 다시 열어 주세요.';

@@ -6,6 +6,7 @@ use serde_json::Value;
 use std::sync::Mutex;
 use tauri::webview::WebviewWindowBuilder;
 use tauri::{AppHandle, Emitter, Manager, State, WebviewUrl, WindowEvent};
+use tauri::window::Color;
 
 const SHELF_VAULT_FORM_WEBVIEW_LABEL: &str = "shelf-vault-form";
 
@@ -68,6 +69,7 @@ pub async fn shelf_open_vault_form_window(
     .min_inner_size(400.0, 480.0)
     .decorations(false)
     .transparent(true)
+    .background_color(Color(0, 0, 0, 0))
     .resizable(true)
     .position(logical_left, logical_top)
     .build()

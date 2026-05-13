@@ -706,7 +706,8 @@ button.ex-proj-add{width:100%;font:inherit;text-align:left;background:transparen
 #cp-memo-detail-body{flex:1;min-height:140px}
 .ex-memo-layout{display:flex;position:absolute;top:0;left:0;right:0;bottom:0;overflow:hidden;min-height:0}
 .ex-memo-sidebar{width:200px;border-right:.5px solid var(--divider);padding:10px;display:flex;flex-direction:column;min-height:0}
-.ex-memo-main{flex:1;padding:12px;display:flex;flex-direction:column;min-height:0;overflow:hidden;background:var(--panel-bg)}
+/* 우측은 배경 없음 — `.expanel` 한 겹만 비치게(사이드바와 동일). 여기에 면을 또 올리면 이중으로 뿌옇게 됨 */
+.ex-memo-main{flex:1;padding:12px;display:flex;flex-direction:column;min-height:0;overflow:hidden;background:transparent}
 .memo-title-input{width:100%;border:.5px solid var(--input-border);border-radius:8px;padding:8px 10px;font-size:13px;font-weight:600;margin-bottom:8px;box-sizing:border-box;outline:none;background:var(--input-bg);color:var(--panel-text)}
 .memo-body-input{
   flex:1;width:100%;min-height:120px;border:.5px solid var(--input-border);border-radius:8px;padding:10px;font-size:13px;line-height:1.5;
@@ -1406,6 +1407,17 @@ function shelfGetUiThemeToken(){
   const t=document.documentElement.getAttribute('data-theme');
   return t===SHELF_UI_THEME_SOFT?SHELF_UI_THEME_SOFT:SHELF_UI_THEME_DARK;
 }
+/** 네이티브 보조 웹뷰 bootstrap — 메인과 동일한 테마·패널 투명도(DB 지연·미리보기 드리프트 방지) */
+function shelfBuildShellUiAppearanceBootstrapSlice(){
+  const themeToken=shelfGetUiThemeToken();
+  const panelTranslucent=!!shelfAppliedPanelTranslucent;
+  const raw=shelfAppliedPanelFillOpacity;
+  const panelFillOpacity=
+    typeof raw==='number'&&Number.isFinite(raw)
+      ? Math.min(SHELF_PANEL_FILL_OPACITY_RANGE_MAX, Math.max(SHELF_PANEL_FILL_OPACITY_RANGE_MIN, raw))
+      : SHELF_PANEL_FILL_OPACITY_RANGE_MAX;
+  return { themeToken, panelTranslucent, panelFillOpacity };
+}
 function shelfApplyUiThemeToken(themeToken){
   if(themeToken===SHELF_UI_THEME_SOFT) document.documentElement.setAttribute('data-theme',SHELF_UI_THEME_SOFT);
   else document.documentElement.setAttribute('data-theme',SHELF_UI_THEME_DARK);
@@ -1440,12 +1452,16 @@ function shelfInitNativeSettingsWindowBridge(subAttempt){
   }).catch(()=>{});
   ev.listen('shelf-settings-preview-panel', e=>{
     const p=e?.payload;
-    if(!p||typeof p.translucent!=='boolean') return;
+    if(!p||typeof p!=='object') return;
+    const rawTr=p.translucent;
+    const tr=rawTr===true||rawTr===1||rawTr==='1'||rawTr==='true';
     const op=typeof p.opacity==='number'&&Number.isFinite(p.opacity)
       ? Math.min(SHELF_PANEL_FILL_OPACITY_RANGE_MAX, Math.max(SHELF_PANEL_FILL_OPACITY_RANGE_MIN, p.opacity))
       : shelfCoercePanelFillOpacityFromStoredString(p.opacity);
     if(op==null) return;
-    shelfApplyPanelFillOpacityToDom(p.translucent, op);
+    shelfAppliedPanelTranslucent=tr;
+    shelfAppliedPanelFillOpacity=op;
+    shelfApplyPanelFillOpacityToDom(tr, op);
   }).catch(()=>{});
   ev.listen('shelf-settings-window-done', e=>{
     const p=e?.payload;
@@ -1463,20 +1479,22 @@ function shelfInitNativeSettingsWindowBridge(subAttempt){
       shelfPanelFillModalChoiceOpacity=shelfNativeSettingsChildBaselineOpacity;
     }else{
       const theme=p.theme===SHELF_UI_THEME_SOFT?SHELF_UI_THEME_SOFT:SHELF_UI_THEME_DARK;
-      const tr=!!p.translucent;
+      const rawTr=p.translucent;
+      const tr=rawTr===true||rawTr===1||rawTr==='1'||rawTr==='true';
       const op=typeof p.opacity==='number'&&Number.isFinite(p.opacity)
         ? Math.min(SHELF_PANEL_FILL_OPACITY_RANGE_MAX, Math.max(SHELF_PANEL_FILL_OPACITY_RANGE_MIN, p.opacity))
-        : shelfAppliedPanelFillOpacity;
+        : shelfCoercePanelFillOpacityFromStoredString(p.opacity);
+      const opFinal=op!=null?op:shelfAppliedPanelFillOpacity;
       shelfThemeModalBaselineToken=theme;
       shelfThemeModalChoiceToken=theme;
       shelfAppliedPanelTranslucent=tr;
-      shelfAppliedPanelFillOpacity=op;
+      shelfAppliedPanelFillOpacity=opFinal;
       shelfPanelFillModalBaselineTranslucent=tr;
-      shelfPanelFillModalBaselineOpacity=op;
+      shelfPanelFillModalBaselineOpacity=opFinal;
       shelfPanelFillModalChoiceTranslucent=tr;
-      shelfPanelFillModalChoiceOpacity=op;
+      shelfPanelFillModalChoiceOpacity=opFinal;
       shelfApplyUiThemeToken(theme);
-      shelfApplyPanelFillOpacityToDom(tr, op);
+      shelfApplyPanelFillOpacityToDom(tr, opFinal);
     }
     shelfSyncSettingsThemeCardSelection();
     shelfSyncSettingsPanelFillControls();
@@ -1723,8 +1741,21 @@ async function shelfSettingsConfirm(){
   shelfAppliedPanelFillOpacity=shelfPanelFillModalChoiceOpacity;
   shelfPanelFillModalBaselineTranslucent=shelfPanelFillModalChoiceTranslucent;
   shelfPanelFillModalBaselineOpacity=shelfPanelFillModalChoiceOpacity;
+  shelfApplyUiThemeToken(token);
+  shelfApplyPanelFillOpacityToDom(shelfAppliedPanelTranslucent, shelfAppliedPanelFillOpacity);
   document.getElementById('modal-shelf-settings').classList.remove('show');
   await shelfRestoreShellLogicalWidthAfterSettingsModal();
+  try{
+    await invoke('shelf_emit_to_main_window',{
+      channel:'shelf-settings-window-done',
+      payload:{
+        confirmed:true,
+        theme:token,
+        translucent:shelfPanelFillModalChoiceTranslucent,
+        opacity:shelfPanelFillModalChoiceOpacity,
+      },
+    });
+  }catch(e){ shelfUiTrace('settings.dom.confirm.emit.fail', String(e)); console.error(e); }
   shelfUiTrace('settings.dom.confirm.done',{});
 }
 async function shelfRestorePanelFillFromDb(){
@@ -2287,7 +2318,11 @@ async function shelfMemoTryOpenMemoNativeCreate(zone){
   if(!window.__TAURI__?.core?.invoke) return false;
   try{
     shelfMemoNativeFormLaunchZone=z;
-    await invoke('shelf_open_memo_form_window',{ bootstrap:{ mode:'create', launchZone:z } });
+    await invoke('shelf_open_memo_form_window',{ bootstrap:{
+      mode:'create',
+      launchZone:z,
+      shelfShellUiAppearance: shelfBuildShellUiAppearanceBootstrapSlice(),
+    }});
     return true;
   }catch(e){
     console.error(e);
@@ -3472,7 +3507,10 @@ async function openVaultAddModal(){
   shelfUiTrace('vault.modal.open',{ mode:'create', surface:'native-or-dom' });
   if(window.__TAURI__?.core?.invoke){
     try{
-      await invoke('shelf_open_vault_form_window',{ bootstrap:{ mode:'create' } });
+      await invoke('shelf_open_vault_form_window',{ bootstrap:{
+        mode:'create',
+        shelfShellUiAppearance: shelfBuildShellUiAppearanceBootstrapSlice(),
+      }});
       return;
     }catch(e){
       console.error(e);
@@ -3538,6 +3576,7 @@ async function openVaultEditModal(id){
           itemId:id,
           title:item.title||'',
           itemType:item.item_type||'memo',
+          shelfShellUiAppearance: shelfBuildShellUiAppearanceBootstrapSlice(),
         },
       });
       return;
@@ -3679,6 +3718,7 @@ async function shelfOpenTaskModalInNativeWindow(ctx){
     if(selectedProjectId==null&&list.length>0) selectedProjectId=list[0].id;
     await invoke('shelf_open_task_add_form_window',{
       bootstrap:{
+        shelfShellUiAppearance: shelfBuildShellUiAppearanceBootstrapSlice(),
         ctx:String(ctx||''),
         projects:projectsPayload,
         selectedProjectId,
@@ -3736,6 +3776,7 @@ async function shelfOpenTaskEditFormWindow(todoId){
   try{
     await invoke('shelf_open_task_edit_form_window',{
       bootstrap:{
+        shelfShellUiAppearance: shelfBuildShellUiAppearanceBootstrapSlice(),
         todoId:todo.id,
         title:todo.title,
         note:todo.note||'',

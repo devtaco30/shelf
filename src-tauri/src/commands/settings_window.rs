@@ -4,6 +4,7 @@ use serde::Serialize;
 use serde_json::Value;
 use tauri::{AppHandle, Emitter, Manager, WebviewUrl, WindowEvent};
 use tauri::webview::WebviewWindowBuilder;
+use tauri::window::Color;
 
 /// 메인·메뉴 핸들러에서 동일 라벨로 참조한다.
 pub const SHELF_SETTINGS_WEBVIEW_LABEL: &str = "settings";
@@ -52,6 +53,7 @@ pub async fn shelf_open_settings_window(app: AppHandle) -> Result<(), String> {
     .min_inner_size(320.0, 380.0)
     .decorations(false)
     .transparent(true)
+    .background_color(Color(0, 0, 0, 0))
     .resizable(true)
     .position(logical_left, logical_top)
     .build()
