@@ -8,6 +8,9 @@
 html,body{width:100%;height:100%;overflow:hidden;background:transparent}
 body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
 
+/* 컴팩트·확장·필·설정 모달 면에만 `--shelf-panel-fill-opacity` — 기타 모달·피커는 불투명 `--panel-bg` */
+:root{ --shelf-panel-fill-opacity:1; }
+
 /* ── Shelf UI palette (data-theme: dark | soft) ── */
 :root,[data-theme="dark"]{
   --shelf-pill-fixed-height:320px;
@@ -43,6 +46,36 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
   --modal-shadow:0 2px 24px rgba(0,0,0,.14),0 0 0 1px rgba(0,0,0,.07);
   --picker-bg:#fff;
 }
+/* 셸: 컴팩트·확장 카드 + 필 + 설정 모달 카드 면에만 알파 */
+[data-theme="dark"] .cpanel,
+[data-theme="dark"] .expanel{
+  background:rgb(22 22 31 / var(--shelf-panel-fill-opacity,1));
+}
+[data-theme="dark"] .pill{
+  background:rgb(30 30 46 / var(--shelf-panel-fill-opacity,1));
+}
+[data-theme="dark"] #modal-shelf-settings .modal{
+  background:rgb(22 22 31 / var(--shelf-panel-fill-opacity,1));
+}
+[data-theme="soft"] .cpanel,
+[data-theme="soft"] .expanel{
+  background:rgb(255 255 255 / var(--shelf-panel-fill-opacity,1));
+}
+[data-theme="soft"] .pill{
+  background:rgb(30 30 46 / var(--shelf-panel-fill-opacity,1));
+}
+[data-theme="soft"] #modal-shelf-settings .modal{
+  background:rgb(255 255 255 / var(--shelf-panel-fill-opacity,1));
+}
+/* 설정 전용: 일반 `.modal`(300px·92% 높이)보다 넓·높게 — 짧은 창에서 쓸데없는 세로 스크롤 완화 */
+#modal-shelf-settings .modal{
+  width:min(348px,calc(100vw - 24px));
+  max-width:100%;
+  box-sizing:border-box;
+  max-height:min(calc(100dvh - 28px),calc(100vh - 28px));
+  overflow-y:auto;
+  padding:18px 20px;
+}
 .shelf-settings-theme-cards{display:flex;flex-direction:column;gap:8px;margin-bottom:4px}
 .shelf-theme-card{
   display:block;width:100%;text-align:left;padding:10px 12px;border-radius:10px;border:1.5px solid var(--input-border);
@@ -52,6 +85,15 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
 .shelf-theme-card.sel{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
 .shelf-theme-card .shelf-theme-card-title{font-size:12px;font-weight:700}
 .shelf-theme-card .shelf-theme-card-sub{font-size:10px;color:var(--panel-text-sub);margin-top:3px;line-height:1.35}
+
+.shelf-settings-panel-fill-block{margin-top:6px}
+.shelf-settings-panel-fill-label{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;color:var(--panel-text);cursor:pointer;user-select:none}
+.shelf-settings-panel-fill-label input{accent-color:var(--accent)}
+.shelf-settings-panel-fill-row{margin-top:10px;display:flex;align-items:center;gap:10px}
+.shelf-settings-panel-fill-row span{font-size:11px;color:var(--panel-text-sub);flex-shrink:0;width:42px}
+.shelf-settings-panel-fill-row input[type=range]{flex:1;min-width:0}
+.shelf-settings-panel-fill-row input[type=range]:disabled{opacity:.45}
+.shelf-settings-panel-fill-hint{margin-top:6px;font-size:10px;color:var(--panel-text-sub);line-height:1.35}
 
 /* 초기값은 폴드 기준 — 실행 후 resizeWindow가 상태별로 덮어씀 */
 #app{position:relative;width:52px;height:420px}
@@ -965,9 +1007,11 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
     </div>
   </div>
 
-  <!-- Shelf 테마·설정 -->
-  <div class="modal-overlay" id="modal-shelf-settings" style="z-index:130" onclick="if(event.target===this)shelfSettingsDismiss()">
-    <div class="modal" style="width:320px" onclick="event.stopPropagation()">
+</div><!-- /app -->
+
+  <!-- Shelf 테마·설정 — #app 밖: pill(52px) 창에서 fixed 오버레이가 찌그러지지 않도록. 열 때 일시적으로 창 폭 확장 -->
+  <div class="modal-overlay" id="modal-shelf-settings" style="z-index:130" onclick="if(event.target===this)void shelfSettingsDismiss()">
+    <div class="modal" onclick="event.stopPropagation()">
       <div class="modal-title">설정</div>
       <div class="modal-label">테마</div>
       <div class="shelf-settings-theme-cards">
@@ -980,14 +1024,24 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
           <div class="shelf-theme-card-sub">밝은 패널 · 바이올렛 포인트</div>
         </button>
       </div>
+      <div class="modal-label" style="margin-top:14px">패널 투명도</div>
+      <div class="shelf-settings-panel-fill-block">
+        <label class="shelf-settings-panel-fill-label" for="shelf-settings-panel-translucent">
+          <input type="checkbox" id="shelf-settings-panel-translucent" onchange="shelfSettingsOnPanelTranslucentToggle()">
+          반투명 패널
+        </label>
+        <div class="shelf-settings-panel-fill-row">
+          <span>강도</span>
+          <input type="range" id="shelf-settings-panel-opacity-range" min="0.55" max="1" step="0.01" value="1" oninput="shelfSettingsOnPanelOpacityPreview()" aria-label="패널 불투명 강도">
+        </div>
+        <p class="shelf-settings-panel-fill-hint" id="shelf-settings-panel-opacity-hint">컴팩트·확장 패널 카드, 레일(필), 설정 모달 카드 배경(다크/라이트 면)에 적용됩니다.</p>
+      </div>
       <div class="modal-footer">
-        <button type="button" class="btn-cancel" onclick="shelfSettingsDismiss()">취소</button>
-        <button type="button" class="btn-submit" onclick="shelfSettingsConfirm()">적용</button>
+        <button type="button" class="btn-cancel" onclick="void shelfSettingsDismiss()">취소</button>
+        <button type="button" class="btn-submit" onclick="void shelfSettingsConfirm()">적용</button>
       </div>
     </div>
   </div>
-
-</div><!-- /app -->
 
   <!-- 삭제·일반 토스트 (#app 밖 — 창 경계·패널 클립 회피) -->
   <div class="del-toast" id="del-toast">
@@ -1072,8 +1126,67 @@ function invoke(cmd, args){
 
 const SHELF_UI_THEME_DARK='dark';
 const SHELF_UI_THEME_SOFT='soft';
+const SHELF_SETTINGS_KEY_PANEL_TRANSLUCENT='ui.panelTranslucent';
+const SHELF_SETTINGS_KEY_PANEL_FILL_OPACITY='ui.panelFillOpacity';
+const SHELF_PANEL_FILL_OPACITY_RANGE_MIN=0.55;
+const SHELF_PANEL_FILL_OPACITY_RANGE_MAX=1;
 let shelfThemeModalBaselineToken=SHELF_UI_THEME_DARK;
 let shelfThemeModalChoiceToken=SHELF_UI_THEME_DARK;
+/** 현재 적용 중인 패널 반투명 여부·슬라이더 값(모달 baseline/choice와 동기) */
+let shelfAppliedPanelTranslucent=false;
+let shelfAppliedPanelFillOpacity=SHELF_PANEL_FILL_OPACITY_RANGE_MAX;
+let shelfPanelFillModalBaselineTranslucent=false;
+let shelfPanelFillModalBaselineOpacity=SHELF_PANEL_FILL_OPACITY_RANGE_MAX;
+let shelfPanelFillModalChoiceTranslucent=false;
+let shelfPanelFillModalChoiceOpacity=SHELF_PANEL_FILL_OPACITY_RANGE_MAX;
+
+function shelfCoercePanelFillOpacityFromStoredString(raw){
+  if(raw==null||raw==='') return null;
+  const n=Number.parseFloat(String(raw).trim());
+  if(!Number.isFinite(n)) return null;
+  return Math.min(SHELF_PANEL_FILL_OPACITY_RANGE_MAX, Math.max(SHELF_PANEL_FILL_OPACITY_RANGE_MIN, n));
+}
+
+/** `반투명 패널`이 꺼지면 항상 불투명 1, 켜지면 `opacity01`을 그대로 CSS 변수에 반영 */
+function shelfApplyPanelFillOpacityToDom(translucentEnabled, opacity01){
+  const eff=translucentEnabled
+    ? Math.min(SHELF_PANEL_FILL_OPACITY_RANGE_MAX, Math.max(SHELF_PANEL_FILL_OPACITY_RANGE_MIN, opacity01))
+    : 1;
+  document.documentElement.style.setProperty('--shelf-panel-fill-opacity', String(eff));
+}
+
+function shelfSyncSettingsPanelFillControls(){
+  const cb=document.getElementById('shelf-settings-panel-translucent');
+  const rng=document.getElementById('shelf-settings-panel-opacity-range');
+  if(!cb||!rng) return;
+  cb.checked=shelfPanelFillModalChoiceTranslucent;
+  rng.disabled=!shelfPanelFillModalChoiceTranslucent;
+  rng.value=String(shelfPanelFillModalChoiceOpacity);
+  const pct=Math.round(Number(rng.value)*100);
+  const hint=document.getElementById('shelf-settings-panel-opacity-hint');
+  if(hint){
+    hint.textContent=shelfPanelFillModalChoiceTranslucent
+      ? `컴팩트·확장·레일(필)·설정 모달 면 · 불투명 ${pct}%`
+      : '컴팩트·확장·레일(필)·설정 모달 카드 배경(다크/라이트 면)에 적용. (반투명 끔 = 완전 불투명)';
+  }
+}
+
+function shelfSettingsOnPanelTranslucentToggle(){
+  const cb=document.getElementById('shelf-settings-panel-translucent');
+  shelfPanelFillModalChoiceTranslucent=!!(cb&&cb.checked);
+  shelfSyncSettingsPanelFillControls();
+  shelfApplyPanelFillOpacityToDom(shelfPanelFillModalChoiceTranslucent, shelfPanelFillModalChoiceOpacity);
+}
+
+function shelfSettingsOnPanelOpacityPreview(){
+  const rng=document.getElementById('shelf-settings-panel-opacity-range');
+  if(!rng||rng.disabled) return;
+  const v=shelfCoercePanelFillOpacityFromStoredString(rng.value);
+  if(v==null) return;
+  shelfPanelFillModalChoiceOpacity=v;
+  shelfSyncSettingsPanelFillControls();
+  shelfApplyPanelFillOpacityToDom(shelfPanelFillModalChoiceTranslucent, shelfPanelFillModalChoiceOpacity);
+}
 
 function shelfGetUiThemeToken(){
   const t=document.documentElement.getAttribute('data-theme');
@@ -1089,10 +1202,16 @@ function shelfSyncSettingsThemeCardSelection(){
     btn.classList.toggle('sel',btn.getAttribute('data-shelf-ui-theme')===choice);
   });
 }
-function shelfOpenSettingsModal(){
+async function shelfOpenSettingsModal(){
+  await shelfEnsureShellLogicalWidthForSettingsModal();
   shelfThemeModalBaselineToken=shelfGetUiThemeToken();
   shelfThemeModalChoiceToken=shelfThemeModalBaselineToken;
   shelfSyncSettingsThemeCardSelection();
+  shelfPanelFillModalBaselineTranslucent=shelfAppliedPanelTranslucent;
+  shelfPanelFillModalBaselineOpacity=shelfAppliedPanelFillOpacity;
+  shelfPanelFillModalChoiceTranslucent=shelfPanelFillModalBaselineTranslucent;
+  shelfPanelFillModalChoiceOpacity=shelfPanelFillModalBaselineOpacity;
+  shelfSyncSettingsPanelFillControls();
   document.getElementById('modal-shelf-settings').classList.add('show');
 }
 function shelfPreviewUiThemeInSettings(themeToken){
@@ -1100,18 +1219,53 @@ function shelfPreviewUiThemeInSettings(themeToken){
   shelfApplyUiThemeToken(shelfThemeModalChoiceToken);
   shelfSyncSettingsThemeCardSelection();
 }
-function shelfSettingsDismiss(){
+async function shelfSettingsDismiss(){
   document.getElementById('modal-shelf-settings').classList.remove('show');
+  await shelfRestoreShellLogicalWidthAfterSettingsModal();
   shelfApplyUiThemeToken(shelfThemeModalBaselineToken);
   shelfThemeModalChoiceToken=shelfThemeModalBaselineToken;
   shelfSyncSettingsThemeCardSelection();
+  shelfPanelFillModalChoiceTranslucent=shelfPanelFillModalBaselineTranslucent;
+  shelfPanelFillModalChoiceOpacity=shelfPanelFillModalBaselineOpacity;
+  shelfApplyPanelFillOpacityToDom(shelfPanelFillModalBaselineTranslucent, shelfPanelFillModalBaselineOpacity);
+  shelfSyncSettingsPanelFillControls();
 }
 async function shelfSettingsConfirm(){
   const token=shelfThemeModalChoiceToken;
   try{ await invoke('set_setting',{key:'theme',value:token}); }catch(e){ console.error(e); }
   shelfThemeModalBaselineToken=token;
+  try{
+    await invoke('set_setting',{key:SHELF_SETTINGS_KEY_PANEL_TRANSLUCENT,value:shelfPanelFillModalChoiceTranslucent?'1':'0'});
+    await invoke('set_setting',{key:SHELF_SETTINGS_KEY_PANEL_FILL_OPACITY,value:String(shelfPanelFillModalChoiceOpacity)});
+  }catch(e){ console.error(e); }
+  shelfAppliedPanelTranslucent=shelfPanelFillModalChoiceTranslucent;
+  shelfAppliedPanelFillOpacity=shelfPanelFillModalChoiceOpacity;
+  shelfPanelFillModalBaselineTranslucent=shelfPanelFillModalChoiceTranslucent;
+  shelfPanelFillModalBaselineOpacity=shelfPanelFillModalChoiceOpacity;
   document.getElementById('modal-shelf-settings').classList.remove('show');
+  await shelfRestoreShellLogicalWidthAfterSettingsModal();
 }
+async function shelfRestorePanelFillFromDb(){
+  let translucent=false;
+  let opacity=SHELF_PANEL_FILL_OPACITY_RANGE_MAX;
+  if(!window.__TAURI__?.core?.invoke){
+    shelfAppliedPanelTranslucent=translucent;
+    shelfAppliedPanelFillOpacity=opacity;
+    shelfApplyPanelFillOpacityToDom(translucent, opacity);
+    return;
+  }
+  try{
+    const tr=await invoke('get_setting',{key:SHELF_SETTINGS_KEY_PANEL_TRANSLUCENT});
+    translucent=tr==='1'||tr===1||tr===true||tr==='true';
+    const opRaw=await invoke('get_setting',{key:SHELF_SETTINGS_KEY_PANEL_FILL_OPACITY});
+    const parsed=shelfCoercePanelFillOpacityFromStoredString(opRaw);
+    if(parsed!=null) opacity=parsed;
+  }catch(_){ /* 기본 유지 */ }
+  shelfAppliedPanelTranslucent=translucent;
+  shelfAppliedPanelFillOpacity=opacity;
+  shelfApplyPanelFillOpacityToDom(translucent, opacity);
+}
+
 async function shelfRestoreUiThemeFromDb(){
   try{
     const saved=await invoke('get_setting',{key:'theme'});
@@ -1120,11 +1274,12 @@ async function shelfRestoreUiThemeFromDb(){
   }catch(_){
     shelfApplyUiThemeToken(SHELF_UI_THEME_DARK);
   }
+  await shelfRestorePanelFillFromDb();
 }
 function shelfAttachOpenSettingsMenuListener(){
   const ev=window.__TAURI__?.event;
   if(!ev?.listen) return;
-  ev.listen('open-settings',()=>{ shelfOpenSettingsModal(); }).catch(()=>{});
+  ev.listen('open-settings',()=>{ void shelfOpenSettingsModal(); }).catch(()=>{});
 }
 const { getCurrentWindow, LogicalSize } = window.__TAURI__?.window || {}; // currentMonitor 는 매 호출 시 __TAURI__.window 에서 참조
 
@@ -1138,6 +1293,39 @@ async function applyWindowLogicalSizeKeepingOuterTopLeft(logicalW, logicalH){
     await gw.setSize(new LogicalSize(logicalW, logicalH));
     if(outerTopLeftPhysical) await gw.setPosition(outerTopLeftPhysical);
   }catch(_){}
+}
+
+/** 설정 모달이 `position:fixed`로 그릴 WebView 논리 크기 — pill(52px)이면 오버레이가 세로 띠로 깨짐; 높이가 낮으면 모달 본문이 92%에서 잘려 스크롤 남 */
+const SHELF_SETTINGS_MODAL_MIN_SHELL_LOGICAL_WIDTH_PX=360;
+const SHELF_SETTINGS_MODAL_MIN_SHELL_LOGICAL_HEIGHT_PX=492;
+let shelfSettingsModalShellSizePriorToWiden=null;
+
+async function shelfEnsureShellLogicalWidthForSettingsModal(){
+  const app=document.getElementById('app');
+  if(!app) return;
+  const rawW=parseFloat(String(app.style.width||'').replace('px',''));
+  const rawH=parseFloat(String(app.style.height||'').replace('px',''));
+  const curW=Number.isFinite(rawW)&&rawW>0?Math.round(rawW):52;
+  const curH=Number.isFinite(rawH)&&rawH>0?Math.round(rawH):420;
+  const nextW=Math.max(curW,SHELF_SETTINGS_MODAL_MIN_SHELL_LOGICAL_WIDTH_PX);
+  const nextH=Math.max(curH,SHELF_SETTINGS_MODAL_MIN_SHELL_LOGICAL_HEIGHT_PX);
+  if(nextW===curW&&nextH===curH) return;
+  shelfSettingsModalShellSizePriorToWiden={w:curW,h:curH};
+  app.style.width=nextW+'px';
+  app.style.height=nextH+'px';
+  await applyWindowLogicalSizeKeepingOuterTopLeft(nextW,nextH);
+}
+
+async function shelfRestoreShellLogicalWidthAfterSettingsModal(){
+  if(!shelfSettingsModalShellSizePriorToWiden) return;
+  const {w,h}=shelfSettingsModalShellSizePriorToWiden;
+  shelfSettingsModalShellSizePriorToWiden=null;
+  const app=document.getElementById('app');
+  if(app){
+    app.style.width=w+'px';
+    app.style.height=h+'px';
+  }
+  await applyWindowLogicalSizeKeepingOuterTopLeft(w,h);
 }
 
 /** 필 레일 물리 높이(px) — `.pill` 의 `height`·`--shelf-pill-fixed-height` 와 반드시 동일 */
