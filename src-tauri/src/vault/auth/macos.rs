@@ -10,6 +10,7 @@ use std::sync::{Arc, Mutex};
 const SERVICE: &str = "com.shelf.app";
 const KEY_ACCOUNT: &str = "vault-key";
 const SALT_ACCOUNT: &str = "vault-salt";
+const DB_KEY_ACCOUNT: &str = "db-key";
 
 pub struct MacOSAuthProvider;
 
@@ -32,6 +33,14 @@ impl AuthProvider for MacOSAuthProvider {
 
     fn load_salt(&self) -> Result<Vec<u8>, String> {
         get_generic_password(SERVICE, SALT_ACCOUNT).map_err(|e| e.to_string())
+    }
+
+    fn store_db_key(&self, key: &[u8]) -> Result<(), String> {
+        unsafe { store_unrestricted(DB_KEY_ACCOUNT, key) }
+    }
+
+    fn load_db_key(&self) -> Result<Vec<u8>, String> {
+        get_generic_password(SERVICE, DB_KEY_ACCOUNT).map_err(|e| e.to_string())
     }
 }
 
