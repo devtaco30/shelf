@@ -40,6 +40,7 @@
           "update_memo",
           "delete_memo",
           "get_platform",
+          "shelf_close_all_secondary_webviews",
           "shelf_open_settings_window",
           "shelf_emit_to_main_window",
           "shelf_finish_settings_window",

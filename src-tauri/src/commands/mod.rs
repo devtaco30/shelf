@@ -9,3 +9,4 @@ pub mod task_edit_window;
 pub mod vault_add_window;
 pub mod memo_add_window;
 pub mod memo;
+pub mod app_lifecycle;

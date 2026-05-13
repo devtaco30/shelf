@@ -2218,7 +2218,14 @@ async function resizeWindow(state, tabOverride){
   await applyWindowLogicalSizeKeepingOuterTopLeft(w, h);
   if(SHELF_WINDOW_METRICS_DEBUG) void logShelfWindowMetrics('resizeWindow('+state+')');
 }
-async function closeApp(){ try{ await getCurrentWindow().close(); }catch(e){} }
+async function closeApp(){
+  try{
+    if(window.__TAURI__?.core?.invoke){
+      await invoke('shelf_close_all_secondary_webviews');
+    }
+  }catch(e){ console.error('[Shelf] closeApp: 보조 웹뷰 닫기 실패', e); }
+  try{ await getCurrentWindow().close(); }catch(e){}
+}
 async function minimizeApp(){ try{ await getCurrentWindow().minimize(); }catch(e){} }
 
 // ══════════════════════════════════════════════════════

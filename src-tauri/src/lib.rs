@@ -172,6 +172,7 @@ pub fn run() {
             commands::memo::update_memo,
             commands::memo::delete_memo,
             get_platform,
+            commands::app_lifecycle::shelf_close_all_secondary_webviews,
             commands::settings_window::shelf_open_settings_window,
             commands::settings_window::shelf_emit_to_main_window,
             commands::settings_window::shelf_finish_settings_window,
@@ -196,6 +197,15 @@ pub fn run() {
             commands::memo_add_window::shelf_finish_memo_form_window,
             commands::memo_add_window::shelf_memo_form_trace,
         ])
+        .on_window_event(|window, event| {
+            if window.label() != "main" {
+                return;
+            }
+            if let tauri::WindowEvent::CloseRequested { .. } = event {
+                let app = window.app_handle().clone();
+                commands::app_lifecycle::close_all_secondary_webviews_impl(&app);
+            }
+        })
         .run(tauri::generate_context!())
         .expect("Tauri 실행 오류");
 }
