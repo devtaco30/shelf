@@ -67,8 +67,10 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
 [data-theme="soft"] #modal-shelf-settings .modal{
   background:rgb(255 255 255 / var(--shelf-panel-fill-opacity,1));
 }
-/* 설정 전용: 일반 `.modal`(300px·92% 높이)보다 넓·높게 — 짧은 창에서 쓸데없는 세로 스크롤 완화 */
+/* 설정 전용: 일반 `.modal`(300px·92% 높이)보다 넓·높게 — 짧은 창에서 쓸데없는 세로 스크롤 완화; 창과 별개로 제목줄 드래그로 위치 이동 */
 #modal-shelf-settings .modal{
+  position:fixed;
+  margin:0;
   width:min(348px,calc(100vw - 24px));
   max-width:100%;
   box-sizing:border-box;
@@ -76,6 +78,12 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
   overflow-y:auto;
   padding:18px 20px;
 }
+#modal-shelf-settings .modal-title.shelf-settings-modal-drag-handle{
+  cursor:grab;
+  user-select:none;
+  touch-action:none;
+}
+#modal-shelf-settings .modal-title.shelf-settings-modal-drag-handle:active{cursor:grabbing}
 .shelf-settings-theme-cards{display:flex;flex-direction:column;gap:8px;margin-bottom:4px}
 .shelf-theme-card{
   display:block;width:100%;text-align:left;padding:10px 12px;border-radius:10px;border:1.5px solid var(--input-border);
@@ -1009,10 +1017,10 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
 
 </div><!-- /app -->
 
-  <!-- Shelf 테마·설정 — #app 밖: pill(52px) 창에서 fixed 오버레이가 찌그러지지 않도록. 열 때 일시적으로 창 폭 확장 -->
+  <!-- Shelf 테마·설정 — Tauri에선 별도 OS 창(settings.html). 브라우저 미리보기만 이 오버레이 사용 -->
   <div class="modal-overlay" id="modal-shelf-settings" style="z-index:130" onclick="if(event.target===this)void shelfSettingsDismiss()">
     <div class="modal" onclick="event.stopPropagation()">
-      <div class="modal-title">설정</div>
+      <div class="modal-title shelf-settings-modal-drag-handle">설정</div>
       <div class="modal-label">테마</div>
       <div class="shelf-settings-theme-cards">
         <button type="button" class="shelf-theme-card" data-shelf-ui-theme="dark" onclick="shelfPreviewUiThemeInSettings('dark')">
@@ -1202,7 +1210,70 @@ function shelfSyncSettingsThemeCardSelection(){
     btn.classList.toggle('sel',btn.getAttribute('data-shelf-ui-theme')===choice);
   });
 }
-async function shelfOpenSettingsModal(){
+
+/** 네이티브 설정 창이 열릴 때 메인 UI 복구용 baseline(취소 시 그대로 되돌림) */
+let shelfNativeSettingsChildBaselineToken=SHELF_UI_THEME_DARK;
+let shelfNativeSettingsChildBaselineTranslucent=false;
+let shelfNativeSettingsChildBaselineOpacity=SHELF_PANEL_FILL_OPACITY_RANGE_MAX;
+
+let shelfNativeSettingsWindowBridgeInited=false;
+function shelfInitNativeSettingsWindowBridge(){
+  if(shelfNativeSettingsWindowBridgeInited) return;
+  const ev=window.__TAURI__?.event;
+  if(!ev?.listen) return;
+  shelfNativeSettingsWindowBridgeInited=true;
+  ev.listen('shelf-settings-preview-theme', e=>{
+    const p=e?.payload;
+    const token=(p&&typeof p==='object'&&p.token!=null)?String(p.token):String(p||'');
+    if(token===SHELF_UI_THEME_SOFT) shelfApplyUiThemeToken(SHELF_UI_THEME_SOFT);
+    else if(token===SHELF_UI_THEME_DARK) shelfApplyUiThemeToken(SHELF_UI_THEME_DARK);
+  }).catch(()=>{});
+  ev.listen('shelf-settings-preview-panel', e=>{
+    const p=e?.payload;
+    if(!p||typeof p.translucent!=='boolean') return;
+    const op=typeof p.opacity==='number'&&Number.isFinite(p.opacity)
+      ? Math.min(SHELF_PANEL_FILL_OPACITY_RANGE_MAX, Math.max(SHELF_PANEL_FILL_OPACITY_RANGE_MIN, p.opacity))
+      : shelfCoercePanelFillOpacityFromStoredString(p.opacity);
+    if(op==null) return;
+    shelfApplyPanelFillOpacityToDom(p.translucent, op);
+  }).catch(()=>{});
+  ev.listen('shelf-settings-window-done', e=>{
+    const p=e?.payload;
+    const ok=p&&p.confirmed===true;
+    if(!ok){
+      shelfApplyUiThemeToken(shelfNativeSettingsChildBaselineToken);
+      shelfApplyPanelFillOpacityToDom(shelfNativeSettingsChildBaselineTranslucent, shelfNativeSettingsChildBaselineOpacity);
+      shelfThemeModalBaselineToken=shelfNativeSettingsChildBaselineToken;
+      shelfThemeModalChoiceToken=shelfNativeSettingsChildBaselineToken;
+      shelfAppliedPanelTranslucent=shelfNativeSettingsChildBaselineTranslucent;
+      shelfAppliedPanelFillOpacity=shelfNativeSettingsChildBaselineOpacity;
+      shelfPanelFillModalBaselineTranslucent=shelfNativeSettingsChildBaselineTranslucent;
+      shelfPanelFillModalBaselineOpacity=shelfNativeSettingsChildBaselineOpacity;
+      shelfPanelFillModalChoiceTranslucent=shelfNativeSettingsChildBaselineTranslucent;
+      shelfPanelFillModalChoiceOpacity=shelfNativeSettingsChildBaselineOpacity;
+    }else{
+      const theme=p.theme===SHELF_UI_THEME_SOFT?SHELF_UI_THEME_SOFT:SHELF_UI_THEME_DARK;
+      const tr=!!p.translucent;
+      const op=typeof p.opacity==='number'&&Number.isFinite(p.opacity)
+        ? Math.min(SHELF_PANEL_FILL_OPACITY_RANGE_MAX, Math.max(SHELF_PANEL_FILL_OPACITY_RANGE_MIN, p.opacity))
+        : shelfAppliedPanelFillOpacity;
+      shelfThemeModalBaselineToken=theme;
+      shelfThemeModalChoiceToken=theme;
+      shelfAppliedPanelTranslucent=tr;
+      shelfAppliedPanelFillOpacity=op;
+      shelfPanelFillModalBaselineTranslucent=tr;
+      shelfPanelFillModalBaselineOpacity=op;
+      shelfPanelFillModalChoiceTranslucent=tr;
+      shelfPanelFillModalChoiceOpacity=op;
+      shelfApplyUiThemeToken(theme);
+      shelfApplyPanelFillOpacityToDom(tr, op);
+    }
+    shelfSyncSettingsThemeCardSelection();
+    shelfSyncSettingsPanelFillControls();
+  }).catch(()=>{});
+}
+
+async function shelfOpenSettingsDomModalFallback(){
   await shelfEnsureShellLogicalWidthForSettingsModal();
   shelfThemeModalBaselineToken=shelfGetUiThemeToken();
   shelfThemeModalChoiceToken=shelfThemeModalBaselineToken;
@@ -1213,6 +1284,24 @@ async function shelfOpenSettingsModal(){
   shelfPanelFillModalChoiceOpacity=shelfPanelFillModalBaselineOpacity;
   shelfSyncSettingsPanelFillControls();
   document.getElementById('modal-shelf-settings').classList.add('show');
+  requestAnimationFrame(()=>{
+    requestAnimationFrame(()=>void shelfLayoutSettingsModalCenteredInViewport());
+  });
+}
+
+async function shelfOpenSettingsModal(){
+  if(window.__TAURI__?.core?.invoke){
+    shelfNativeSettingsChildBaselineToken=shelfGetUiThemeToken();
+    shelfNativeSettingsChildBaselineTranslucent=shelfAppliedPanelTranslucent;
+    shelfNativeSettingsChildBaselineOpacity=shelfAppliedPanelFillOpacity;
+    try{
+      await invoke('shelf_open_settings_window');
+      return;
+    }catch(err){
+      console.error(err);
+    }
+  }
+  await shelfOpenSettingsDomModalFallback();
 }
 function shelfPreviewUiThemeInSettings(themeToken){
   shelfThemeModalChoiceToken=themeToken===SHELF_UI_THEME_SOFT?SHELF_UI_THEME_SOFT:SHELF_UI_THEME_DARK;
@@ -1326,6 +1415,119 @@ async function shelfRestoreShellLogicalWidthAfterSettingsModal(){
     app.style.height=h+'px';
   }
   await applyWindowLogicalSizeKeepingOuterTopLeft(w,h);
+}
+
+/** 설정 모달 드래그 시 뷰포트 안에 남겨 둘 최소 가시 크기(px) — 나머지는 화면 밖으로 나가도 됨(이동 범위 확대) */
+const SHELF_SETTINGS_MODAL_MIN_VISIBLE_IN_VIEWPORT_PX=72;
+
+/** 설정 모달 `left`/`top`: 가시 최소 `SHELF_SETTINGS_MODAL_MIN_VISIBLE_IN_VIEWPORT_PX`만 뷰포트와 겹치면 됨 */
+function shelfClampSettingsModalOriginPx(leftPx, topPx, modalWidthPx, modalHeightPx){
+  const vw=window.innerWidth;
+  const vh=window.innerHeight;
+  const w=Math.max(1, modalWidthPx);
+  const h=Math.max(1, modalHeightPx);
+  const kW=Math.min(SHELF_SETTINGS_MODAL_MIN_VISIBLE_IN_VIEWPORT_PX, w);
+  const kH=Math.min(SHELF_SETTINGS_MODAL_MIN_VISIBLE_IN_VIEWPORT_PX, h);
+  const minLeftPx=-(w-kW);
+  const maxLeftPx=vw-kW;
+  const minTopPx=-(h-kH);
+  const maxTopPx=vh-kH;
+  return{
+    left:Math.min(Math.max(minLeftPx, leftPx), maxLeftPx),
+    top:Math.min(Math.max(minTopPx, topPx), maxTopPx),
+  };
+}
+
+function shelfLayoutSettingsModalCenteredInViewport(){
+  const modal=document.querySelector('#modal-shelf-settings .modal');
+  if(!modal) return;
+  modal.style.position='fixed';
+  const rect=modal.getBoundingClientRect();
+  const w=Math.round(rect.width);
+  const h=Math.round(rect.height);
+  if(w<2||h<2) return;
+  const left=Math.round((window.innerWidth-w)/2);
+  const top=Math.round((window.innerHeight-h)/2);
+  const c=shelfClampSettingsModalOriginPx(left, top, w, h);
+  modal.style.left=c.left+'px';
+  modal.style.top=c.top+'px';
+}
+
+let shelfSettingsModalDragActivePointerId=null;
+let shelfSettingsModalDragBaseline=null;
+
+function shelfSettingsModalOnDragPointerMove(ev){
+  if(shelfSettingsModalDragActivePointerId!==ev.pointerId||!shelfSettingsModalDragBaseline) return;
+  const modal=document.querySelector('#modal-shelf-settings .modal');
+  if(!modal) return;
+  const dX=ev.clientX-shelfSettingsModalDragBaseline.startClientX;
+  const dY=ev.clientY-shelfSettingsModalDragBaseline.startClientY;
+  const nextL=shelfSettingsModalDragBaseline.originLeftPx+dX;
+  const nextT=shelfSettingsModalDragBaseline.originTopPx+dY;
+  const rect=modal.getBoundingClientRect();
+  const c=shelfClampSettingsModalOriginPx(nextL, nextT, rect.width, rect.height);
+  modal.style.left=c.left+'px';
+  modal.style.top=c.top+'px';
+}
+
+function shelfSettingsModalOnDragPointerEnd(ev){
+  if(shelfSettingsModalDragActivePointerId!==ev.pointerId) return;
+  const handle=document.querySelector('#modal-shelf-settings .shelf-settings-modal-drag-handle');
+  if(handle){
+    try{ handle.releasePointerCapture(ev.pointerId); }catch(_){}
+    handle.style.cursor='';
+  }
+  shelfSettingsModalDragActivePointerId=null;
+  shelfSettingsModalDragBaseline=null;
+  window.removeEventListener('pointermove', shelfSettingsModalOnDragPointerMove);
+  window.removeEventListener('pointerup', shelfSettingsModalOnDragPointerEnd);
+  window.removeEventListener('pointercancel', shelfSettingsModalOnDragPointerEnd);
+}
+
+function shelfSettingsModalOnDragHandlePointerDown(ev){
+  if(ev.button!==0) return;
+  const modal=document.querySelector('#modal-shelf-settings .modal');
+  const handle=ev.currentTarget;
+  if(!modal||!handle||shelfSettingsModalDragActivePointerId!==null) return;
+  shelfSettingsModalDragActivePointerId=ev.pointerId;
+  try{ handle.setPointerCapture(ev.pointerId); }catch(_){}
+  const rect=modal.getBoundingClientRect();
+  shelfSettingsModalDragBaseline={
+    startClientX: ev.clientX,
+    startClientY: ev.clientY,
+    originLeftPx: rect.left,
+    originTopPx: rect.top,
+  };
+  handle.style.cursor='grabbing';
+  window.addEventListener('pointermove', shelfSettingsModalOnDragPointerMove);
+  window.addEventListener('pointerup', shelfSettingsModalOnDragPointerEnd);
+  window.addEventListener('pointercancel', shelfSettingsModalOnDragPointerEnd);
+}
+
+function shelfReclampSettingsModalOriginIfOpen(){
+  const overlay=document.getElementById('modal-shelf-settings');
+  if(!overlay?.classList.contains('show')) return;
+  const modal=overlay.querySelector('.modal');
+  if(!modal) return;
+  const l=parseFloat(modal.style.left);
+  const t=parseFloat(modal.style.top);
+  if(!Number.isFinite(l)||!Number.isFinite(t)) return;
+  const rect=modal.getBoundingClientRect();
+  const c=shelfClampSettingsModalOriginPx(l, t, rect.width, rect.height);
+  modal.style.left=c.left+'px';
+  modal.style.top=c.top+'px';
+}
+
+let shelfSettingsModalInteractionInited=false;
+function shelfInitSettingsModalInteraction(){
+  if(shelfSettingsModalInteractionInited) return;
+  shelfSettingsModalInteractionInited=true;
+  const handle=document.querySelector('#modal-shelf-settings .shelf-settings-modal-drag-handle');
+  if(handle&&!handle.dataset.shelfSettingsModalDragBound){
+    handle.dataset.shelfSettingsModalDragBound='1';
+    handle.addEventListener('pointerdown', shelfSettingsModalOnDragHandlePointerDown);
+  }
+  window.addEventListener('resize', shelfReclampSettingsModalOriginIfOpen, { passive: true });
 }
 
 /** 필 레일 물리 높이(px) — `.pill` 의 `height`·`--shelf-pill-fixed-height` 와 반드시 동일 */
@@ -3317,6 +3519,8 @@ function waitAndInit(retries){
     resizeWindow('pill').then(()=>init());
   }
 }
+shelfInitNativeSettingsWindowBridge();
+shelfInitSettingsModalInteraction();
 waitAndInit(10);
 </script>
 </body>

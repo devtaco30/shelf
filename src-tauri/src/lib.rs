@@ -123,6 +123,9 @@ pub fn run() {
             commands::memo::update_memo,
             commands::memo::delete_memo,
             get_platform,
+            commands::settings_window::shelf_open_settings_window,
+            commands::settings_window::shelf_emit_to_main_window,
+            commands::settings_window::shelf_finish_settings_window,
         ])
         .run(tauri::generate_context!())
         .expect("Tauri 실행 오류");

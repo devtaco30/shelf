@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shelf 설정</title>
+<style>
+/* 메인과 동일: 카드 면만 `--shelf-panel-fill-opacity` — 창 transparent 시 뒤가 비침 */
+:root{ --shelf-panel-fill-opacity:1; }
+:root,[data-theme="dark"]{
+  --panel-bg:#16161F;
+  --panel-border:rgba(255,255,255,0.08);
+  --panel-text:#F0F0F0;
+  --panel-text-sub:rgba(255,255,255,0.45);
+  --accent:#AAED3A;
+  --input-bg:rgba(255,255,255,0.07);
+  --input-border:rgba(255,255,255,0.12);
+  --panel-item-hover:rgba(255,255,255,0.06);
+}
+[data-theme="soft"]{
+  --panel-bg:#FFFFFF;
+  --panel-border:#EBEBEB;
+  --panel-text:#111111;
+  --panel-text-sub:#888888;
+  --accent:#6C63FF;
+  --input-bg:#F5F5F5;
+  --input-border:#E0E0E0;
+  --panel-item-hover:#F5F5FF;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:transparent;font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px;color:var(--panel-text)}
+body{padding:14px 16px 16px}
+.settings-card{
+  border-radius:16px;
+  border:.5px solid var(--panel-border);
+  box-shadow:0 2px 24px rgba(0,0,0,.35),0 0 0 1px rgba(255,255,255,.06);
+  padding:18px 20px;
+  max-width:100%;
+}
+[data-theme="dark"] .settings-card{
+  background:rgb(22 22 31 / var(--shelf-panel-fill-opacity,1));
+}
+[data-theme="soft"] .settings-card{
+  background:rgb(255 255 255 / var(--shelf-panel-fill-opacity,1));
+}
+.settings-drag{
+  cursor:grab;
+  user-select:none;
+  font-size:15px;
+  font-weight:700;
+  margin-bottom:14px;
+  padding:4px 0;
+}
+.settings-drag:active{cursor:grabbing}
+.lbl{font-size:10px;font-weight:600;color:var(--panel-text-sub);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px}
+.theme-cards{display:flex;flex-direction:column;gap:8px;margin-bottom:4px}
+.theme-btn{
+  display:block;width:100%;text-align:left;padding:10px 12px;border-radius:10px;border:1.5px solid var(--input-border);
+  background:var(--input-bg);cursor:pointer;font:inherit;color:var(--panel-text);
+}
+.theme-btn:hover{border-color:var(--accent);background:var(--panel-item-hover)}
+.theme-btn.sel{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.theme-btn .t{font-size:12px;font-weight:700}
+.theme-btn .s{font-size:10px;color:var(--panel-text-sub);margin-top:3px;line-height:1.35}
+.fill-block{margin-top:10px}
+.fill-label{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;cursor:pointer;user-select:none}
+.fill-label input{accent-color:var(--accent)}
+.fill-row{margin-top:10px;display:flex;align-items:center;gap:10px}
+.fill-row span{font-size:11px;color:var(--panel-text-sub);flex-shrink:0;width:42px}
+.fill-row input[type=range]{flex:1;min-width:0}
+.fill-row input[type=range]:disabled{opacity:.45}
+.fill-hint{margin-top:6px;font-size:10px;color:var(--panel-text-sub);line-height:1.35}
+.footer{display:flex;gap:8px;margin-top:16px}
+.btn{flex:1;padding:8px;border-radius:8px;border:1px solid var(--input-border);background:var(--input-bg);font-size:12px;font-weight:500;cursor:pointer;color:var(--panel-text)}
+.btn:hover{background:var(--panel-item-hover)}
+.btn-primary{border:none;background:var(--accent);color:#111;font-weight:600}
+.btn-primary:hover{filter:brightness(1.05)}
+</style>
+</head>
+<body>
+  <div class="settings-card">
+    <div class="settings-drag" data-tauri-drag-region>설정</div>
+    <div class="lbl">테마</div>
+    <div class="theme-cards">
+      <button type="button" class="theme-btn" data-theme="dark" id="btn-theme-dark">
+        <div class="t">Dark Glass</div>
+        <div class="s">어두운 글래스 패널 · 라임 포인트</div>
+      </button>
+      <button type="button" class="theme-btn" data-theme="soft" id="btn-theme-soft">
+        <div class="t">Soft Color</div>
+        <div class="s">밝은 패널 · 바이올렛 포인트</div>
+      </button>
+    </div>
+    <div class="lbl" style="margin-top:12px">패널 투명도</div>
+    <div class="fill-block">
+      <label class="fill-label" for="cb-translucent">
+        <input type="checkbox" id="cb-translucent">
+        반투명 패널
+      </label>
+      <div class="fill-row">
+        <span>강도</span>
+        <input type="range" id="rng-opacity" min="0.55" max="1" step="0.01" value="1" aria-label="패널 불투명 강도">
+      </div>
+      <p class="fill-hint" id="hint-opacity">슬라이더는 메인 패널과 이 설정 창 카드 면에 같이 반영됩니다.</p>
+    </div>
+    <div class="footer">
+      <button type="button" class="btn" id="btn-cancel">취소</button>
+      <button type="button" class="btn btn-primary" id="btn-apply">적용</button>
+    </div>
+  </div>
+<script>
+(function(){
+  const THEME_DARK='dark';
+  const THEME_SOFT='soft';
+  const KEY_THEME='theme';
+  const KEY_TR='ui.panelTranslucent';
+  const KEY_OP='ui.panelFillOpacity';
+  const OP_MIN=0.55;
+  const OP_MAX=1;
+
+  function invoke(cmd, args){
+    const core=window.__TAURI__?.core;
+    if(!core?.invoke) return Promise.reject(new Error('Tauri 없음'));
+    return core.invoke(cmd, args);
+  }
+  function emitToMain(channel, payload){
+    return invoke('shelf_emit_to_main_window',{ channel, payload });
+  }
+  function finish(payload){
+    return invoke('shelf_finish_settings_window', payload);
+  }
+
+  function applyDataTheme(token){
+    if(token===THEME_SOFT) document.documentElement.setAttribute('data-theme',THEME_SOFT);
+    else document.documentElement.setAttribute('data-theme',THEME_DARK);
+  }
+  function syncThemeButtons(choice){
+    document.querySelectorAll('.theme-btn').forEach(b=>{
+      b.classList.toggle('sel', b.getAttribute('data-theme')===choice);
+    });
+  }
+  function coerceOpacity(raw){
+    if(raw==null||raw==='') return OP_MAX;
+    const n=Number.parseFloat(String(raw).trim());
+    if(!Number.isFinite(n)) return OP_MAX;
+    return Math.min(OP_MAX, Math.max(OP_MIN, n));
+  }
+  /** 메인 `shelfApplyPanelFillOpacityToDom` 과 동일 — 이 웹뷰의 `.settings-card` 면에도 적용 */
+  function applyLocalPanelFillOpacity(translucent, opacity01){
+    const eff=translucent
+      ? Math.min(OP_MAX, Math.max(OP_MIN, opacity01))
+      : 1;
+    document.documentElement.style.setProperty('--shelf-panel-fill-opacity', String(eff));
+  }
+  function syncHint(){
+    const cb=document.getElementById('cb-translucent');
+    const rng=document.getElementById('rng-opacity');
+    const hint=document.getElementById('hint-opacity');
+    if(!cb||!rng||!hint) return;
+    rng.disabled=!cb.checked;
+    const pct=Math.round(Number(rng.value)*100);
+    hint.textContent=cb.checked
+      ? `메인·설정 창 카드 면 · 불투명 ${pct}%`
+      : '반투명 끔 = 메인·설정 창 패널 면 완전 불투명.';
+  }
+
+  let choiceTheme=THEME_DARK;
+
+  document.getElementById('btn-theme-dark').addEventListener('click',()=>{
+    choiceTheme=THEME_DARK;
+    applyDataTheme(choiceTheme);
+    syncThemeButtons(choiceTheme);
+    void emitToMain('shelf-settings-preview-theme',{ token: choiceTheme });
+  });
+  document.getElementById('btn-theme-soft').addEventListener('click',()=>{
+    choiceTheme=THEME_SOFT;
+    applyDataTheme(choiceTheme);
+    syncThemeButtons(choiceTheme);
+    void emitToMain('shelf-settings-preview-theme',{ token: choiceTheme });
+  });
+
+  const cbTr=document.getElementById('cb-translucent');
+  const rngOp=document.getElementById('rng-opacity');
+  function pushPanelPreview(){
+    const tr=!!cbTr.checked;
+    const op=coerceOpacity(rngOp.value);
+    applyLocalPanelFillOpacity(tr, op);
+    void emitToMain('shelf-settings-preview-panel',{ translucent: tr, opacity: op });
+    syncHint();
+  }
+  cbTr.addEventListener('change', pushPanelPreview);
+  rngOp.addEventListener('input', pushPanelPreview);
+
+  document.getElementById('btn-cancel').addEventListener('click',()=>{
+    void finish({ confirmed: false });
+  });
+  document.getElementById('btn-apply').addEventListener('click',async()=>{
+    const tr=!!cbTr.checked;
+    const op=coerceOpacity(rngOp.value);
+    try{
+      await invoke('set_setting',{ key: KEY_THEME, value: choiceTheme });
+      await invoke('set_setting',{ key: KEY_TR, value: tr ? '1' : '0' });
+      await invoke('set_setting',{ key: KEY_OP, value: String(op) });
+      await finish({
+        confirmed: true,
+        theme: choiceTheme,
+        translucent: tr,
+        opacity: op,
+      });
+    }catch(e){
+      console.error(e);
+    }
+  });
+
+  (async function init(){
+    try{
+      const savedTheme=await invoke('get_setting',{ key: KEY_THEME });
+      choiceTheme=savedTheme===THEME_SOFT ? THEME_SOFT : THEME_DARK;
+      applyDataTheme(choiceTheme);
+      syncThemeButtons(choiceTheme);
+      const trRaw=await invoke('get_setting',{ key: KEY_TR });
+      const translucent=trRaw==='1'||trRaw===1||trRaw===true||trRaw==='true';
+      cbTr.checked=translucent;
+      const opRaw=await invoke('get_setting',{ key: KEY_OP });
+      rngOp.value=String(coerceOpacity(opRaw));
+      rngOp.disabled=!translucent;
+      syncHint();
+      pushPanelPreview();
+    }catch(e){
+      console.error(e);
+      syncHint();
+    }
+  })();
+})();
+</script>
+</body>
+</html>
