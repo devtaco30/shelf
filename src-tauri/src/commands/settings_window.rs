@@ -75,28 +75,25 @@ pub async fn shelf_open_settings_window(app: AppHandle) -> Result<(), String> {
     Ok(())
 }
 
-/// 설정 창에서 메인 웹뷰로만 이벤트를 보낸다(테마·패널 면 미리보기).
+/// 설정 창 → 메인(및 동일 앱 내 웹뷰)으로 미리보기 이벤트 — `WebviewWindow::emit` 만으로는 메인 리스너가 안 받는 환경이 있어 앱 전역 브로드캐스트 사용.
 #[tauri::command]
 pub fn shelf_emit_to_main_window(app: AppHandle, channel: String, payload: Value) -> Result<(), String> {
-    let main = app
-        .get_webview_window("main")
-        .ok_or_else(|| "main webview 없음".to_string())?;
-    main
-        .emit(&channel, payload)
-        .map_err(|e| e.to_string())
+    app.emit(&channel, payload).map_err(|e| e.to_string())
 }
 
 /// 설정 창을 닫기 전에 메인에 완료 여부(및 적용 시 최종 값)를 알린다.
 #[tauri::command]
 pub async fn shelf_finish_settings_window(app: AppHandle, payload: ShelfSettingsWindowDonePayload) -> Result<(), String> {
-    let main = app
-        .get_webview_window("main")
-        .ok_or_else(|| "main webview 없음".to_string())?;
     let v = serde_json::to_value(&payload).map_err(|e| e.to_string())?;
-    main.emit("shelf-settings-window-done", v)
+    app.emit("shelf-settings-window-done", v)
         .map_err(|e| e.to_string())?;
-    if let Some(w) = app.get_webview_window(SHELF_SETTINGS_WEBVIEW_LABEL) {
-        w.close().map_err(|e| e.to_string())?;
-    }
+    // invoke 응답이 JS로 돌아간 뒤 닫히도록 지연 — 즉시 close 시 IPC 완료 순서 꼬임 완화 (태스크 추가 창과 동일)
+    let app_for_close = app.clone();
+    std::thread::spawn(move || {
+        std::thread::sleep(std::time::Duration::from_millis(80));
+        if let Some(w) = app_for_close.get_webview_window(SHELF_SETTINGS_WEBVIEW_LABEL) {
+            let _ = w.close();
+        }
+    });
     Ok(())
 }
