@@ -5,7 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>보안 항목</title>
 <style>
-:root{ --shelf-panel-fill-opacity:1; }
+:root{
+  --shelf-panel-fill-opacity:1;
+  /* 카드 박스 하단(edge)에서 위로 — 창 크기와 무관하게 폼·저장 버튼 근처에 붙음 */
+  --vault-saved-toast-bottom:72px;
+}
 :root,[data-theme="dark"]{
   --panel-bg:#16161F;
   --panel-border:rgba(255,255,255,0.08);
@@ -37,28 +41,61 @@
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;background:transparent;font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px;color:var(--panel-text);-webkit-app-region:no-drag}
 body{padding:14px 16px 16px;overflow:auto}
+.backdrop-hit{
+  position:fixed;
+  inset:0;
+  z-index:0;
+  -webkit-app-region:no-drag;
+}
 .card{
+  position:relative;
+  z-index:1;
   border-radius:16px;
   border:.5px solid var(--panel-border);
   box-shadow:0 2px 24px rgba(0,0,0,.35),0 0 0 1px rgba(255,255,255,.06);
   padding:18px 18px 16px;
   max-width:100%;
+  -webkit-app-region:no-drag;
 }
+.grab-drag[data-tauri-drag-region]{
+  -webkit-app-region:drag;
+}
+.grab-row{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin:-18px -18px 12px -18px;
+  padding:12px 14px 10px;
+  border-radius:16px 16px 0 0;
+}
+.traffic-close{
+  width:12px;height:12px;border-radius:50%;
+  border:none;
+  background:#FF5F57;
+  cursor:pointer;
+  flex-shrink:0;
+  padding:0;
+  -webkit-app-region:no-drag;
+  box-shadow:inset 0 0 0 0.5px rgba(0,0,0,0.15);
+}
+.traffic-close:hover{ filter:brightness(1.08); }
+.grab-drag{
+  flex:1;
+  min-width:0;
+  cursor:grab;
+  user-select:none;
+  touch-action:none;
+  padding:4px 2px;
+  display:flex;
+  align-items:center;
+}
+.grab-drag:active{ cursor:grabbing; }
 [data-theme="dark"] .card{
   background:rgb(22 22 31 / var(--shelf-panel-fill-opacity,1));
 }
 [data-theme="soft"] .card{
   background:rgb(255 255 255 / var(--shelf-panel-fill-opacity,1));
 }
-.grab-bar{
-  cursor:grab;
-  user-select:none;
-  touch-action:none;
-  padding:12px 4px 12px;
-  margin:-18px -18px 12px -18px;
-  border-radius:16px 16px 0 0;
-}
-.grab-bar:active{cursor:grabbing}
 .grab-title{font-size:15px;font-weight:700;padding:0 2px}
 .lbl{font-size:10px;font-weight:600;color:var(--panel-text-sub);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px}
 .inp,.modal-input{
@@ -83,13 +120,41 @@ body{padding:14px 16px 16px;overflow:auto}
 .btn-primary{border:none;background:var(--accent);color:var(--accent-fg);font-weight:600}
 .btn-primary:hover{filter:brightness(1.05)}
 .btn-primary:disabled{opacity:.55;cursor:not-allowed}
+.btn-del{border-color:rgba(248,113,113,.45);color:#F87171;background:rgba(248,113,113,.1)}
+.btn-del:hover{background:rgba(248,113,113,.2)}
 .err{font-size:12px;color:#F87171;line-height:1.45;margin-bottom:10px}
+/* 창 전체가 아니라 .card 하단 기준 — 큰 투명 창에서도 저장 버튼 근처에 보이게 함 */
+#vault-saved-toast.add-task-toast{
+  position:absolute;left:50%;bottom:var(--vault-saved-toast-bottom);transform:translateX(-50%) translateY(10px);
+  padding:9px 18px;border-radius:10px;font-size:12px;font-weight:600;z-index:5;
+  background:var(--accent);color:var(--accent-fg);box-shadow:var(--modal-shadow);
+  opacity:0;pointer-events:none;transition:opacity .22s ease,transform .22s ease;
+}
+#vault-saved-toast.add-task-toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+/* WKWebView 보조 창에서 window.confirm 미동작 */
+.shelf-native-confirm-overlay{
+  display:none;position:fixed;inset:0;z-index:600;
+  align-items:center;justify-content:center;padding:16px;
+  background:rgba(0,0,0,.42);-webkit-app-region:no-drag;
+}
+.shelf-native-confirm-overlay.open{display:flex;}
+.shelf-native-confirm-card{
+  width:100%;max-width:300px;border-radius:12px;padding:16px 16px 14px;
+  border:.5px solid var(--panel-border);background:var(--panel-bg);box-shadow:var(--modal-shadow);
+}
+.shelf-native-confirm-msg{font-size:13px;line-height:1.45;margin-bottom:14px;color:var(--panel-text);}
+.shelf-native-confirm-actions{display:flex;gap:8px;}
+.shelf-native-confirm-actions .btn{flex:1;padding:8px;}
 </style>
 </head>
 <body>
+  <div class="backdrop-hit" id="backdrop-hit" aria-hidden="true"></div>
   <div class="card">
-    <div class="grab-bar" data-tauri-drag-region>
-      <div class="grab-title" id="vault-win-title">🔐 새 보안 항목</div>
+    <div class="grab-row">
+      <button type="button" class="traffic-close" id="btn-close-window" title="닫기" aria-label="창 닫기"></button>
+      <div class="grab-drag" data-tauri-drag-region>
+        <span class="grab-title" id="vault-win-title">🔐 새 보안 항목</span>
+      </div>
     </div>
     <div id="boot-err" class="err" style="display:none"></div>
     <div id="form-root" style="display:none">
@@ -108,8 +173,19 @@ body{padding:14px 16px 16px;overflow:auto}
       </div>
       <div id="vault-fields"></div>
       <div class="footer">
+        <button type="button" class="btn btn-del" id="btn-delete" hidden>삭제</button>
         <button type="button" class="btn" id="btn-cancel">취소</button>
         <button type="button" class="btn btn-primary" id="btn-save">저장</button>
+      </div>
+    </div>
+    <div id="vault-saved-toast" class="add-task-toast" role="status" aria-live="polite">저장했어요</div>
+  </div>
+  <div id="vault-delete-confirm-overlay" class="shelf-native-confirm-overlay" aria-hidden="true">
+    <div class="shelf-native-confirm-card" onclick="event.stopPropagation()" role="dialog" aria-labelledby="vault-delete-confirm-msg">
+      <div id="vault-delete-confirm-msg" class="shelf-native-confirm-msg">삭제할까요?</div>
+      <div class="shelf-native-confirm-actions">
+        <button type="button" class="btn" id="vault-delete-confirm-cancel">취소</button>
+        <button type="button" class="btn btn-del" id="vault-delete-confirm-ok">삭제</button>
       </div>
     </div>
   </div>
@@ -127,8 +203,70 @@ function invoke(cmd, args){
   if(!core?.invoke) return Promise.reject(new Error('Tauri 없음'));
   return core.invoke(cmd, args);
 }
+function shelfNativeAskVaultDeleteConfirm(message){
+  return new Promise(resolve=>{
+    const ov=document.getElementById('vault-delete-confirm-overlay');
+    const msgEl=document.getElementById('vault-delete-confirm-msg');
+    const btnOk=document.getElementById('vault-delete-confirm-ok');
+    const btnCancel=document.getElementById('vault-delete-confirm-cancel');
+    msgEl.textContent=message||'삭제할까요?';
+    ov.classList.add('open');
+    ov.setAttribute('aria-hidden','false');
+    function cleanup(){
+      ov.classList.remove('open');
+      ov.setAttribute('aria-hidden','true');
+      btnOk.removeEventListener('click', onOk);
+      btnCancel.removeEventListener('click', onCancel);
+      ov.removeEventListener('click', onBackdrop);
+      document.removeEventListener('keydown', onKey);
+    }
+    function onOk(){ cleanup(); resolve(true); }
+    function onCancel(){ cleanup(); resolve(false); }
+    function onBackdrop(e){ if(e.target===ov) onCancel(); }
+    function onKey(e){
+      if(e.key==='Escape'){ e.preventDefault(); onCancel(); }
+    }
+    btnOk.addEventListener('click', onOk);
+    btnCancel.addEventListener('click', onCancel);
+    ov.addEventListener('click', onBackdrop);
+    document.addEventListener('keydown', onKey);
+  });
+}
 function finish(payload){
   return invoke('shelf_finish_vault_form_window', payload);
+}
+function shelfCloseVaultWindowFallback(reason){
+  trace('nativeWindow.closeFallback', reason!==undefined?reason:'');
+  try{
+    const gw=window.__TAURI__?.window?.getCurrentWindow?.();
+    if(gw) return gw.close();
+  }catch(e){
+    trace('nativeWindow.closeFallback.err', String(e&&e.message?e.message:e));
+  }
+  return Promise.resolve();
+}
+async function dismissVaultWindowCancelled(){
+  trace('userAction.dismiss');
+  try{
+    await finish({ cancelled: true, savedItemId: null });
+  }catch(e){
+    trace('finish.dismiss.fail', String(e));
+    await shelfCloseVaultWindowFallback('finish_cancel_failed');
+  }
+}
+function resetVaultFormForNextCreate(){
+  document.getElementById('vault-title').value='';
+  currentVaultType='idpw';
+  setVaultTypeToggleDisabled(false);
+  selectVaultType('idpw');
+}
+let vaultSavedToastTimer=null;
+function showVaultSavedToast(){
+  const el=document.getElementById('vault-saved-toast');
+  if(!el) return;
+  el.classList.add('show');
+  clearTimeout(vaultSavedToastTimer);
+  vaultSavedToastTimer=setTimeout(()=>el.classList.remove('show'),2200);
 }
 function trace(tag, detail){
   console.info('[ShelfVaultWin]', tag, detail!==undefined?detail:'');
@@ -234,7 +372,34 @@ function validateVaultData(type,data){
 
 document.getElementById('btn-cancel').addEventListener('click',()=>{
   trace('cancel');
-  void finish({ cancelled: true, savedItemId: null });
+  void dismissVaultWindowCancelled();
+});
+document.getElementById('backdrop-hit').addEventListener('click',()=>{ void dismissVaultWindowCancelled(); });
+document.getElementById('btn-close-window').addEventListener('click',()=>{ void dismissVaultWindowCancelled(); });
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){
+    e.preventDefault();
+    void dismissVaultWindowCancelled();
+  }
+});
+
+document.getElementById('btn-delete').addEventListener('click', async ()=>{
+  if(editItemId==null||!Number.isFinite(editItemId)) return;
+  const confirmed=await shelfNativeAskVaultDeleteConfirm('이 보안 항목을 삭제할까요?');
+  if(!confirmed) return;
+  trace('userAction.deleteClick',{ editItemId });
+  try{
+    await invoke('shelf_commit_vault_edit_from_window',{
+      delete_vault_item: true,
+      id: editItemId,
+      title: '',
+      content: '',
+    });
+    trace('vault_edit.delete.ok',{ id: editItemId });
+  }catch(e){
+    trace('delete.fail', String(e));
+    alert('삭제 실패: '+e);
+  }
 });
 
 document.getElementById('btn-save').addEventListener('click', async ()=>{
@@ -254,19 +419,31 @@ document.getElementById('btn-save').addEventListener('click', async ()=>{
   btn.disabled=true;
   btn.textContent=isEdit?'반영 중…':'저장 중…';
   try{
-    let savedId=null;
     if(isEdit){
-      await invoke('update_vault_item',{ id: editItemId, title, content });
-      savedId=editItemId;
-      trace('save.ok',{ edit:true, id:savedId });
+      trace('submit→shelf_commit_vault_edit_from_window',{ id: editItemId });
+      await invoke('shelf_commit_vault_edit_from_window',{
+        delete_vault_item: false,
+        id: editItemId,
+        title,
+        content,
+      });
+      trace('vault_edit.commit.ok');
     }else{
-      savedId=await invoke('create_vault_item',{ title, content, item_type: currentVaultType });
-      trace('save.ok',{ edit:false, id:savedId });
+      trace('submit→shelf_create_vault_item_from_window',{ item_type: currentVaultType });
+      const savedId=await invoke('shelf_create_vault_item_from_window',{
+        title,
+        content,
+        item_type: currentVaultType,
+      });
+      trace('vault_create.ok',{ id: savedId });
+      showVaultSavedToast();
+      resetVaultFormForNextCreate();
+      document.getElementById('vault-title').focus();
     }
-    await finish({ cancelled: false, savedItemId: savedId });
   }catch(e){
     trace('save.error', String(e));
     alert((isEdit?'수정':'저장')+' 실패: '+e);
+    if(!isEdit) await shelfCloseVaultWindowFallback('create_failed');
   }finally{
     btn.disabled=false;
     btn.textContent=isEdit?'수정 반영':'저장';
@@ -305,6 +482,7 @@ document.getElementById('btn-save').addEventListener('click', async ()=>{
       return;
     }
     document.getElementById('vault-win-title').textContent='🔐 보안 항목 수정';
+    document.getElementById('btn-delete').hidden=false;
     document.getElementById('btn-save').textContent='수정 반영';
     document.getElementById('vault-title').value=boot.title!=null?String(boot.title):'';
     const it=(boot.itemType!=null?String(boot.itemType):'memo').trim()||'memo';
@@ -323,6 +501,7 @@ document.getElementById('btn-save').addEventListener('click', async ()=>{
     }
   }else{
     editItemId=null;
+    document.getElementById('btn-delete').hidden=true;
     currentVaultType='idpw';
     setVaultTypeToggleDisabled(false);
     selectVaultType('idpw');
