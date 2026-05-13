@@ -98,7 +98,17 @@ pub fn run() {
         .on_menu_event(|app, event| {
             #[cfg(target_os = "macos")]
             if event.id() == "open-settings" {
-                let _ = app.emit("open-settings", ());
+                use tauri::Manager;
+                if app
+                    .get_webview_window(commands::settings_window::SHELF_SETTINGS_WEBVIEW_LABEL)
+                    .is_some()
+                {
+                    let _ = commands::settings_window::shelf_dismiss_settings_window_as_cancelled_from_menu(
+                        app.clone(),
+                    );
+                } else {
+                    let _ = app.emit("open-settings", ());
+                }
             }
         })
         .invoke_handler(tauri::generate_handler![

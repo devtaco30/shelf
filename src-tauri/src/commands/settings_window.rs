@@ -5,7 +5,8 @@ use serde_json::Value;
 use tauri::{AppHandle, Emitter, Manager, WebviewUrl, WindowEvent};
 use tauri::webview::WebviewWindowBuilder;
 
-const SHELF_SETTINGS_WEBVIEW_LABEL: &str = "settings";
+/// 메인·메뉴 핸들러에서 동일 라벨로 참조한다.
+pub const SHELF_SETTINGS_WEBVIEW_LABEL: &str = "settings";
 
 #[derive(Debug, Clone, Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -81,9 +82,10 @@ pub fn shelf_emit_to_main_window(app: AppHandle, channel: String, payload: Value
     app.emit(&channel, payload).map_err(|e| e.to_string())
 }
 
-/// 설정 창을 닫기 전에 메인에 완료 여부(및 적용 시 최종 값)를 알린다.
-#[tauri::command]
-pub async fn shelf_finish_settings_window(app: AppHandle, payload: ShelfSettingsWindowDonePayload) -> Result<(), String> {
+fn shelf_emit_settings_window_done_and_schedule_close(
+    app: &AppHandle,
+    payload: ShelfSettingsWindowDonePayload,
+) -> Result<(), String> {
     let v = serde_json::to_value(&payload).map_err(|e| e.to_string())?;
     app.emit("shelf-settings-window-done", v)
         .map_err(|e| e.to_string())?;
@@ -96,4 +98,27 @@ pub async fn shelf_finish_settings_window(app: AppHandle, payload: ShelfSettings
         }
     });
     Ok(())
+}
+
+/// 설정 창을 닫기 전에 메인에 완료 여부(및 적용 시 최종 값)를 알린다.
+#[tauri::command]
+pub async fn shelf_finish_settings_window(
+    app: AppHandle,
+    payload: ShelfSettingsWindowDonePayload,
+) -> Result<(), String> {
+    shelf_emit_settings_window_done_and_schedule_close(&app, payload)
+}
+
+/// 앱 메뉴 `Cmd+,` 재입력 시 — 설정 창이 떠 있으면 `finish({ confirmed: false })`와 동일하게 메인 baseline 복구 후 닫는다.
+pub fn shelf_dismiss_settings_window_as_cancelled_from_menu(app: AppHandle) -> Result<(), String> {
+    if app.get_webview_window(SHELF_SETTINGS_WEBVIEW_LABEL).is_none() {
+        return Ok(());
+    }
+    let payload = ShelfSettingsWindowDonePayload {
+        confirmed: false,
+        theme: None,
+        translucent: None,
+        opacity: None,
+    };
+    shelf_emit_settings_window_done_and_schedule_close(&app, payload)
 }
