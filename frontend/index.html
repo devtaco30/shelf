@@ -363,7 +363,11 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
 .expanel.open{transform:scale(1);opacity:1}
 .ex-header{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:.5px solid var(--divider);flex-shrink:0}
 .ex-profile{display:flex;align-items:center;gap:8px;flex:1}
-.ex-avatar{width:32px;height:32px;border-radius:50%;background:var(--accent-fg);color:var(--panel-bg);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600}
+.ex-avatar{width:32px;height:32px;border-radius:50%;background:var(--panel-elev);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0}
+.ex-avatar-shelf-img{width:100%;height:100%;object-fit:contain;padding:2px;box-sizing:border-box;display:block;-webkit-user-drag:none;user-select:none;pointer-events:none}
+.cp-brand-shelf{width:22px;height:22px;border-radius:50%;background:var(--panel-elev);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0}
+.cp-brand-shelf > img{width:100%;height:100%;object-fit:contain;padding:1.5px;box-sizing:border-box;display:block;-webkit-user-drag:none;user-select:none;pointer-events:none}
+.cp-header-left-group{display:flex;align-items:center;gap:7px;min-width:0;flex:1}
 .ex-stats{display:flex;gap:12px}
 .ex-stat .n{font-size:18px;font-weight:700;line-height:1;color:var(--panel-text)}
 .ex-stat .l{font-size:9px;color:var(--panel-text-sub)}
@@ -753,7 +757,10 @@ button.ex-proj-add{width:100%;font:inherit;text-align:left;background:transparen
   <!-- ── 컴팩트 패널 ── -->
   <div class="cpanel" id="cpanel">
     <div class="cp-header" data-tauri-drag-region>
-      <span class="cp-title" id="cp-title" data-tauri-drag-region>할 일</span>
+      <div class="cp-header-left-group" data-tauri-drag-region>
+        <div class="cp-brand-shelf" data-tauri-drag-region aria-hidden="true"><img src="assets/shelf_icon.png" alt="" draggable="false"></div>
+        <span class="cp-title" id="cp-title" data-tauri-drag-region>할 일</span>
+      </div>
       <div class="cp-actions">
         <button class="hdr-add-btn" id="cp-add-btn" type="button" title="추가">＋</button>
         <button class="cp-expand" onclick="setState('expanded')">⬜ 확장</button>
@@ -866,7 +873,7 @@ button.ex-proj-add{width:100%;font:inherit;text-align:left;background:transparen
   <div class="expanel" id="expanel">
     <div class="ex-header" data-tauri-drag-region>
       <div class="ex-profile" data-tauri-drag-region>
-        <div class="ex-avatar" data-tauri-drag-region>S</div>
+        <div class="ex-avatar" data-tauri-drag-region aria-hidden="true"><img class="ex-avatar-shelf-img" src="assets/shelf_icon.png" alt="" draggable="false"></div>
         <div data-tauri-drag-region>
           <div style="font-size:13px;font-weight:600;color:var(--panel-text)" id="ex-header-title" data-tauri-drag-region>프로젝트 관리</div>
           <div style="font-size:10px;color:var(--panel-text-sub)" data-tauri-drag-region>Shelf</div>
@@ -2231,8 +2238,7 @@ async function showExpandSub(ctx){
     document.getElementById('ex-sub-'+k).classList.toggle('active',k===ctx);
     document.getElementById('ico-'+k).classList.toggle('active',k===ctx);
   });
-  const titles={todo:'프로젝트 관리',cal:'캘린더',vault:'🔐 Vault',memo:'📝 메모'};
-  document.getElementById('ex-header-title').textContent=titles[ctx];
+  document.getElementById('ex-header-title').textContent=EX_HEADER_TITLES[ctx];
   SHELF_SHELL_TAB_IDS.forEach(k=>{
     document.getElementById('ex-stats-'+k).style.display=k===ctx?'flex':'none';
   });
@@ -2267,7 +2273,8 @@ async function showExpandSub(ctx){
 }
 
 // 컴팩트 패널 탭
-const CP_TITLES={todo:'📋 할 일',cal:'📅 캘린더',vault:'🔐 Vault',memo:'📝 메모'};
+const CP_TITLES={todo:'할 일',cal:'캘린더',vault:'Vault',memo:'메모'};
+const EX_HEADER_TITLES={todo:'프로젝트 관리',cal:'캘린더',vault:'Vault',memo:'메모'};
 
 /** 메모: SQLite 다건 + 검색(제목·본문) — 목록은 제목·미리보기 */
 let memoSummaries=[], memoSelectedId=null, memoSearchDebounceTimer=null;
