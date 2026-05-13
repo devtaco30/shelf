@@ -28,6 +28,9 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
   --panel-elev:rgba(255,255,255,0.06);
   --modal-shadow:0 2px 24px rgba(0,0,0,.45),0 0 0 1px rgba(255,255,255,.06);
   --picker-bg:#1E1E28;
+  /* 필(레일) 면 — 패널과 구분되는 다크 크롬 */
+  --shelf-pill-bg-channels:30 30 46;
+  --shelf-pill-border:rgba(255,255,255,0.12);
 }
 [data-theme="soft"]{
   --shelf-pill-fixed-height:320px;
@@ -45,14 +48,13 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
   --panel-elev:#FAFAFA;
   --modal-shadow:0 2px 24px rgba(0,0,0,.14),0 0 0 1px rgba(0,0,0,.07);
   --picker-bg:#fff;
+  --shelf-pill-bg-channels:248 246 252;
+  --shelf-pill-border:rgba(0,0,0,0.1);
 }
 /* 셸: 컴팩트·확장 카드 + 필 + 설정 모달 카드 면에만 알파 */
 [data-theme="dark"] .cpanel,
 [data-theme="dark"] .expanel{
   background:rgb(22 22 31 / var(--shelf-panel-fill-opacity,1));
-}
-[data-theme="dark"] .pill{
-  background:rgb(30 30 46 / var(--shelf-panel-fill-opacity,1));
 }
 [data-theme="dark"] #modal-shelf-settings .modal{
   background:rgb(22 22 31 / var(--shelf-panel-fill-opacity,1));
@@ -60,9 +62,6 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
 [data-theme="soft"] .cpanel,
 [data-theme="soft"] .expanel{
   background:rgb(255 255 255 / var(--shelf-panel-fill-opacity,1));
-}
-[data-theme="soft"] .pill{
-  background:rgb(30 30 46 / var(--shelf-panel-fill-opacity,1));
 }
 [data-theme="soft"] #modal-shelf-settings .modal{
   background:rgb(255 255 255 / var(--shelf-panel-fill-opacity,1));
@@ -151,9 +150,10 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
   min-height:var(--shelf-pill-fixed-height);
   max-height:var(--shelf-pill-fixed-height);
   box-sizing:border-box;
-  background:#1E1E2E;border-radius:26px;
+  background:rgb(var(--shelf-pill-bg-channels) / var(--shelf-panel-fill-opacity,1));
+  border-radius:26px;
   padding:12px 0;display:flex;flex-direction:column;align-items:center;
-  border:.5px solid rgba(255,255,255,.08);z-index:20;
+  border:.5px solid var(--shelf-pill-border);z-index:20;
 }
 .pill-body{
   flex:1 1 0;
@@ -172,6 +172,9 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
   flex-shrink:0;width:28px;height:3px;border-radius:2px;margin-top:4px;
   background:linear-gradient(90deg,var(--accent),rgba(255,255,255,.35));
 }
+[data-theme="soft"] .pill-theme-cap{
+  background:linear-gradient(90deg,var(--accent),rgba(0,0,0,.12));
+}
 /* 폴드·컴팩트·확장: 레일 상단 앵커 — 창만 커져도 필 위치가 세로 중앙으로 튀지 않음 */
 #app.shell-fold .pill,
 #app.shell-panel .pill,
@@ -186,10 +189,15 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
 .pico{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer;transition:.15s;position:relative;border:none;background:transparent}
 .pico:hover{background:rgba(255,255,255,.1)}
 .pico.active{background:rgba(255,255,255,.15)}
+[data-theme="soft"] .pico:hover{background:rgba(0,0,0,.06)}
+[data-theme="soft"] .pico.active{background:rgba(108,99,255,.14)}
 .pico.active::before{content:'';position:absolute;right:-10px;top:50%;transform:translateY(-50%);width:3px;height:20px;border-radius:2px;background:var(--accent)}
 .pill-divider{width:28px;height:.5px;background:rgba(255,255,255,.08)}
+[data-theme="soft"] .pill-divider{background:rgba(0,0,0,.08)}
 .fold-ico{width:30px;height:20px;background:rgba(255,255,255,.06);border-radius:6px;color:rgba(255,255,255,.5);display:flex;align-items:center;justify-content:center;border:none;cursor:pointer;transition:.15s}
 .fold-ico:hover{background:rgba(255,255,255,.12);color:#fff}
+[data-theme="soft"] .fold-ico{background:rgba(0,0,0,.06);color:rgba(0,0,0,.45)}
+[data-theme="soft"] .fold-ico:hover{background:rgba(0,0,0,.1);color:var(--panel-text)}
 .fold-arrow{display:flex;flex-direction:column;gap:3px;align-items:center;justify-content:center;transition:transform .2s}
 .fold-arrow span{display:block;width:10px;height:1.5px;background:currentColor;border-radius:1px;transition:.2s}
 .fold-arrow.open span:first-child{transform:rotate(-35deg) translateY(1px)}
@@ -209,8 +217,18 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
   display:flex;flex-direction:column;min-height:0;
 }
 .cpanel.open{transform:scaleX(1);opacity:1}
-.cp-header{padding:11px 13px 0;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
-.cp-title{font-size:13px;font-weight:600;color:var(--panel-text)}
+.cp-header{padding:11px 13px 0;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;gap:8px;min-width:0}
+.cp-title{font-size:13px;font-weight:600;color:var(--panel-text);flex-shrink:0}
+/* 컴팩트 Vault 목록 상단(원래 +추가·잠금 행 위치) — 잠금만 */
+.cp-vault-list-toolbar{
+  display:flex;justify-content:flex-end;align-items:center;margin-bottom:7px;
+  -webkit-app-region:no-drag;
+}
+.cp-vault-lock-row{
+  font-size:9px;font-weight:600;color:var(--panel-text-sub);cursor:pointer;white-space:nowrap;
+  background:none;border:none;padding:2px 4px;border-radius:6px;font:inherit;
+}
+.cp-vault-lock-row:hover{color:var(--panel-text);background:var(--panel-item-hover)}
 .cp-actions{display:flex;align-items:center;gap:6px}
 .cp-expand{padding:3px 8px;border-radius:6px;background:var(--accent);color:var(--accent-fg);border:none;font-size:10px;font-weight:600;cursor:pointer}
 .cp-close{background:none;border:none;cursor:pointer;color:var(--panel-text-sub);font-size:15px;line-height:1}
@@ -258,43 +276,48 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
   position:relative;z-index:1;
   display:grid;grid-template-columns:repeat(7,1fr);gap:1px;align-content:start;
 }
-/* 선택한 날짜 열: 주간 프로젝트 막대 영역에만 얹는 하이라이트(아래 .cdd.cal-selected 와 열 정렬) */
+/* 주간 프로젝트 띠 위: 열 그리드만 유지(선택 날짜는 아래 일자 셀에서만 표시 — 이중 하이라이트 방지) */
 .cal-strip-selection-overlay{
   position:absolute;inset:0;
   display:grid;grid-template-columns:repeat(7,1fr);gap:1px;
   pointer-events:none;z-index:2;
 }
 .cal-strip-col{min-height:100%}
-.cal-strip-col-selected{
-  border-radius:5px 5px 0 0;
-  box-shadow:inset 0 1.5px 0 0 var(--accent),inset 1.5px 0 0 0 var(--accent),inset -1.5px 0 0 0 var(--accent);
-  background:color-mix(in srgb,var(--accent) 7%,transparent);
-}
 .cal-proj-span{
   height:3px;border-radius:2px;opacity:.88;box-sizing:border-box;min-width:0;
 }
 .ex-left .cal-proj-span,.exgrid-root .cal-proj-span{height:4px;opacity:.9}
 .cdow{text-align:center;color:var(--panel-text-sub);padding:2px 0}
 .cdow:first-child{color:#E53935}
-/* 일자 셀: 숫자 행 높이 고정 → 오늘(원)·일반일 모두 하단 막대 시작선 일치 */
+/* 일자 셀: 동일 min-height 로 그리드 행 높이 안정화(프로젝트 띠 높이는 주마다 달라도 숫자 행 기준 통일) */
 .cdd{
-  display:flex;flex-direction:column;align-items:center;padding:3px 1px;border-radius:4px;cursor:pointer;min-height:24px;
+  display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
+  padding:3px 1px;border-radius:4px;cursor:pointer;min-height:34px;box-sizing:border-box;
 }
 .cdd:hover{background:var(--panel-item-hover)}
 .cdd.cal-selected:hover{background:color-mix(in srgb,var(--accent) 18%,transparent)}
 .cdd .cdn{
   flex-shrink:0;min-height:18px;display:flex;align-items:center;justify-content:center;line-height:1;width:100%;color:var(--panel-text);
 }
-.cdd.today .cdn{
-  background:var(--accent);color:var(--accent-fg);border-radius:50%;width:18px;height:18px;min-height:18px;margin:0 auto;font-weight:700;
+/* 오늘(선택 아님): 액센트 채움 원 — 일정 막대와 혼동되지 않음 */
+.cdd.today:not(.cal-selected) .cdn{
+  background:var(--accent);color:var(--accent-fg);border-radius:50%;
+  width:18px;height:18px;min-height:18px;margin:0 auto;font-weight:700;
+  flex-shrink:0;
 }
-/* 선택: 숫자 링 대신 날짜 셀 전체(일정 막대 포함) 하이라이트 */
+/* 선택: inset 링만(레이아웃·패딩은 비선택과 동일 — 행 깨짐·숫자 밀림 방지) */
 .cdd.cal-selected{
-  border-radius:0 0 5px 5px;
-  box-shadow:inset 0 -1.5px 0 0 var(--accent),inset 1.5px 0 0 0 var(--accent),inset -1.5px 0 0 0 var(--accent);
-  background:color-mix(in srgb,var(--accent) 13%,transparent);
+  border-radius:6px;
+  box-shadow:inset 0 0 0 2px var(--accent);
+  background:color-mix(in srgb,var(--accent) 12%,transparent);
 }
-.cdd.today.cal-selected .cdn{box-shadow:none}
+.cdd.today.cal-selected .cdn{
+  color:var(--accent-fg);
+  width:16px;height:16px;min-height:16px;border-radius:50%;margin:1px auto 0;font-weight:700;
+  display:flex;align-items:center;justify-content:center;
+  background:var(--accent);
+}
+.cdd.sun.today.cal-selected .cdn{color:var(--accent-fg)}
 .cdd.sun .cdn{color:#E53935}
 .cdd.other .cdn{color:var(--panel-text-sub)}
 .pbar{flex-shrink:0;height:3px;border-radius:2px;margin:2px 2px 0;width:calc(100% - 4px);max-width:100%}
@@ -403,20 +426,30 @@ button.ex-proj-add{width:100%;font:inherit;text-align:left;background:transparen
 .exdow{text-align:center;color:var(--panel-text-sub);padding:3px 0;font-size:9px}
 .exdow:first-child{color:#E53935}
 .exdd{
-  display:flex;flex-direction:column;align-items:center;padding:3px 1px;border-radius:5px;cursor:pointer;min-height:30px;
+  display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
+  padding:3px 1px;border-radius:5px;cursor:pointer;min-height:38px;box-sizing:border-box;
 }
 .exdd:hover{background:var(--panel-item-hover)}
 .exdd.cal-selected:hover{background:color-mix(in srgb,var(--accent) 18%,transparent)}
 .exdd .exdn{
   flex-shrink:0;min-height:18px;display:flex;align-items:center;justify-content:center;line-height:1;width:100%;color:var(--panel-text);
 }
-.exdd.today .exdn{background:var(--accent);color:var(--accent-fg);border-radius:50%;width:18px;height:18px;min-height:18px;margin:0 auto;font-weight:700}
-.exdd.cal-selected{
-  border-radius:0 0 5px 5px;
-  box-shadow:inset 0 -1.5px 0 0 var(--accent),inset 1.5px 0 0 0 var(--accent),inset -1.5px 0 0 0 var(--accent);
-  background:color-mix(in srgb,var(--accent) 13%,transparent);
+.exdd.today:not(.cal-selected) .exdn{
+  background:var(--accent);color:var(--accent-fg);border-radius:50%;
+  width:18px;height:18px;min-height:18px;margin:0 auto;font-weight:700;
+  flex-shrink:0;
 }
-.exdd.today.cal-selected .exdn{box-shadow:none}
+.exdd.cal-selected{
+  border-radius:6px;
+  box-shadow:inset 0 0 0 2px var(--accent);
+  background:color-mix(in srgb,var(--accent) 12%,transparent);
+}
+.exdd.today.cal-selected .exdn{
+  background:var(--accent);color:var(--accent-fg);
+  width:16px;height:16px;min-height:16px;border-radius:50%;margin:1px auto 0;font-weight:700;
+  display:flex;align-items:center;justify-content:center;
+}
+.exdd.sun.today.cal-selected .exdn{color:var(--accent-fg)}
 .exdd.sun .exdn{color:#E53935}
 .exdd.other .exdn{color:var(--panel-text-sub)}
 .expbar{flex-shrink:0;height:4px;border-radius:2px;margin:2px 2px 0;width:calc(100% - 4px);max-width:100%}
@@ -444,8 +477,6 @@ button.ex-proj-add{width:100%;font:inherit;text-align:left;background:transparen
 .vd-copy{background:var(--accent-fg);color:var(--panel-bg);border:none;border-radius:6px;padding:5px 11px;font-size:11px;cursor:pointer;margin-top:6px;width:100%}
 .vd-edit{background:var(--input-bg);color:var(--panel-text);border:.5px solid var(--input-border);border-radius:6px;padding:5px 11px;font-size:11px;cursor:pointer;margin-top:4px;width:100%}
 .vd-edit:hover{background:var(--panel-item-hover)}
-.vd-delete{background:#FFF0F0;color:#EF4444;border:none;border-radius:6px;padding:5px 11px;font-size:11px;cursor:pointer;margin-top:4px;width:100%}
-.vd-delete:hover{background:#FFE0E0}
 .vd-copy-field{background:none;border:.5px solid var(--input-border);border-radius:5px;padding:2px 7px;font-size:10px;cursor:pointer;color:var(--panel-text-sub);white-space:nowrap}
 .vd-copy-field:hover{background:var(--panel-item-hover)}
 .vd-type-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:600;margin-bottom:12px}
@@ -487,6 +518,7 @@ button.ex-proj-add{width:100%;font:inherit;text-align:left;background:transparen
 .swatch{width:24px;height:24px;border-radius:50%;cursor:pointer;border:2.5px solid transparent;transition:.15s}
 .swatch.sel{border-color:var(--panel-bg);box-shadow:0 0 0 2.5px currentColor}
 .type-toggle{display:flex;background:var(--input-bg);border-radius:8px;padding:3px;gap:3px;border:.5px solid var(--input-border)}
+#proj-kind-toggle .type-btn{font-size:10px;padding:5px 4px}
 .type-btn{flex:1;padding:5px;border:none;border-radius:6px;font-size:11px;font-weight:500;cursor:pointer;background:none;color:var(--panel-text-sub);transition:.15s}
 .type-btn.sel{background:var(--panel-bg);color:var(--panel-text);box-shadow:0 1px 4px rgba(0,0,0,.12)}
 .todo-completion-toggle .type-btn{font-size:9px;padding:4px 2px}
@@ -593,17 +625,40 @@ button.ex-proj-add{width:100%;font:inherit;text-align:left;background:transparen
 .dp-day.sun{color:#E53935}
 .dp-day.sel.sun{color:#fff}
 
-/* 토스트 — #app 밖에 두어 패널 overflow·창 하단 클립 방지 */
+/* 토스트 — #app 밖에 두어 패널 overflow·창 하단 클립 방지; 폭은 내용 기준(상한까지) */
 .del-toast{
   position:fixed;top:0;left:0;transform:translateX(-50%) translateY(-6px);
-  background:#1E1E2E;color:#fff;padding:9px 16px;border-radius:10px;font-size:12px;
-  display:flex;align-items:center;gap:10px;opacity:0;pointer-events:none;
+  background:var(--panel-bg);color:var(--panel-text);
+  border:.5px solid var(--panel-border);box-shadow:var(--modal-shadow);
+  padding:10px 14px;border-radius:12px;font-size:12px;font-weight:500;
+  display:inline-flex;align-items:center;gap:10px;opacity:0;pointer-events:none;
   transition:opacity .2s,transform .2s;z-index:9999;
-  max-width:min(92vw,360px);white-space:normal;word-break:break-word;text-align:left;
-  box-sizing:border-box;
+  box-sizing:border-box;text-align:left;line-height:1.35;
+  width:max-content;max-width:min(94vw,560px);
+  white-space:normal;word-break:keep-all;overflow-wrap:anywhere;
 }
 .del-toast.show{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:all}
-.del-toast-undo{background:var(--accent);color:var(--accent-fg);border:none;border-radius:6px;padding:3px 9px;font-size:11px;font-weight:700;cursor:pointer}
+#del-toast-msg{flex:0 1 auto;min-width:0}
+.del-toast-undo{
+  flex-shrink:0;
+  background:var(--accent);color:var(--accent-fg);border:none;border-radius:8px;
+  padding:5px 11px;font-size:11px;font-weight:700;cursor:pointer;
+}
+.del-toast-undo:hover{filter:brightness(1.06)}
+/* 메모 삭제 확인 — WKWebView에서 window.confirm 불안정 */
+.shelf-inline-confirm-overlay{
+  display:none;position:fixed;inset:0;z-index:10050;
+  align-items:center;justify-content:center;padding:16px;
+  background:rgba(0,0,0,.42);-webkit-app-region:no-drag;
+}
+.shelf-inline-confirm-overlay.open{display:flex;}
+.shelf-inline-confirm-card{
+  width:100%;max-width:300px;border-radius:12px;padding:16px 16px 14px;
+  border:.5px solid var(--panel-border);background:var(--panel-bg);box-shadow:var(--modal-shadow);
+}
+.shelf-inline-confirm-msg{font-size:13px;line-height:1.45;margin-bottom:14px;color:var(--panel-text);}
+.shelf-inline-confirm-actions{display:flex;gap:8px;}
+.shelf-inline-confirm-actions .btn-cancel,.shelf-inline-confirm-actions .btn-submit{flex:1;padding:8px;}
 
 /* 로딩 */
 .loading{display:flex;align-items:center;justify-content:center;height:80px;color:var(--panel-text-sub);font-size:12px}
@@ -641,6 +696,9 @@ button.ex-proj-add{width:100%;font:inherit;text-align:left;background:transparen
 .memo-row.sel{background:var(--panel-item-sel);border-color:var(--accent)}
 .memo-row-title{font-size:12px;font-weight:600;color:var(--panel-text);display:block}
 .memo-row-preview{font-size:10px;color:var(--panel-text-sub);margin-top:3px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+/* 컴팩트 메모 상세: 인라인 편집(제목 input + 본문 textarea) */
+#cp-memo-detail-scroll{display:flex;flex-direction:column;gap:8px;min-height:0}
+#cp-memo-detail-body{flex:1;min-height:140px}
 .ex-memo-layout{display:flex;position:absolute;top:0;left:0;right:0;bottom:0;overflow:hidden;min-height:0}
 .ex-memo-sidebar{width:200px;border-right:.5px solid var(--divider);padding:10px;display:flex;flex-direction:column;min-height:0}
 .ex-memo-main{flex:1;padding:12px;display:flex;flex-direction:column;min-height:0;overflow:hidden;background:var(--panel-bg)}
@@ -748,23 +806,23 @@ button.ex-proj-add{width:100%;font:inherit;text-align:left;background:transparen
         <div id="cp-vault-open" style="display:none">
           <!-- 목록 뷰 -->
           <div id="cp-vault-list-view">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px">
-              <span style="font-size:11px;font-weight:600;color:var(--panel-text)">보안 항목</span>
-              <div style="display:flex;align-items:center;gap:8px">
-                <span style="font-size:11px;color:#7C3AED;cursor:pointer;font-weight:600" onclick="openVaultAddModal()">＋ 추가</span>
-                <span style="font-size:9px;color:var(--panel-text-sub);cursor:pointer" onclick="lockVault()">🔒 잠금</span>
-              </div>
+            <div class="cp-vault-list-toolbar" id="cp-vault-list-toolbar" style="display:none">
+              <button type="button" class="cp-vault-lock-row" id="cp-vault-lock-list" onclick="void lockVault()" title="Vault 잠금">🔒 잠금</button>
             </div>
             <div id="cp-vault-list"></div>
           </div>
           <!-- 상세 뷰 -->
           <div id="cp-vault-detail-view" style="display:none">
-            <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px">
-              <button style="background:none;border:none;color:var(--panel-text-sub);font-size:16px;cursor:pointer;padding:0" onclick="cpVaultBack()">‹</button>
-              <span id="cp-vault-detail-title" style="font-size:12px;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
-              <span id="cp-vault-detail-type" style="font-size:9px;color:var(--panel-text-sub);background:var(--input-bg);padding:2px 7px;border-radius:10px;white-space:nowrap"></span>
-              <button type="button" onclick="void cpVaultOpenEditModal()" style="background:none;border:none;cursor:pointer;font-size:11px;padding:2px 6px;color:var(--accent);font-weight:600;line-height:1" title="수정">수정</button>
-              <button id="cp-vault-delete-btn" onclick="cpVaultDelete()" style="background:none;border:none;cursor:pointer;font-size:14px;padding:2px 4px;color:#EF4444;opacity:.6;line-height:1" title="삭제">🗑</button>
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;min-width:0">
+              <button type="button" style="background:none;border:none;color:var(--panel-text-sub);font-size:16px;cursor:pointer;padding:0" onclick="cpVaultBack()" title="목록">‹</button>
+              <div style="flex:1;min-width:0;display:flex;align-items:center;gap:6px">
+                <span id="cp-vault-detail-title" style="font-size:12px;font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
+                <span id="cp-vault-detail-type" style="font-size:9px;color:var(--panel-text-sub);background:var(--input-bg);padding:2px 7px;border-radius:10px;white-space:nowrap;flex-shrink:0"></span>
+              </div>
+              <div class="ti-actions" style="flex-shrink:0">
+                <button type="button" class="ti-btn ti-btn-edit" onclick="event.stopPropagation();void cpVaultOpenEditModal()" title="수정">✏️ 수정</button>
+                <button type="button" class="ti-btn ti-btn-del" onclick="event.stopPropagation();void cpVaultDeleteFromCompactDetail()" title="삭제">🗑 삭제</button>
+              </div>
             </div>
             <div id="cp-vault-detail-fields" style="max-height:200px;overflow-y:auto"></div>
             <button onclick="cpVaultCopy()" style="width:100%;margin-top:6px;padding:7px;border-radius:8px;border:none;background:var(--accent-fg);color:var(--panel-bg);font-size:11px;font-weight:600;cursor:pointer">📋 전체 복사 (30초 후 삭제)</button>
@@ -779,15 +837,19 @@ button.ex-proj-add{width:100%;font:inherit;text-align:left;background:transparen
           <div class="memo-list" id="cp-memo-list"></div>
         </div>
         <div id="cp-memo-detail-view" style="display:none;flex-direction:column;min-height:0;flex:1;overflow:hidden">
-          <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-shrink:0">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;min-width:0;flex-shrink:0">
             <button type="button" style="background:none;border:none;color:var(--panel-text-sub);font-size:16px;cursor:pointer;padding:0" onclick="shelfMemoCompactBack()" title="목록">‹</button>
-            <span style="font-size:11px;color:var(--panel-text-sub)">메모 편집</span>
+            <div style="flex:1;min-width:0;display:flex;align-items:center">
+              <span style="font-size:12px;font-weight:600;color:var(--panel-text)">메모 편집</span>
+            </div>
+            <div class="ti-actions" style="flex-shrink:0">
+              <button type="button" class="ti-btn ti-btn-edit" onclick="event.stopPropagation();void shelfMemoSave('cp')" title="편집 내용 저장">✏️ 수정</button>
+              <button type="button" class="ti-btn ti-btn-del" onclick="event.stopPropagation();void shelfMemoDelete('cp')" title="삭제">🗑 삭제</button>
+            </div>
           </div>
-          <input type="text" class="memo-title-input" id="cp-memo-title" placeholder="제목" autocomplete="off">
-          <textarea class="memo-body-input" id="cp-memo-body" placeholder="내용" spellcheck="false" autocomplete="off"></textarea>
-          <div style="display:flex;gap:8px;margin-top:8px;flex-shrink:0">
-            <button type="button" class="vbtn vp" id="cp-memo-save-btn" style="flex:1;margin:0">저장</button>
-            <button type="button" class="vbtn vb" id="cp-memo-delete-btn" style="flex:1;margin:0">삭제</button>
+          <div id="cp-memo-detail-scroll" style="flex:1;min-height:0;overflow-y:auto;-webkit-app-region:no-drag">
+            <input type="text" id="cp-memo-detail-title" class="memo-title-input" placeholder="제목" autocomplete="off" autocapitalize="sentences" spellcheck="true">
+            <textarea id="cp-memo-detail-body" class="memo-body-input" placeholder="내용을 입력하세요…" rows="6" autocapitalize="sentences" spellcheck="true"></textarea>
           </div>
         </div>
       </div>
@@ -914,7 +976,7 @@ button.ex-proj-add{width:100%;font:inherit;text-align:left;background:transparen
           <input type="text" class="memo-title-input" id="ex-memo-title" placeholder="제목" autocomplete="off">
           <textarea class="memo-body-input" id="ex-memo-body" placeholder="내용" spellcheck="false" autocomplete="off"></textarea>
           <div style="display:flex;gap:8px;margin-top:8px;flex-shrink:0">
-            <button type="button" id="ex-memo-save-btn" style="flex:1;padding:7px;border-radius:8px;border:none;background:var(--accent-fg);color:var(--panel-bg);font-size:11px;font-weight:600;cursor:pointer">저장</button>
+            <button type="button" id="ex-memo-save-btn" style="flex:1;padding:7px;border-radius:8px;border:none;background:var(--accent);color:var(--accent-fg);font-size:11px;font-weight:600;cursor:pointer">저장</button>
             <button type="button" id="ex-memo-delete-btn" style="flex:1;padding:7px;border-radius:8px;border:.5px solid var(--input-border);background:var(--panel-elev);color:#EF4444;font-size:11px;font-weight:600;cursor:pointer">삭제</button>
           </div>
         </div>
@@ -1090,9 +1152,10 @@ button.ex-proj-add{width:100%;font:inherit;text-align:left;background:transparen
       </div>
       <div class="modal-field">
         <div class="modal-label">유형</div>
-        <div class="type-toggle">
-          <button class="type-btn sel" id="type-personal" onclick="selType('personal')">👤 개인</button>
-          <button class="type-btn" id="type-work"     onclick="selType('work')">💼 회사</button>
+        <div class="type-toggle" id="proj-kind-toggle">
+          <button type="button" class="type-btn sel" id="type-personal" onclick="selType('personal')">👤 개인</button>
+          <button type="button" class="type-btn" id="type-work" onclick="selType('work')">💼 회사</button>
+          <button type="button" class="type-btn" id="type-team-side" onclick="selType('team_side')">🤝 팀 사이드</button>
         </div>
       </div>
       <div class="modal-field">
@@ -1181,7 +1244,6 @@ button.ex-proj-add{width:100%;font:inherit;text-align:left;background:transparen
     <span id="del-toast-msg">삭제됨</span>
     <button class="del-toast-undo" onclick="undoDelete()">되돌리기</button>
   </div>
-
 <script>
 function dbg(){} // 디버그 종료 — no-op
 
@@ -1353,10 +1415,14 @@ let shelfNativeSettingsChildBaselineTranslucent=false;
 let shelfNativeSettingsChildBaselineOpacity=SHELF_PANEL_FILL_OPACITY_RANGE_MAX;
 
 let shelfNativeSettingsWindowBridgeInited=false;
-function shelfInitNativeSettingsWindowBridge(){
+function shelfInitNativeSettingsWindowBridge(subAttempt){
   if(shelfNativeSettingsWindowBridgeInited) return;
   const ev=window.__TAURI__?.event;
-  if(!ev?.listen) return;
+  const n=subAttempt|0;
+  if(!ev?.listen){
+    if(n<100) setTimeout(()=>shelfInitNativeSettingsWindowBridge(n+1),40);
+    return;
+  }
   shelfNativeSettingsWindowBridgeInited=true;
   ev.listen('shelf-settings-preview-theme', e=>{
     const p=e?.payload;
@@ -1506,6 +1572,15 @@ function shelfDismissTaskAddUiWhenLeavingTodoSurface(){
   }
 }
 
+/** Vault 탭 이탈 시 DOM Vault 모달·네이티브 보안 항목 창 정리 */
+function shelfDismissVaultFormUiWhenLeavingVaultSurface(){
+  const mv=document.getElementById('modal-vault');
+  if(mv?.classList.contains('show')) closeModal('vault');
+  if(window.__TAURI__?.core?.invoke){
+    void invoke('shelf_close_vault_form_window').catch(()=>{});
+  }
+}
+
 let shelfNativeVaultFormBridgeInited=false;
 function shelfInitNativeVaultFormWindowBridge(){
   if(shelfNativeVaultFormBridgeInited) return;
@@ -1516,10 +1591,18 @@ function shelfInitNativeVaultFormWindowBridge(){
     const p=e?.payload;
     if(!p||p.cancelled===true) return;
     const sid=p.savedItemId!=null?Number(p.savedItemId):null;
+    const deleted=p.deleted===true||p.deleted==='true';
     try{
       await loadAndRenderVaultItems('cp-vault-list');
       await loadAndRenderVaultItems('ex-vault-list-items');
-      showToast('보안 항목이 저장됐어요');
+      if(deleted&&sid!=null&&Number.isFinite(sid)){
+        if(cpVaultCurrentId===sid) cpVaultBack();
+        document.getElementById('ex-vault-detail').innerHTML='<div style="color:var(--panel-text-sub);font-size:12px;text-align:center;padding-top:40px">항목을 선택하세요</div>';
+        vdData=null;
+        document.querySelectorAll('#ex-vault-list-items .vitem').forEach(el=>el.classList.remove('sel'));
+        showToast('보안 항목이 삭제됐어요');
+        return;
+      }
       if(sid!=null&&Number.isFinite(sid)){
         if(cpVaultCurrentId===sid) await cpVaultShowDetail(sid);
         const exUnlocked=document.getElementById('ex-vault-unlocked');
@@ -1548,12 +1631,13 @@ function shelfInitNativeMemoFormWindowBridge(){
         memoSelectedId=mid;
         await shelfMemoFillEditorsFromId(mid);
       }
+      /* 컴팩트: Vault 저장 후와 같이 목록 유지(신규 행만 갱신). 상세 자동 진입하지 않음 */
       const z=shelfMemoNativeFormLaunchZone==='ex'?'ex':'cp';
       if(z==='cp'){
         const lv=document.getElementById('cp-memo-list-view');
         const dv=document.getElementById('cp-memo-detail-view');
-        if(lv) lv.style.display='none';
-        if(dv) dv.style.display='flex';
+        if(lv) lv.style.display='flex';
+        if(dv) dv.style.display='none';
       }
       shelfMemoRenderLists();
       showToast('메모를 저장했어요');
@@ -2104,6 +2188,7 @@ async function setState(s){
   const fa=document.getElementById('fold-arrow');
   if(s==='pill'){
     shelfDismissTaskAddUiWhenLeavingTodoSurface();
+    shelfDismissVaultFormUiWhenLeavingVaultSurface();
     cp.classList.remove('open'); ex.classList.remove('open');
     cp.classList.remove('cp-shell-memo-list','cp-body-scroll-capped');
     SHELF_SHELL_TAB_IDS.forEach(k=>document.getElementById('ico-'+k).classList.remove('active'));
@@ -2132,11 +2217,12 @@ async function showExpandSub(ctx){
   const prevTab=curTab;
   curTab=ctx;
   if(ctx!=='todo') shelfDismissTaskAddUiWhenLeavingTodoSurface();
+  if(ctx!=='vault') shelfDismissVaultFormUiWhenLeavingVaultSurface();
   SHELF_SHELL_TAB_IDS.forEach(k=>{
     document.getElementById('ex-sub-'+k).classList.toggle('active',k===ctx);
     document.getElementById('ico-'+k).classList.toggle('active',k===ctx);
   });
-  const titles={todo:'프로젝트 관리',cal:'캘린더',vault:'🔐 Vault',memo:'메모'};
+  const titles={todo:'프로젝트 관리',cal:'캘린더',vault:'🔐 Vault',memo:'📝 메모'};
   document.getElementById('ex-header-title').textContent=titles[ctx];
   SHELF_SHELL_TAB_IDS.forEach(k=>{
     document.getElementById('ex-stats-'+k).style.display=k===ctx?'flex':'none';
@@ -2172,7 +2258,7 @@ async function showExpandSub(ctx){
 }
 
 // 컴팩트 패널 탭
-const CP_TITLES={todo:'📋 할 일',cal:'📅 캘린더',vault:'🔐 Vault',memo:'메모'};
+const CP_TITLES={todo:'📋 할 일',cal:'📅 캘린더',vault:'🔐 Vault',memo:'📝 메모'};
 
 /** 메모: SQLite 다건 + 검색(제목·본문) — 목록은 제목·미리보기 */
 let memoSummaries=[], memoSelectedId=null, memoSearchDebounceTimer=null;
@@ -2261,12 +2347,14 @@ function shelfMemoRenderLists(){
 async function shelfMemoFillEditorsFromId(id){
   try{
     const m=await invoke('get_memo',{id});
-    ['cp','ex'].forEach(prefix=>{
-      const t=document.getElementById(prefix+'-memo-title');
-      const b=document.getElementById(prefix+'-memo-body');
-      if(t) t.value=m.title||'';
-      if(b) b.value=m.body||'';
-    });
+    const cpTitle=document.getElementById('cp-memo-detail-title');
+    const cpBody=document.getElementById('cp-memo-detail-body');
+    if(cpTitle) cpTitle.value=m.title!=null?String(m.title):'';
+    if(cpBody) cpBody.value=m.body!=null?String(m.body):'';
+    const ext=document.getElementById('ex-memo-title');
+    const exb=document.getElementById('ex-memo-body');
+    if(ext) ext.value=m.title!=null?String(m.title):'';
+    if(exb) exb.value=m.body!=null?String(m.body):'';
   }catch(e){ dbg('get_memo',e); }
 }
 
@@ -2288,12 +2376,14 @@ async function shelfMemoRowClickEx(id){ await shelfMemoSelect(id,{openCpDetail:f
 async function shelfMemoStartNew(zone){
   if(await shelfMemoTryOpenMemoNativeCreate(zone)) return;
   memoSelectedId=null;
-  ['cp','ex'].forEach(prefix=>{
-    const t=document.getElementById(prefix+'-memo-title');
-    const b=document.getElementById(prefix+'-memo-body');
-    if(t) t.value='';
-    if(b) b.value='';
-  });
+  const cpTitle=document.getElementById('cp-memo-detail-title');
+  const cpBody=document.getElementById('cp-memo-detail-body');
+  if(cpTitle) cpTitle.value='';
+  if(cpBody) cpBody.value='';
+  const ext=document.getElementById('ex-memo-title');
+  const exb=document.getElementById('ex-memo-body');
+  if(ext) ext.value='';
+  if(exb) exb.value='';
   shelfMemoRenderLists();
   if(zone==='cp'){
     const lv=document.getElementById('cp-memo-list-view');
@@ -2303,12 +2393,13 @@ async function shelfMemoStartNew(zone){
   }
 }
 
-function shelfMemoCompactBack(){
+function shelfMemoCompactBack(opts){
+  const skipReload=opts&&opts.skipReload;
   const lv=document.getElementById('cp-memo-list-view');
   const dv=document.getElementById('cp-memo-detail-view');
   if(lv) lv.style.display='flex';
   if(dv) dv.style.display='none';
-  void shelfMemoLoadSummaries();
+  if(!skipReload) void shelfMemoLoadSummaries();
 }
 
 async function shelfMemoEnterCompactMemoTab(){
@@ -2354,8 +2445,14 @@ async function shelfMemoSave(zone){
     showToast('앱 연결이 없어 저장할 수 없어요');
     return;
   }
-  const t=document.getElementById(zone+'-memo-title');
-  const b=document.getElementById(zone+'-memo-body');
+  let t,b;
+  if(zone==='cp'){
+    t=document.getElementById('cp-memo-detail-title');
+    b=document.getElementById('cp-memo-detail-body');
+  }else{
+    t=document.getElementById(zone+'-memo-title');
+    b=document.getElementById(zone+'-memo-body');
+  }
   if(!t||!b){
     showToast('편집 영역을 찾을 수 없어요');
     return;
@@ -2375,19 +2472,45 @@ async function shelfMemoSave(zone){
       }
       memoSelectedId=nid;
     }
-    const mirror=zone==='cp'?'ex':'cp';
-    const tm=document.getElementById(mirror+'-memo-title');
-    const bm=document.getElementById(mirror+'-memo-body');
-    if(tm) tm.value=title;
-    if(bm) bm.value=body;
+    const cpTitleEl=document.getElementById('cp-memo-detail-title');
+    const cpBodyEl=document.getElementById('cp-memo-detail-body');
+    if(cpTitleEl) cpTitleEl.value=title;
+    if(cpBodyEl) cpBodyEl.value=body;
     await shelfMemoLoadSummaries();
     await shelfMemoUpdateHeaderCount();
     showToast('메모를 저장했어요');
-    if(zone==='cp') shelfMemoCompactBack();
   }catch(e){
     console.error('memo save',e);
     showToast('저장 실패: '+(e&&e.message?e.message:String(e)));
   }
+}
+
+async function shelfMemoBuildSummarySnapshotForUndo(memoId){
+  let row=memoSummaries.find(m=>Number(m.id)===Number(memoId));
+  if(row) return {...row};
+  try{
+    const m=await invoke('get_memo',{id:memoId});
+    const bodyRaw=m.body!=null?String(m.body):'';
+    const preview=bodyRaw.replace(/\r|\n/g,' ').slice(0,120);
+    return{
+      id:m.id,
+      title:m.title!=null?String(m.title):'',
+      preview,
+      updated_at:m.updated_at!=null?String(m.updated_at):'',
+    };
+  }catch(_){
+    return null;
+  }
+}
+
+async function shelfMemoPaintHeaderCountDeferred(){
+  const n=document.getElementById('ex-memo-count');
+  if(!n) return;
+  try{
+    const total=await invoke('get_memo_count');
+    const display=deletedMemoPending?Math.max(0,Number(total)-1):Number(total);
+    n.textContent=String(display);
+  }catch(_){ n.textContent='-'; }
 }
 
 async function shelfMemoDelete(zone){
@@ -2399,34 +2522,41 @@ async function shelfMemoDelete(zone){
     await shelfMemoStartNew(zone);
     return;
   }
-  if(!confirm('이 메모를 삭제할까요?')) return;
-  try{
-    await invoke('delete_memo',{id:memoSelectedId});
-    memoSelectedId=null;
-    ['cp','ex'].forEach(prefix=>{
-      const t=document.getElementById(prefix+'-memo-title');
-      const b=document.getElementById(prefix+'-memo-body');
-      if(t) t.value='';
-      if(b) b.value='';
-    });
-    if(zone==='cp') shelfMemoCompactBack();
-    await shelfMemoLoadSummaries();
-    await shelfMemoUpdateHeaderCount();
-    if(zone==='ex'){
-      if(memoSummaries.length>0) await shelfMemoSelect(memoSummaries[0].id,{openCpDetail:false});
-      else await shelfMemoStartNew('ex');
-    }
-    showToast('메모를 삭제했어요');
-  }catch(e){
-    console.error('memo del',e);
-    showToast('삭제 실패: '+(e&&e.message?e.message:String(e)));
+  const memoId=memoSelectedId;
+  const memoSummarySnapshot=await shelfMemoBuildSummarySnapshotForUndo(memoId);
+  if(!memoSummarySnapshot){
+    showToast('메모 정보를 불러올 수 없어요');
+    return;
   }
+  shelfCommitDeferredDeletesWithoutToast();
+  deletedMemoPending={
+    id:memoId,
+    memoSummarySnapshot,
+    memoDeleteSurface:zone,
+  };
+  memoSummaries=memoSummaries.filter(m=>Number(m.id)!==Number(memoId));
+  memoSelectedId=null;
+  const cpTitleEl=document.getElementById('cp-memo-detail-title');
+  const cpBodyEl=document.getElementById('cp-memo-detail-body');
+  if(cpTitleEl) cpTitleEl.value='';
+  if(cpBodyEl) cpBodyEl.value='';
+  const ext=document.getElementById('ex-memo-title');
+  const exb=document.getElementById('ex-memo-body');
+  if(ext) ext.value='';
+  if(exb) exb.value='';
+  if(zone==='cp') shelfMemoCompactBack({skipReload:true});
+  shelfMemoRenderLists();
+  await shelfMemoPaintHeaderCountDeferred();
+  if(zone==='ex'){
+    if(memoSummaries.length>0) await shelfMemoSelect(memoSummaries[0].id,{openCpDetail:false});
+    else await shelfMemoStartNew('ex');
+  }
+  const toastTitle=(memoSummarySnapshot.title||'').trim()||'제목 없음';
+  showToast(`"${toastTitle}" 삭제됨`, {undo:true});
 }
 
 function shelfMemoBindToolbar(){
   [
-    ['cp-memo-save-btn',()=>{ void shelfMemoSave('cp'); }],
-    ['cp-memo-delete-btn',()=>{ void shelfMemoDelete('cp'); }],
     ['ex-memo-save-btn',()=>{ void shelfMemoSave('ex'); }],
     ['ex-memo-delete-btn',()=>{ void shelfMemoDelete('ex'); }],
   ].forEach(([id,fn])=>{
@@ -2440,6 +2570,7 @@ function shelfMemoBindToolbar(){
 /** 아이콘·cp-* 표시·제목만 전환 (expand→panel 시에도 동일 탭 유지에 사용) */
 function shelfApplyCompactTab(id){
   if(id!=='todo') shelfDismissTaskAddUiWhenLeavingTodoSurface();
+  if(id!=='vault') shelfDismissVaultFormUiWhenLeavingVaultSurface();
   curTab=id;
   SHELF_SHELL_TAB_IDS.forEach(k=>{
     const cpEl=document.getElementById('cp-'+k);
@@ -2456,6 +2587,10 @@ function shelfApplyCompactTab(id){
     cpHdrAdd.style.display='flex';
     cpHdrAdd.onclick=()=>{ void shelfMemoStartNew('cp'); };
     cpHdrAdd.title='새 메모';
+  }else if(id==='vault'){
+    cpHdrAdd.onclick=()=>openVaultAddModal();
+    cpHdrAdd.title='보안 항목 추가';
+    void renderVaultCompact();
   }else{
     cpHdrAdd.style.display='none';
     cpHdrAdd.onclick=null;
@@ -2464,7 +2599,6 @@ function shelfApplyCompactTab(id){
   document.getElementById('cpanel').classList.toggle('cp-shell-memo-list', id==='memo');
   document.getElementById('cpanel').classList.toggle('cp-body-scroll-capped', id==='todo');
   if(id==='cal') renderCpCal();
-  if(id==='vault') renderVaultCompact();
   if(id==='memo') void shelfMemoEnterCompactMemoTab();
 }
 function openCompact(id){
@@ -2525,6 +2659,10 @@ function setExTodoCompletionFilter(mode){
 
 // 지연 삭제 패턴: UI에서 즉시 제거 → 5초 뒤 DB 삭제, 그 사이 undo 가능
 let deletedTask=null, deleteTimer=null;
+/** 태스크와 동일 — 컴팩트 Vault 삭제만 사용 `{ id, item }`, 타이머 만료 시 `delete_vault_item` */
+let deletedVaultPending=null;
+/** 메모 지연 삭제 — 목록 행 스냅샷 복구용, 타이머 만료 시 `delete_memo` */
+let deletedMemoPending=null;
 
 // 태스크 상세 모달 상태 — 저장 시 프로젝트가 실제로 변경됐는지 비교하는 데 사용
 // (currentDetailProjectId !== todo.project_id 일 때만 set_todo_project 호출)
@@ -2669,6 +2807,7 @@ function cpDeleteTodo(e,id,name){
   item.style.opacity='0'; item.style.transform='translateX(6px)';
   setTimeout(()=>{
     const todo=todos.find(t=>t.id===id); if(!todo) return;
+    shelfCommitDeferredDeletesWithoutToast();
     // UI·로컬 상태에서만 제거 (DB 삭제는 5초 뒤)
     deletedTask={id,name,todo:{...todo}};
     todos=todos.filter(t=>t.id!==id);
@@ -2698,7 +2837,7 @@ function renderExProjects(){
       <div class="proj-card-bar" style="background:${p.color}"></div>
       <div class="proj-card-info">
         <div class="proj-card-name">${escHtml(p.name)}</div>
-        <div class="proj-card-sub">${p.category==='work'?'회사':'개인'} · 진행 중</div>
+        <div class="proj-card-sub">${shelfProjectKindLabel(p.category)} · 진행 중</div>
       </div>
       <button type="button" class="proj-card-edit" onclick="event.stopPropagation();openEditProjectModal(${p.id})" title="프로젝트 수정">✏️</button>
       <button type="button" class="proj-card-del" onclick="event.stopPropagation();openProjectDeleteConfirm(${p.id})" title="프로젝트 삭제">🗑</button>
@@ -2962,7 +3101,7 @@ function buildCal(y,m,gridId,chipsId,dowCls,ddCls,dnCls,pbarCls,selectedYmd,calK
       const sun=dt.getDay()===0;
       const td=shelfLocalYmdFromDate(today)===dayDateStr;
       const isSel=selectedYmd&&dayDateStr===selectedYmd;
-      stripOverlay+=`<div class="cal-strip-col${isSel?' cal-strip-col-selected':''}" aria-hidden="true"></div>`;
+      stripOverlay+=`<div class="cal-strip-col" aria-hidden="true"></div>`;
       const bars=shelfCalDayBarsHtml(dayDateStr,pbarCls,calKind);
       const ddClsUse=inMonth?ddCls:`${ddCls} other`;
       const pick=`onclick="shelfCalPickDay('${calKind}','${dayDateStr}')"`;
@@ -3066,6 +3205,22 @@ function renderDayScheduleList(containerId,ymd,opts){
 
 // ── Vault ──
 let vaultUnlocked=false;
+/** 컴팩트 패널 헤더 `＋` + 목록 상단 툴바 `🔒 잠금`(예전 보조 행 오른쪽과 동일), 잠금 해제 시에만 표시 */
+function shelfSyncCompactVaultHeader(){
+  const toolbar=document.getElementById('cp-vault-list-toolbar');
+  const addBtn=document.getElementById('cp-add-btn');
+  if(curTab!=='vault'){
+    if(toolbar) toolbar.style.display='none';
+    return;
+  }
+  const showLock=vaultUnlocked;
+  if(toolbar) toolbar.style.display=showLock?'flex':'none';
+  if(addBtn){
+    addBtn.style.display=showLock?'flex':'none';
+    addBtn.onclick=()=>openVaultAddModal();
+    addBtn.title='보안 항목 추가';
+  }
+}
 async function renderVaultCompact(){
   try{
     const initialized=await invoke('vault_initialized');
@@ -3074,6 +3229,7 @@ async function renderVaultCompact(){
     document.getElementById('cp-vault-locked').style.display=unlocked?'none':'block';
     document.getElementById('cp-vault-open').style.display=unlocked?'block':'none';
     if(unlocked) await loadAndRenderVaultItems('cp-vault-list');
+    shelfSyncCompactVaultHeader();
   }catch(e){}
 }
 async function renderVaultExpand(){
@@ -3085,14 +3241,12 @@ async function renderVaultExpand(){
     if(unlocked) await loadAndRenderVaultItems('ex-vault-list-items');
   }catch(e){}
 }
-async function loadAndRenderVaultItems(containerId){
-  try{
-    vaultItems=await invoke('get_vault_items')||[];
-    const el=document.getElementById(containerId);
-    if(!el) return;
-    const ICONS={mnemonic:'🔐',idpw:'🔑',memo:'📝',card:'💳'};
-    const isCompact=(containerId==='cp-vault-list');
-    el.innerHTML=vaultItems.map(v=>`
+function shelfPaintVaultListEl(containerId){
+  const el=document.getElementById(containerId);
+  if(!el) return;
+  const ICONS={mnemonic:'🔐',idpw:'🔑',memo:'📝',card:'💳'};
+  const isCompact=(containerId==='cp-vault-list');
+  el.innerHTML=vaultItems.map(v=>`
       <div class="vitem" data-id="${v.id}" onclick="${isCompact?`cpVaultShowDetail(${v.id})`:`showVaultDetail(${v.id})`}">
         <span style="font-size:15px">${ICONS[v.item_type]||'📄'}</span>
         <div style="flex:1;margin-left:7px">
@@ -3101,39 +3255,18 @@ async function loadAndRenderVaultItems(containerId){
         </div>
         <span style="color:var(--panel-text-sub);font-size:11px">›</span>
       </div>`).join('');
-    document.getElementById('ex-vault-count').textContent=vaultItems.length;
+  const ex=document.getElementById('ex-vault-count');
+  if(ex) ex.textContent=vaultItems.length;
+}
+async function loadAndRenderVaultItems(containerId){
+  try{
+    vaultItems=await invoke('get_vault_items')||[];
+    shelfPaintVaultListEl(containerId);
   }catch(e){}
 }
 
-// ── Vault 삭제 ──
+// ── 컴팩트 Vault 상세 (삭제: 태스크와 동일 지연 삭제 + 되돌리기) ──
 let cpVaultCurrentId=null;
-async function deleteVaultItem(id){
-  // 확장 뷰용: undo 토스트
-  const item=vaultItems.find(v=>v.id===id); if(!item) return;
-  try{
-    await invoke('delete_vault_item',{id});
-    document.getElementById('ex-vault-detail').innerHTML='<div style="color:var(--panel-text-sub);font-size:12px;text-align:center;padding-top:40px">항목을 선택하세요</div>';
-    vdData=null;
-    await loadAndRenderVaultItems('cp-vault-list');
-    await loadAndRenderVaultItems('ex-vault-list-items');
-    showToast(`"${item.title}" 삭제됨`);
-  }catch(e){ alert('삭제 실패: '+e); }
-}
-async function cpVaultDelete(){
-  if(!cpVaultCurrentId) return;
-  const item=vaultItems.find(v=>v.id===cpVaultCurrentId); if(!item) return;
-  const btn=document.getElementById('cp-vault-delete-btn');
-  btn.disabled=true;
-  try{
-    await invoke('delete_vault_item',{id:cpVaultCurrentId});
-    cpVaultBack();
-    await loadAndRenderVaultItems('cp-vault-list');
-    await loadAndRenderVaultItems('ex-vault-list-items');
-    showToast(`"${item.title}" 삭제됨`);
-  }catch(e){ alert('삭제 실패: '+e); }finally{ btn.disabled=false; }
-}
-
-// ── 컴팩트 Vault 상세 ──
 let cpVaultData=null;
 let cpVaultType='';
 async function cpVaultShowDetail(id){
@@ -3263,8 +3396,7 @@ async function showVaultDetail(id){
       <div style="font-size:13px;font-weight:600;margin-bottom:12px">${escHtml(item.title)}</div>
       ${fieldsHtml}
       <button class="vd-copy" onclick="copyVaultContent(formatVaultForCopy('${type}',vdData))">📋 전체 복사 (30초 후 자동 삭제)</button>
-      <button class="vd-edit" onclick="void openVaultEditModal(${id})">✏ 수정</button>
-      <button class="vd-delete" onclick="deleteVaultItem(${id})">🗑 삭제</button>`;
+      <button class="vd-edit" onclick="void openVaultEditModal(${id})">✏ 수정</button>`;
   }catch(e){}
 }
 function vdToggleField(i,key){
@@ -3395,6 +3527,23 @@ async function openVaultEditModal(id){
 async function cpVaultOpenEditModal(){
   if(!cpVaultCurrentId) return;
   await openVaultEditModal(cpVaultCurrentId);
+}
+async function cpVaultDeleteFromCompactDetail(){
+  const id=cpVaultCurrentId;
+  if(id==null||!Number.isFinite(id)) return;
+  const item=vaultItems.find(v=>v.id===id);
+  if(!item) return;
+  shelfCommitDeferredDeletesWithoutToast();
+  deletedVaultPending={ id, item:{...item} };
+  vaultItems=vaultItems.filter(v=>v.id!==id);
+  cpVaultBack();
+  shelfPaintVaultListEl('cp-vault-list');
+  shelfPaintVaultListEl('ex-vault-list-items');
+  const exDet=document.getElementById('ex-vault-detail');
+  if(exDet) exDet.innerHTML='<div style="color:var(--panel-text-sub);font-size:12px;text-align:center;padding-top:40px">항목을 선택하세요</div>';
+  vdData=null;
+  document.querySelectorAll('#ex-vault-list-items .vitem').forEach(el=>el.classList.remove('sel'));
+  showToast(`"${item.title}" 삭제됨`, {undo:true});
 }
 
 function selectVaultType(type){
@@ -3742,6 +3891,13 @@ function closeModal(type){
 }
 
 // ── 프로젝트 모달 ──
+/** DB `projects.category` 저장값 → 목록 부제 한글 */
+function shelfProjectKindLabel(storedKind){
+  const k=String(storedKind||'').trim();
+  if(k==='work') return '회사';
+  if(k==='team_side') return '팀 사이드';
+  return '개인';
+}
 function syncProjectModalSwatchSelection(hex){
   const norm=s=>(s||'').trim().toLowerCase();
   const t=norm(hex);
@@ -3761,6 +3917,7 @@ function openProjectModal(){
   document.querySelectorAll('#modal-project .swatch').forEach((s,i)=>s.classList.toggle('sel',i===0));
   document.getElementById('type-personal').classList.add('sel');
   document.getElementById('type-work').classList.remove('sel');
+  document.getElementById('type-team-side').classList.remove('sel');
   document.getElementById('proj-start-text').textContent='시작일';
   document.getElementById('proj-start-text').style.color='#bbb';
   document.getElementById('proj-end-text').textContent='종료일';
@@ -3809,9 +3966,10 @@ function openEditProjectModal(projectId){
   document.getElementById('proj-submit-btn').textContent='저장';
   document.getElementById('proj-name-input').value=p.name;
   selectedColor=p.color;
-  selectedType=p.category==='work'?'work':'personal';
+  selectedType=p.category==='work'?'work':p.category==='team_side'?'team_side':'personal';
   document.getElementById('type-personal').classList.toggle('sel',selectedType==='personal');
   document.getElementById('type-work').classList.toggle('sel',selectedType==='work');
+  document.getElementById('type-team-side').classList.toggle('sel',selectedType==='team_side');
   syncProjectModalSwatchSelection(p.color);
   const startIso=p.start_date?String(p.start_date).slice(0,10):null;
   const endIso=p.end_date?String(p.end_date).slice(0,10):null;
@@ -3880,6 +4038,7 @@ function selType(t){
   selectedType=t;
   document.getElementById('type-personal').classList.toggle('sel',t==='personal');
   document.getElementById('type-work').classList.toggle('sel',t==='work');
+  document.getElementById('type-team-side').classList.toggle('sel',t==='team_side');
 }
 
 // ── 커스텀 날짜 피커 ──
@@ -4011,8 +4170,25 @@ document.addEventListener('click',e=>{
 });
 
 // ── 토스트 ──
+/** 새 토스트 직전: 이전에 연기됐던 삭제를 DB에 확정 (타이머만 지우면 영구 반영이 안 됨) */
+function shelfCommitDeferredDeletesWithoutToast(){
+  if(deletedTask){
+    void invoke('delete_todo',{id:deletedTask.id}).catch(()=>{});
+    deletedTask=null;
+  }
+  if(deletedVaultPending){
+    void invoke('delete_vault_item',{id:deletedVaultPending.id}).catch(()=>{});
+    deletedVaultPending=null;
+  }
+  if(deletedMemoPending){
+    void invoke('delete_memo',{id:deletedMemoPending.id}).catch(()=>{});
+    deletedMemoPending=null;
+  }
+}
 function showToast(msg, {undo=false}={}){
   if(deleteTimer) clearTimeout(deleteTimer);
+  /* undo 토스트 직전에 이미 pending 이 세팅된 경우(태스크·Vault 삭제)는 건드리지 않음 */
+  if(!undo) shelfCommitDeferredDeletesWithoutToast();
   const t=document.getElementById('del-toast');
   document.getElementById('del-toast-msg').textContent=msg;
   document.querySelector('.del-toast-undo').style.display=undo?'':'none';
@@ -4048,9 +4224,41 @@ function showToast(msg, {undo=false}={}){
       try{ await invoke('delete_todo',{id:deletedTask.id}); }catch(e){}
       deletedTask=null;
     }
+    if(deletedVaultPending){
+      try{ await invoke('delete_vault_item',{id:deletedVaultPending.id}); }catch(e){}
+      deletedVaultPending=null;
+    }
+    if(deletedMemoPending){
+      try{ await invoke('delete_memo',{id:deletedMemoPending.id}); }catch(e){}
+      deletedMemoPending=null;
+    }
   },5000);
 }
 function undoDelete(){
+  if(deletedVaultPending){
+    clearTimeout(deleteTimer);
+    deleteTimer=null;
+    document.getElementById('del-toast').classList.remove('show');
+    vaultItems.push(deletedVaultPending.item);
+    vaultItems.sort((a,b)=>(b.updated_at||'').localeCompare(a.updated_at||''));
+    deletedVaultPending=null;
+    shelfPaintVaultListEl('cp-vault-list');
+    shelfPaintVaultListEl('ex-vault-list-items');
+    return;
+  }
+  if(deletedMemoPending){
+    clearTimeout(deleteTimer);
+    deleteTimer=null;
+    document.getElementById('del-toast').classList.remove('show');
+    const pending=deletedMemoPending;
+    deletedMemoPending=null;
+    memoSummaries.push(pending.memoSummarySnapshot);
+    memoSummaries.sort((a,b)=>(b.updated_at||'').localeCompare(a.updated_at||''));
+    memoSelectedId=pending.id;
+    void shelfMemoUpdateHeaderCount();
+    void shelfMemoSelect(pending.id,{openCpDetail:pending.memoDeleteSurface==='cp'});
+    return;
+  }
   if(!deletedTask) return;
   clearTimeout(deleteTimer);
   document.getElementById('del-toast').classList.remove('show');
@@ -4185,6 +4393,7 @@ function waitAndInit(retries){
       await init();
       attachShelfWindowMetricsDebug();
       shelfAttachOpenSettingsMenuListener();
+      shelfInitNativeSettingsWindowBridge(0);
     });
     return;
   } else if(retries > 0){
@@ -4192,9 +4401,10 @@ function waitAndInit(retries){
   } else {
     // 브라우저 미리보기 모드 (Tauri 없음) — 레이아웃·shell-fold 동기화만
     resizeWindow('pill').then(()=>init());
+    shelfInitNativeSettingsWindowBridge(0);
   }
 }
-shelfInitNativeSettingsWindowBridge();
+shelfInitNativeSettingsWindowBridge(0);
 shelfInitNativeTaskAddFormWindowBridge();
 shelfInitNativeTaskEditFormWindowBridge();
 shelfInitNativeVaultFormWindowBridge();
