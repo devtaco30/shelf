@@ -5,7 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>메모</title>
 <style>
-:root{ --shelf-panel-fill-opacity:1; }
+:root{
+  --shelf-panel-fill-opacity:1;
+}
 :root,[data-theme="dark"]{
   --panel-bg:#16161F;
   --panel-border:rgba(255,255,255,0.08);
@@ -16,6 +18,8 @@
   --input-bg:rgba(255,255,255,0.07);
   --input-border:rgba(255,255,255,0.12);
   --panel-item-hover:rgba(255,255,255,0.06);
+  --panel-elev:rgba(255,255,255,0.04);
+  --modal-shadow:0 2px 24px rgba(0,0,0,.45),0 0 0 1px rgba(255,255,255,.06);
 }
 [data-theme="soft"]{
   --panel-bg:#FFFFFF;
@@ -27,16 +31,27 @@
   --input-bg:#F7F7F7;
   --input-border:#E0E0E0;
   --panel-item-hover:#F5F5FF;
+  --panel-elev:#FAFAFA;
+  --modal-shadow:0 2px 24px rgba(0,0,0,.14),0 0 0 1px rgba(0,0,0,.07);
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;background:transparent;font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px;color:var(--panel-text);-webkit-app-region:no-drag}
 body{padding:14px 16px 16px;overflow:auto}
+.backdrop-hit{
+  position:fixed;
+  inset:0;
+  z-index:0;
+  -webkit-app-region:no-drag;
+}
 .card{
+  position:relative;
+  z-index:1;
   border-radius:16px;
   border:.5px solid var(--panel-border);
   box-shadow:0 2px 24px rgba(0,0,0,.35),0 0 0 1px rgba(255,255,255,.06);
   padding:18px 18px 16px;
   max-width:100%;
+  -webkit-app-region:no-drag;
 }
 [data-theme="dark"] .card{
   background:rgb(22 22 31 / var(--shelf-panel-fill-opacity,1));
@@ -44,15 +59,39 @@ body{padding:14px 16px 16px;overflow:auto}
 [data-theme="soft"] .card{
   background:rgb(255 255 255 / var(--shelf-panel-fill-opacity,1));
 }
-.grab-bar{
+.grab-drag[data-tauri-drag-region]{
+  -webkit-app-region:drag;
+}
+.grab-row{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin:-18px -18px 12px -18px;
+  padding:12px 14px 10px;
+  border-radius:16px 16px 0 0;
+}
+.traffic-close{
+  width:12px;height:12px;border-radius:50%;
+  border:none;
+  background:#FF5F57;
+  cursor:pointer;
+  flex-shrink:0;
+  padding:0;
+  -webkit-app-region:no-drag;
+  box-shadow:inset 0 0 0 0.5px rgba(0,0,0,0.15);
+}
+.traffic-close:hover{ filter:brightness(1.08); }
+.grab-drag{
+  flex:1;
+  min-width:0;
   cursor:grab;
   user-select:none;
   touch-action:none;
-  padding:12px 4px 12px;
-  margin:-18px -18px 12px -18px;
-  border-radius:16px 16px 0 0;
+  padding:4px 2px;
+  display:flex;
+  align-items:center;
 }
-.grab-bar:active{cursor:grabbing}
+.grab-drag:active{ cursor:grabbing; }
 .grab-title{font-size:15px;font-weight:700;padding:0 2px}
 .lbl{font-size:10px;font-weight:600;color:var(--panel-text-sub);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px}
 .inp{
@@ -76,9 +115,13 @@ body{padding:14px 16px 16px;overflow:auto}
 </style>
 </head>
 <body>
+  <div class="backdrop-hit" id="backdrop-hit" aria-hidden="true"></div>
   <div class="card">
-    <div class="grab-bar" data-tauri-drag-region>
-      <div class="grab-title" id="memo-win-title">📝 새 메모</div>
+    <div class="grab-row">
+      <button type="button" class="traffic-close" id="btn-close-window" title="닫기" aria-label="창 닫기"></button>
+      <div class="grab-drag" data-tauri-drag-region>
+        <span class="grab-title" id="memo-win-title">📝 새 메모</span>
+      </div>
     </div>
     <div id="boot-err" class="err" style="display:none"></div>
     <div id="form-root" style="display:none">
@@ -105,13 +148,71 @@ const KEY_OP='ui.panelFillOpacity';
 const OP_MIN=0.55;
 const OP_MAX=1;
 
+function shelfMemoWinTrace(step, detail){
+  let line=step;
+  if(detail!==undefined){
+    try{ line+=' '+JSON.stringify(detail); }
+    catch(_){ line+=' '+String(detail); }
+  }
+  /* 보조 창: 메인 창 DevTools에는 로그가 거의 안 보임 → console.error + 터미널(shelf_memo_form_trace) */
+  console.info('[ShelfMemoFormWin]', step, detail===undefined?undefined:detail);
+  console.error('[ShelfMemoFormWin]', line);
+  const core=window.__TAURI__?.core;
+  if(core?.invoke){
+    void core.invoke('shelf_memo_form_trace',{ line }).catch(()=>{});
+  }
+}
+function shelfCloseMemoFormWindowFallback(reason){
+  shelfMemoWinTrace('nativeWindow.closeFallback',{ reason:String(reason||'') });
+  try{
+    const gw=window.__TAURI__?.window?.getCurrentWindow?.();
+    if(gw) return gw.close();
+  }catch(e){
+    shelfMemoWinTrace('nativeWindow.closeFallback.err',{ message:String(e&&e.message?e.message:e) });
+  }
+  return Promise.resolve();
+}
 function invoke(cmd, args){
   const core=window.__TAURI__?.core;
-  if(!core?.invoke) return Promise.reject(new Error('Tauri 없음'));
-  return core.invoke(cmd, args);
+  if(!core?.invoke){
+    shelfMemoWinTrace('invoke.skip',{ cmd, reason:'no Tauri core.invoke' });
+    return Promise.reject(new Error('Tauri 없음'));
+  }
+  const quietCmd=cmd==='get_setting';
+  const argsForLog=args===undefined?undefined:(
+    typeof args==='object'&&args!==null&&!Array.isArray(args)
+      ? { ...args, body: typeof args.body==='string'&&args.body.length>120 ? args.body.slice(0,120)+'…(len '+args.body.length+')' : args.body }
+      : args
+  );
+  if(!quietCmd) shelfMemoWinTrace('invoke→',{ cmd, args: argsForLog });
+  return core.invoke(cmd, args).then(
+    out=>{
+      if(!quietCmd) shelfMemoWinTrace('invoke✓',{ cmd, out, outType: typeof out, isBigInt: typeof out==='bigint' });
+      return out;
+    },
+    err=>{
+      shelfMemoWinTrace('invoke✗',{ cmd, message: String(err&&err.message?err.message:err), err: String(err) });
+      return Promise.reject(err);
+    }
+  );
 }
-function finish(payload){
-  return invoke('shelf_finish_memo_form_window', payload);
+function finish(donePayload){
+  shelfMemoWinTrace('finish.payload', donePayload);
+  /* Tauri 2: 두 번째 커맨드 인자 이름이 payload 이므로 반드시 { payload: … } 로 전달 */
+  return invoke('shelf_finish_memo_form_window', { payload: donePayload }).then(
+    out=>{ shelfMemoWinTrace('finish.done',{ out }); return out; },
+    err=>{ shelfMemoWinTrace('finish.reject',{ message: String(err&&err.message?err.message:err) }); return Promise.reject(err); }
+  );
+}
+async function dismissMemoFormWindowCancelled(){
+  shelfMemoWinTrace('userAction.dismiss');
+  try{
+    await finish({ cancelled: true, savedMemoId: null });
+    shelfMemoWinTrace('finish.dismiss.ok');
+  }catch(e){
+    shelfMemoWinTrace('finish.dismiss.fail',{ message:String(e&&e.message?e.message:e) });
+    await shelfCloseMemoFormWindowFallback('finish_cancel_failed');
+  }
 }
 
 function coerceOpacity(raw){
@@ -134,8 +235,17 @@ function normalizeMemoId(raw){
   return Number.isFinite(n)?n:null;
 }
 
+document.getElementById('backdrop-hit').addEventListener('click',()=>{ void dismissMemoFormWindowCancelled(); });
+document.getElementById('btn-close-window').addEventListener('click',()=>{ void dismissMemoFormWindowCancelled(); });
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){
+    e.preventDefault();
+    void dismissMemoFormWindowCancelled();
+  }
+});
 document.getElementById('btn-cancel').addEventListener('click',()=>{
-  void finish({ cancelled: true, savedMemoId: null });
+  shelfMemoWinTrace('userAction.cancelButton');
+  void dismissMemoFormWindowCancelled();
 });
 
 document.getElementById('btn-save').addEventListener('click', async ()=>{
@@ -143,31 +253,46 @@ document.getElementById('btn-save').addEventListener('click', async ()=>{
   const body=document.getElementById('memo-form-body').value||'';
   const btn=document.getElementById('btn-save');
   const isEdit=editMemoId!=null;
+  shelfMemoWinTrace('userAction.saveButton',{ isEdit, editMemoId, titleLen: title.length, bodyLen: body.length });
   btn.disabled=true;
   btn.textContent=isEdit?'저장 중…':'추가 중…';
   try{
     let savedId=null;
     if(isEdit){
+      shelfMemoWinTrace('save.step',{ step:'update_memo', id: editMemoId });
       await invoke('update_memo',{ id: editMemoId, title, body });
       savedId=editMemoId;
+      shelfMemoWinTrace('save.step',{ step:'update_memo.done', savedId });
     }else{
+      shelfMemoWinTrace('save.step',{ step:'create_memo' });
       const rawId=await invoke('create_memo',{ title, body });
+      shelfMemoWinTrace('save.createMemo.raw',{ rawId, rawType: typeof rawId, ctor: rawId!=null&&rawId.constructor?rawId.constructor.name:'' });
       savedId=normalizeMemoId(rawId);
+      shelfMemoWinTrace('save.createMemo.normalized',{ savedId });
       if(savedId==null){
-        alert('저장 응답이 비정상입니다.');
+        shelfMemoWinTrace('save.abort',{ reason:'normalizeMemoId returned null', rawId });
+        alert('저장 응답이 비정상입니다. 콘솔 [ShelfMemoFormWin] 로그를 확인하세요.');
         return;
       }
     }
-    await finish({ cancelled: false, savedMemoId: savedId });
+    const finishPayload={ cancelled: false, savedMemoId: savedId };
+    shelfMemoWinTrace('save.finish.call', finishPayload);
+    await finish(finishPayload);
+    shelfMemoWinTrace('save.done.window_should_close',{ savedId });
   }catch(e){
-    alert('저장 실패: '+e);
+    const msg=String(e&&e.message?e.message:e);
+    shelfMemoWinTrace('save.chain.fail',{ message: msg, stack: e&&e.stack?String(e.stack):'' });
+    alert('저장 실패: '+msg);
+    await shelfCloseMemoFormWindowFallback('submit_failed');
   }finally{
     btn.disabled=false;
     btn.textContent='저장';
+    shelfMemoWinTrace('save.finally',{ btnDisabled: btn.disabled });
   }
 });
 
 (async function init(){
+  shelfMemoWinTrace('init.start',{ href:String(location.href||''), hasTauriCore: !!window.__TAURI__?.core?.invoke, hint:'콘솔 필터 [ShelfMemoFormWin]' });
   try{
     const savedTheme=await invoke('get_setting',{ key: KEY_THEME });
     const token=savedTheme===THEME_SOFT?THEME_SOFT:THEME_DARK;
@@ -189,6 +314,7 @@ document.getElementById('btn-save').addEventListener('click', async ()=>{
     document.getElementById('boot-err').textContent='창 데이터를 불러오지 못했습니다. 닫고 다시 열어 주세요.';
     return;
   }
+  shelfMemoWinTrace('init.bootstrap.raw',{ keys: Object.keys(boot), mode: boot.mode, memoId: boot.memoId, launchZone: boot.launchZone });
 
   const mode=boot.mode==='edit'?'edit':'create';
   if(mode==='edit'){
@@ -216,6 +342,7 @@ document.getElementById('btn-save').addEventListener('click', async ()=>{
   }
 
   document.getElementById('form-root').style.display='block';
+  shelfMemoWinTrace('init.formReady',{ mode, editMemoId });
   setTimeout(()=>{
     const el=document.getElementById(mode==='edit'?'memo-form-body':'memo-form-title');
     el&&el.focus();
