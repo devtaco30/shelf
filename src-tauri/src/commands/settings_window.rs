@@ -2,7 +2,7 @@
 
 use serde::Serialize;
 use serde_json::Value;
-use tauri::{AppHandle, Emitter, Manager, WebviewUrl};
+use tauri::{AppHandle, Emitter, Manager, WebviewUrl, WindowEvent};
 use tauri::webview::WebviewWindowBuilder;
 
 const SHELF_SETTINGS_WEBVIEW_LABEL: &str = "settings";
@@ -55,6 +55,17 @@ pub async fn shelf_open_settings_window(app: AppHandle) -> Result<(), String> {
     .position(logical_left, logical_top)
     .build()
     .map_err(|e| e.to_string())?;
+
+    // 멀티 모니터·Mission Control 이후 배율/포커스가 바뀔 때 WebView가 비어 보이는 경우 완화
+    let win_for_events = win.clone();
+    win.on_window_event(move |event| {
+        if matches!(
+            event,
+            WindowEvent::ScaleFactorChanged { .. } | WindowEvent::Focused(true)
+        ) {
+            let _ = win_for_events.show();
+        }
+    });
 
     #[cfg(target_os = "macos")]
     {
