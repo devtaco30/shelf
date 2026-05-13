@@ -397,6 +397,8 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
 .vd-masked{font-family:monospace;letter-spacing:2px;color:var(--panel-text);flex:1}
 .vd-toggle{background:none;border:.5px solid var(--input-border);border-radius:5px;padding:2px 7px;font-size:10px;cursor:pointer;color:var(--panel-text-sub);white-space:nowrap}
 .vd-copy{background:var(--accent-fg);color:var(--panel-bg);border:none;border-radius:6px;padding:5px 11px;font-size:11px;cursor:pointer;margin-top:6px;width:100%}
+.vd-edit{background:var(--input-bg);color:var(--panel-text);border:.5px solid var(--input-border);border-radius:6px;padding:5px 11px;font-size:11px;cursor:pointer;margin-top:4px;width:100%}
+.vd-edit:hover{background:var(--panel-item-hover)}
 .vd-delete{background:#FFF0F0;color:#EF4444;border:none;border-radius:6px;padding:5px 11px;font-size:11px;cursor:pointer;margin-top:4px;width:100%}
 .vd-delete:hover{background:#FFE0E0}
 .vd-copy-field{background:none;border:.5px solid var(--input-border);border-radius:5px;padding:2px 7px;font-size:10px;cursor:pointer;color:var(--panel-text-sub);white-space:nowrap}
@@ -649,6 +651,7 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
               <button style="background:none;border:none;color:var(--panel-text-sub);font-size:16px;cursor:pointer;padding:0" onclick="cpVaultBack()">‹</button>
               <span id="cp-vault-detail-title" style="font-size:12px;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
               <span id="cp-vault-detail-type" style="font-size:9px;color:var(--panel-text-sub);background:var(--input-bg);padding:2px 7px;border-radius:10px;white-space:nowrap"></span>
+              <button type="button" onclick="void cpVaultOpenEditModal()" style="background:none;border:none;cursor:pointer;font-size:11px;padding:2px 6px;color:var(--accent);font-weight:600;line-height:1" title="수정">수정</button>
               <button id="cp-vault-delete-btn" onclick="cpVaultDelete()" style="background:none;border:none;cursor:pointer;font-size:14px;padding:2px 4px;color:#EF4444;opacity:.6;line-height:1" title="삭제">🗑</button>
             </div>
             <div id="cp-vault-detail-fields" style="max-height:200px;overflow-y:auto"></div>
@@ -920,7 +923,7 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
   <!-- Vault 항목 추가 -->
   <div class="modal-overlay" id="modal-vault" onclick="if(event.target===this)closeModal('vault')">
     <div class="modal">
-      <div class="modal-title">🔐 새 보안 항목</div>
+      <div class="modal-title" id="vault-modal-title">🔐 새 보안 항목</div>
       <div class="modal-field">
         <div class="modal-label">유형</div>
         <div class="type-toggle" id="vault-type-toggle">
@@ -2799,6 +2802,7 @@ async function showVaultDetail(id){
       <div style="font-size:13px;font-weight:600;margin-bottom:12px">${escHtml(item.title)}</div>
       ${fieldsHtml}
       <button class="vd-copy" onclick="copyVaultContent(formatVaultForCopy('${type}',vdData))">📋 전체 복사 (30초 후 자동 삭제)</button>
+      <button class="vd-edit" onclick="void openVaultEditModal(${id})">✏ 수정</button>
       <button class="vd-delete" onclick="deleteVaultItem(${id})">🗑 삭제</button>`;
   }catch(e){}
 }
@@ -2820,15 +2824,79 @@ function copyVaultContent(content){
   });
 }
 
-// ── Vault 추가 모달 ──
+// ── Vault 추가·수정 모달 ──
 let currentVaultType='idpw';
+/** `null`이면 신규, 숫자면 해당 항목 수정 */
+let vaultModalEditId=null;
+
+function shelfSetVaultTypeToggleDisabled(disabled){
+  document.querySelectorAll('#vault-type-toggle .type-btn').forEach(b=>{
+    b.disabled=!!disabled;
+    b.style.opacity=disabled?'0.45':'';
+    b.style.pointerEvents=disabled?'none':'';
+  });
+}
 
 function openVaultAddModal(){
+  vaultModalEditId=null;
+  const titleEl=document.getElementById('vault-modal-title');
+  if(titleEl) titleEl.textContent='🔐 새 보안 항목';
+  document.getElementById('vault-submit-btn').textContent='저장';
+  shelfSetVaultTypeToggleDisabled(false);
   currentVaultType='idpw';
   document.getElementById('vault-title').value='';
   selectVaultType('idpw');
   document.getElementById('modal-vault').classList.add('show');
   setTimeout(()=>document.getElementById('vault-title').focus(),100);
+}
+
+function shelfPopulateVaultFormFromData(type, data){
+  const d=data&&typeof data==='object'?data:{};
+  const set=(id,v)=>{const el=document.getElementById(id); if(el) el.value=v!=null?String(v):'';};
+  if(type==='idpw'){
+    set('vf-username', d.username);
+    set('vf-password', d.password);
+    set('vf-memo', d.memo);
+  }else if(type==='mnemonic'){
+    set('vf-phrase', d.phrase);
+    set('vf-memo', d.memo);
+  }else if(type==='card'){
+    set('vf-number', d.number);
+    set('vf-expiry', d.expiry);
+    set('vf-cvv', d.cvv);
+    set('vf-holder', d.holder);
+  }else{
+    set('vf-content', d.content);
+  }
+}
+
+async function openVaultEditModal(id){
+  const item=vaultItems.find(v=>v.id===id);
+  if(!item) return;
+  let data;
+  try{
+    const raw=await invoke('get_vault_content',{ id });
+    try{ data=JSON.parse(raw); }catch(_){ data={ content: raw }; }
+  }catch(e){
+    alert('내용을 불러오지 못했습니다: '+e);
+    return;
+  }
+  vaultModalEditId=id;
+  const titleEl=document.getElementById('vault-modal-title');
+  if(titleEl) titleEl.textContent='🔐 보안 항목 수정';
+  document.getElementById('vault-submit-btn').textContent='수정 반영';
+  shelfSetVaultTypeToggleDisabled(true);
+  document.getElementById('vault-title').value=item.title||'';
+  currentVaultType=item.item_type||'memo';
+  selectVaultType(currentVaultType);
+  shelfPopulateVaultFormFromData(currentVaultType, data);
+  document.getElementById('modal-vault').classList.add('show');
+  setTimeout(()=>document.getElementById('vault-title').focus(),80);
+}
+
+async function cpVaultOpenEditModal(){
+  if(!cpVaultCurrentId) return;
+  await openVaultEditModal(cpVaultCurrentId);
 }
 
 function selectVaultType(type){
@@ -2894,17 +2962,28 @@ async function submitVaultItem(){
   if(!validateVaultData(currentVaultType,data)){ showToast('필수 항목을 입력해주세요'); return; }
   const content=JSON.stringify(data);
   const btn=document.getElementById('vault-submit-btn');
-  btn.textContent='저장 중...'; btn.disabled=true;
+  const isEdit=vaultModalEditId!=null;
+  btn.textContent=isEdit?'반영 중...':'저장 중...'; btn.disabled=true;
+  const editedId=vaultModalEditId;
   try{
-    await invoke('create_vault_item',{title,content,item_type:currentVaultType});
+    if(isEdit){
+      await invoke('update_vault_item',{ id: editedId, title, content });
+    }else{
+      await invoke('create_vault_item',{ title, content, item_type: currentVaultType });
+    }
     closeModal('vault');
     await loadAndRenderVaultItems('cp-vault-list');
     await loadAndRenderVaultItems('ex-vault-list-items');
-    showToast('보안 항목이 저장됐어요');
+    showToast(isEdit?'보안 항목이 수정됐어요':'보안 항목이 저장됐어요');
+    if(isEdit&&editedId!=null){
+      if(cpVaultCurrentId===editedId) await cpVaultShowDetail(editedId);
+      const exUnlocked=document.getElementById('ex-vault-unlocked');
+      if(exUnlocked&&exUnlocked.style.display!=='none') await showVaultDetail(editedId);
+    }
   }catch(e){
-    alert('저장 실패: '+e);
+    alert((isEdit?'수정':'저장')+' 실패: '+e);
   }finally{
-    btn.textContent='저장'; btn.disabled=false;
+    btn.textContent=isEdit?'수정 반영':'저장'; btn.disabled=false;
   }
 }
 
@@ -3071,6 +3150,10 @@ function closeModal(type){
   document.getElementById('modal-'+type).classList.remove('show');
   if(type==='project') editingProjectId=null;
   if(type==='project-delete') pendingDeleteProjectId=null;
+  if(type==='vault'){
+    vaultModalEditId=null;
+    shelfSetVaultTypeToggleDisabled(false);
+  }
 }
 
 // ── 프로젝트 모달 ──
