@@ -78,21 +78,42 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
   overflow-y:auto;
   padding:18px 20px;
 }
-#modal-shelf-settings .modal-title.shelf-settings-modal-drag-handle{
+#modal-shelf-settings .shelf-settings-modal-drag-strip.shelf-settings-modal-drag-handle{
   cursor:grab;
   user-select:none;
   touch-action:none;
+  margin:-18px -20px 14px -20px;
+  padding:16px 20px 12px;
+  border-radius:16px 16px 0 0;
 }
-#modal-shelf-settings .modal-title.shelf-settings-modal-drag-handle:active{cursor:grabbing}
+#modal-shelf-settings .shelf-settings-modal-drag-strip .modal-title{ margin-bottom:0; }
+#modal-shelf-settings .shelf-settings-modal-drag-strip.shelf-settings-modal-drag-handle:active{ cursor:grabbing; }
+#modal-shelf-settings button,
+#modal-shelf-settings input,
+#modal-shelf-settings label.shelf-settings-panel-fill-label{ -webkit-app-region:no-drag; }
 .shelf-settings-theme-cards{display:flex;flex-direction:column;gap:8px;margin-bottom:4px}
 .shelf-theme-card{
-  display:block;width:100%;text-align:left;padding:10px 12px;border-radius:10px;border:1.5px solid var(--input-border);
-  background:var(--input-bg);cursor:pointer;font:inherit;color:var(--panel-text);box-sizing:border-box;
+  display:block;width:100%;text-align:left;padding:10px 12px;border-radius:10px;border:1.5px solid transparent;
+  cursor:pointer;font:inherit;box-sizing:border-box;
 }
-.shelf-theme-card:hover{border-color:var(--accent);background:var(--panel-item-hover)}
-.shelf-theme-card.sel{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
 .shelf-theme-card .shelf-theme-card-title{font-size:12px;font-weight:700}
-.shelf-theme-card .shelf-theme-card-sub{font-size:10px;color:var(--panel-text-sub);margin-top:3px;line-height:1.35}
+.shelf-theme-card .shelf-theme-card-sub{font-size:10px;margin-top:3px;line-height:1.35}
+.shelf-theme-card[data-shelf-ui-theme="dark"]{
+  background:rgba(28,28,38,.94);
+  border-color:rgba(255,255,255,.24);
+  color:#ECECEC;
+}
+.shelf-theme-card[data-shelf-ui-theme="dark"] .shelf-theme-card-sub{color:rgba(255,255,255,.55)}
+.shelf-theme-card[data-shelf-ui-theme="soft"]{
+  background:#ECECF2;
+  border-color:#B8B4CE;
+  color:#111;
+}
+.shelf-theme-card[data-shelf-ui-theme="soft"] .shelf-theme-card-sub{color:#5C5C66}
+.shelf-theme-card[data-shelf-ui-theme="dark"]:hover{border-color:#AAED3A;background:rgba(36,36,48,.96)}
+.shelf-theme-card[data-shelf-ui-theme="soft"]:hover{border-color:#6C63FF;background:#E4E2F5}
+.shelf-theme-card.sel[data-shelf-ui-theme="dark"]{border-color:#AAED3A;box-shadow:0 0 0 1px #AAED3A}
+.shelf-theme-card.sel[data-shelf-ui-theme="soft"]{border-color:#6C63FF;box-shadow:0 0 0 1px #6C63FF}
 
 .shelf-settings-panel-fill-block{margin-top:6px}
 .shelf-settings-panel-fill-label{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;color:var(--panel-text);cursor:pointer;user-select:none}
@@ -232,9 +253,22 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
 .cgrid-root{display:flex;flex-direction:column;gap:3px;font-size:10px}
 .cgrid-row{display:grid;grid-template-columns:repeat(7,1fr);gap:1px}
 .cgrid-week{display:flex;flex-direction:column;gap:2px}
-.cal-week-strip-host{min-height:2px}
+.cal-week-strip-host{min-height:2px;position:relative}
 .cal-week-strip-grid{
+  position:relative;z-index:1;
   display:grid;grid-template-columns:repeat(7,1fr);gap:1px;align-content:start;
+}
+/* 선택한 날짜 열: 주간 프로젝트 막대 영역에만 얹는 하이라이트(아래 .cdd.cal-selected 와 열 정렬) */
+.cal-strip-selection-overlay{
+  position:absolute;inset:0;
+  display:grid;grid-template-columns:repeat(7,1fr);gap:1px;
+  pointer-events:none;z-index:2;
+}
+.cal-strip-col{min-height:100%}
+.cal-strip-col-selected{
+  border-radius:5px 5px 0 0;
+  box-shadow:inset 0 1.5px 0 0 var(--accent),inset 1.5px 0 0 0 var(--accent),inset -1.5px 0 0 0 var(--accent);
+  background:color-mix(in srgb,var(--accent) 7%,transparent);
 }
 .cal-proj-span{
   height:3px;border-radius:2px;opacity:.88;box-sizing:border-box;min-width:0;
@@ -247,15 +281,20 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
   display:flex;flex-direction:column;align-items:center;padding:3px 1px;border-radius:4px;cursor:pointer;min-height:24px;
 }
 .cdd:hover{background:var(--panel-item-hover)}
+.cdd.cal-selected:hover{background:color-mix(in srgb,var(--accent) 18%,transparent)}
 .cdd .cdn{
   flex-shrink:0;min-height:18px;display:flex;align-items:center;justify-content:center;line-height:1;width:100%;color:var(--panel-text);
 }
 .cdd.today .cdn{
   background:var(--accent);color:var(--accent-fg);border-radius:50%;width:18px;height:18px;min-height:18px;margin:0 auto;font-weight:700;
 }
-.cdd.cal-selected{background:rgba(124,58,237,.1)}
-.cdd.cal-selected .cdn{box-shadow:0 0 0 2px #7C3AED;border-radius:50%}
-.cdd.today.cal-selected .cdn{box-shadow:0 0 0 2px #5B21B6}
+/* 선택: 숫자 링 대신 날짜 셀 전체(일정 막대 포함) 하이라이트 */
+.cdd.cal-selected{
+  border-radius:0 0 5px 5px;
+  box-shadow:inset 0 -1.5px 0 0 var(--accent),inset 1.5px 0 0 0 var(--accent),inset -1.5px 0 0 0 var(--accent);
+  background:color-mix(in srgb,var(--accent) 13%,transparent);
+}
+.cdd.today.cal-selected .cdn{box-shadow:none}
 .cdd.sun .cdn{color:#E53935}
 .cdd.other .cdn{color:var(--panel-text-sub)}
 .pbar{flex-shrink:0;height:3px;border-radius:2px;margin:2px 2px 0;width:calc(100% - 4px);max-width:100%}
@@ -330,6 +369,7 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
 .proj-card:hover .proj-card-del{opacity:.55}
 .proj-card-del:hover{opacity:1;background:#FFF0F0}
 .ex-proj-add{display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:9px;cursor:pointer;color:var(--panel-text-sub);font-size:11px;margin-top:4px;border:.5px dashed var(--input-border)}
+button.ex-proj-add{width:100%;font:inherit;text-align:left;background:transparent}
 .ex-proj-add:hover{background:var(--panel-item-hover);color:var(--panel-text)}
 /* 확장 메모 사이드바 — 기본 .ex-proj-add(#bbb)는 배경과 대비 부족 */
 .ex-proj-add.ex-memo-new-btn{color:var(--panel-text);border-color:var(--input-border)}
@@ -365,13 +405,18 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
 .exdd{
   display:flex;flex-direction:column;align-items:center;padding:3px 1px;border-radius:5px;cursor:pointer;min-height:30px;
 }
+.exdd:hover{background:var(--panel-item-hover)}
+.exdd.cal-selected:hover{background:color-mix(in srgb,var(--accent) 18%,transparent)}
 .exdd .exdn{
   flex-shrink:0;min-height:18px;display:flex;align-items:center;justify-content:center;line-height:1;width:100%;color:var(--panel-text);
 }
 .exdd.today .exdn{background:var(--accent);color:var(--accent-fg);border-radius:50%;width:18px;height:18px;min-height:18px;margin:0 auto;font-weight:700}
-.exdd.cal-selected{background:rgba(124,58,237,.1)}
-.exdd.cal-selected .exdn{box-shadow:0 0 0 2px #7C3AED;border-radius:50%}
-.exdd.today.cal-selected .exdn{box-shadow:0 0 0 2px #5B21B6}
+.exdd.cal-selected{
+  border-radius:0 0 5px 5px;
+  box-shadow:inset 0 -1.5px 0 0 var(--accent),inset 1.5px 0 0 0 var(--accent),inset -1.5px 0 0 0 var(--accent);
+  background:color-mix(in srgb,var(--accent) 13%,transparent);
+}
+.exdd.today.cal-selected .exdn{box-shadow:none}
 .exdd.sun .exdn{color:#E53935}
 .exdd.other .exdn{color:var(--panel-text-sub)}
 .expbar{flex-shrink:0;height:4px;border-radius:2px;margin:2px 2px 0;width:calc(100% - 4px);max-width:100%}
@@ -446,11 +491,78 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
 .type-btn.sel{background:var(--panel-bg);color:var(--panel-text);box-shadow:0 1px 4px rgba(0,0,0,.12)}
 .todo-completion-toggle .type-btn{font-size:9px;padding:4px 2px}
 .ex-todo-completion-toggle .type-btn{font-size:10px;padding:5px 4px}
-.modal-footer{display:flex;gap:7px;margin-top:16px}
+.modal-footer{display:flex;gap:7px;margin-top:16px;-webkit-app-region:no-drag}
+.modal-footer button{-webkit-app-region:no-drag}
 .btn-cancel{flex:1;padding:8px;border-radius:8px;border:1px solid var(--input-border);background:var(--input-bg);font-size:12px;font-weight:500;cursor:pointer;color:var(--panel-text)}
 .btn-cancel:hover{background:var(--panel-item-hover)}
 .btn-submit{flex:2;padding:8px;border-radius:8px;border:none;background:var(--accent);color:var(--accent-fg);font-size:12px;font-weight:600;cursor:pointer}
 .btn-submit:hover{filter:brightness(1.06)}
+
+/* 태스크·Vault·프로젝트 폼 모달 — 오버레이는 visible 유지, 세로 스크롤은 `.modal` 카드 내부만 */
+#modal-task.modal-overlay,
+#modal-task-detail.modal-overlay,
+#modal-vault.modal-overlay,
+#modal-project.modal-overlay{
+  padding:16px 12px;
+  overflow:visible;
+  align-items:flex-start;
+  justify-content:center;
+}
+#modal-task .modal,
+#modal-task-detail .modal,
+#modal-vault .modal,
+#modal-project .modal{
+  position:fixed;
+  margin:0;
+  box-sizing:border-box;
+  max-height:min(calc(100dvh - 36px),calc(100vh - 36px));
+  overflow-x:hidden;
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+}
+#modal-task .modal{ width:min(408px,calc(100vw - 28px)); padding:18px 18px 16px; }
+#modal-task-detail .modal{ width:min(448px,calc(100vw - 28px)); padding:18px 18px 16px; }
+#modal-vault .modal{ width:min(520px,calc(100vw - 24px)); padding:18px 18px 16px; }
+#modal-project .modal{ width:min(400px,calc(100vw - 28px)); padding:18px 18px 16px; }
+/* 넓은 상단 드래그 히트 영역 — `shelf-form-modal-drag-handle` 과 같은 요소에 부착 */
+.shelf-form-modal-drag-strip{
+  cursor:grab;
+  user-select:none;
+  touch-action:none;
+  margin:-18px -18px 14px -18px;
+  padding:16px 18px 14px;
+  border-radius:16px 16px 0 0;
+}
+.shelf-form-modal-drag-strip .modal-title{ margin-bottom:0; }
+.shelf-form-modal-drag-strip:active,
+.shelf-form-modal-drag-handle:active{ cursor:grabbing; }
+.shelf-form-modal-drag-handle{ cursor:grab; user-select:none; touch-action:none; }
+.shelf-form-modal-header-with-close{
+  display:flex;
+  align-items:stretch;
+  gap:2px;
+  margin:-18px -18px 14px -18px;
+  padding:0 6px 0 0;
+  border-radius:16px 16px 0 0;
+}
+.shelf-form-modal-header-with-close .shelf-form-modal-drag-strip{
+  flex:1;
+  min-width:0;
+  margin:0;
+  border-radius:0;
+  padding:16px 12px 14px 18px;
+}
+.shelf-form-modal-close-btn{
+  align-self:center;
+  flex-shrink:0;
+  background:none;
+  border:none;
+  color:var(--panel-text-sub);
+  font-size:16px;
+  cursor:pointer;
+  padding:8px 10px;
+  line-height:1;
+}
 
 /* 커스텀 날짜/시간 피커 */
 .date-picker-wrap{position:relative}
@@ -539,7 +651,7 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
 }
 .memo-body-input:focus{background:var(--panel-bg);border-color:var(--accent)}
 
-/* 컴팩트·메모 탭: cp-body 전체 스크롤 끄고 목록(#cp-memo-list)만 스크롤 → '+ 새 메모' 항상 보임 */
+/* 컴팩트·메모 탭: cp-body 전체 스크롤 끄고 목록(#cp-memo-list)만 스크롤 — 새 메모는 헤더 ＋와 동일 */
 #cpanel.cp-shell-memo-list .cp-body{
   overflow:hidden;
   display:flex;
@@ -585,7 +697,7 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
     <div class="cp-header" data-tauri-drag-region>
       <span class="cp-title" id="cp-title" data-tauri-drag-region>할 일</span>
       <div class="cp-actions">
-        <button class="hdr-add-btn" id="cp-add-btn" onclick="openTaskModal(null)" title="추가">＋</button>
+        <button class="hdr-add-btn" id="cp-add-btn" type="button" title="추가">＋</button>
         <button class="cp-expand" onclick="setState('expanded')">⬜ 확장</button>
         <button class="cp-close" onclick="setState('pill')" title="접기">«</button>
       </div>
@@ -665,7 +777,6 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
         <div id="cp-memo-list-view" style="display:flex;flex-direction:column;min-height:0;flex:1;overflow:hidden">
           <input type="search" class="memo-search" id="cp-memo-search" placeholder="제목·내용 검색…" autocomplete="off" oninput="shelfMemoOnSearchInput('cp-memo-search')">
           <div class="memo-list" id="cp-memo-list"></div>
-          <button type="button" class="vbtn vb" style="margin-top:8px;flex-shrink:0" onclick="shelfMemoStartNew('cp')">＋ 새 메모</button>
         </div>
         <div id="cp-memo-detail-view" style="display:none;flex-direction:column;min-height:0;flex:1;overflow:hidden">
           <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-shrink:0">
@@ -818,14 +929,19 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
     </div>
   </div>
 
+</div><!-- /app -->
+
+  <!-- 폼·삭제 확인 모달 (#app 밖 — 창/쉘 클립 회피; 설정·토스트와 동일) -->
   <!-- ── 모달들 ── -->
 
   <!-- 태스크 상세 -->
   <div class="modal-overlay" id="modal-task-detail" onclick="if(event.target===this)closeModal('task-detail')">
-    <div class="modal">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-        <div class="modal-title" style="margin:0" id="detail-title">태스크</div>
-        <button style="background:none;border:none;color:var(--panel-text-sub);font-size:16px;cursor:pointer" onclick="closeModal('task-detail')">×</button>
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="shelf-form-modal-header-with-close">
+        <div class="shelf-form-modal-drag-strip shelf-form-modal-drag-handle">
+          <div class="modal-title" id="detail-title">태스크</div>
+        </div>
+        <button type="button" class="shelf-form-modal-close-btn" onclick="closeModal('task-detail')" aria-label="닫기">×</button>
       </div>
       <div class="modal-field">
         <div class="modal-label">프로젝트</div>
@@ -874,8 +990,10 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
 
   <!-- 태스크 추가 -->
   <div class="modal-overlay" id="modal-task" onclick="if(event.target===this)closeModal('task')">
-    <div class="modal">
-      <div class="modal-title">새 태스크</div>
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="shelf-form-modal-drag-strip shelf-form-modal-drag-handle">
+        <div class="modal-title" style="margin:0">새 태스크</div>
+      </div>
       <div class="modal-field">
         <input class="modal-input" id="task-title-input" placeholder="태스크 제목...">
       </div>
@@ -922,8 +1040,10 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
 
   <!-- Vault 항목 추가 -->
   <div class="modal-overlay" id="modal-vault" onclick="if(event.target===this)closeModal('vault')">
-    <div class="modal">
-      <div class="modal-title" id="vault-modal-title">🔐 새 보안 항목</div>
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="shelf-form-modal-drag-strip shelf-form-modal-drag-handle">
+        <div class="modal-title" style="margin:0" id="vault-modal-title">🔐 새 보안 항목</div>
+      </div>
       <div class="modal-field">
         <div class="modal-label">유형</div>
         <div class="type-toggle" id="vault-type-toggle">
@@ -948,8 +1068,10 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
 
   <!-- 프로젝트 추가 · 수정 -->
   <div class="modal-overlay" id="modal-project" onclick="if(event.target===this)closeModal('project')">
-    <div class="modal">
-      <div class="modal-title" id="modal-project-title">새 프로젝트</div>
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="shelf-form-modal-drag-strip shelf-form-modal-drag-handle">
+        <div class="modal-title" style="margin:0" id="modal-project-title">새 프로젝트</div>
+      </div>
       <div class="modal-field">
         <input class="modal-input" id="proj-name-input" placeholder="프로젝트 이름...">
       </div>
@@ -1018,12 +1140,12 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
     </div>
   </div>
 
-</div><!-- /app -->
-
   <!-- Shelf 테마·설정 — Tauri에선 별도 OS 창(settings.html). 브라우저 미리보기만 이 오버레이 사용 -->
   <div class="modal-overlay" id="modal-shelf-settings" style="z-index:130" onclick="if(event.target===this)void shelfSettingsDismiss()">
     <div class="modal" onclick="event.stopPropagation()">
-      <div class="modal-title shelf-settings-modal-drag-handle">설정</div>
+      <div class="shelf-settings-modal-drag-strip shelf-settings-modal-drag-handle">
+        <div class="modal-title" style="margin:0">설정</div>
+      </div>
       <div class="modal-label">테마</div>
       <div class="shelf-settings-theme-cards">
         <button type="button" class="shelf-theme-card" data-shelf-ui-theme="dark" onclick="shelfPreviewUiThemeInSettings('dark')">
@@ -1062,6 +1184,17 @@ body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px}
 
 <script>
 function dbg(){} // 디버그 종료 — no-op
+
+/** 사용자·개발자가 콘솔에서 액션 추적 가능하도록 고정 접두사 로그 */
+function shelfUiTrace(tag, detail){
+  let extra='';
+  if(detail!==undefined&&detail!==null){
+    extra=typeof detail==='object'
+      ? JSON.stringify(detail)
+      : String(detail);
+  }
+  console.info('[ShelfUI]', tag, extra);
+}
 
 /** URL ?debugWindow=1 또는 localStorage shelfDebugWindow=1 일 때만 창·모니터 메트릭 로깅 */
 const SHELF_WINDOW_METRICS_DEBUG =
@@ -1276,6 +1409,115 @@ function shelfInitNativeSettingsWindowBridge(){
   }).catch(()=>{});
 }
 
+let shelfNativeTaskAddFormBridgeInited=false;
+function shelfInitNativeTaskAddFormWindowBridge(subAttempt){
+  if(shelfNativeTaskAddFormBridgeInited) return;
+  const ev=window.__TAURI__?.event;
+  const n=subAttempt|0;
+  if(!ev?.listen){
+    if(n<100) setTimeout(()=>shelfInitNativeTaskAddFormWindowBridge(n+1),40);
+    return;
+  }
+  shelfNativeTaskAddFormBridgeInited=true;
+  ev.listen('shelf-task-add-form-window-done', async e=>{
+    const p=e?.payload;
+    console.info('[Shelf][task-add-done] 이벤트 수신 (main webview)', {
+      rawEventId: e?.id,
+      payload: p,
+      cancelledFlag: p?.cancelled,
+      createdId: p?.createdId ?? p?.created_id,
+    });
+    const cancelled=p&&(p.cancelled===true||p.cancelled==='true');
+    if(!p||cancelled){
+      console.info('[Shelf][task-add-done] 취소 또는 payload 없음 → 목록 갱신 스킵');
+      return;
+    }
+    try{
+      const beforeLen=Array.isArray(todos)?todos.length:-1;
+      todos=await invoke('get_todos');
+      const afterLen=Array.isArray(todos)?todos.length:-1;
+      console.info('[Shelf][task-add-done] get_todos 완료', { beforeLen, afterLen, sampleIds: (todos||[]).slice(0,3).map(t=>t.id) });
+      renderCpTodos();
+      renderExTasks();
+      renderCpStats();
+      renderExProjects();
+      shelfRefreshCalendars();
+      console.info('[Shelf][task-add-done] renderCpTodos/renderExTasks 등 호출 완료 (컴팩트는「오늘」필터만 표시)');
+    }catch(err){
+      console.error('[Shelf][task-add-done] refresh 실패', err);
+    }
+  }).catch(err=>{
+    console.error('[Shelf] listen shelf-task-add-form-window-done',err);
+    shelfNativeTaskAddFormBridgeInited=false;
+  });
+}
+
+/** 할 일 탭이 아닌 곳으로 전환하거나 패널을 접을 때 — 네이티브 새 태스크 창·DOM 추가 모달 정리 */
+function shelfDismissTaskAddUiWhenLeavingTodoSurface(){
+  const mt=document.getElementById('modal-task');
+  if(mt?.classList.contains('show')) closeModal('task');
+  if(window.__TAURI__?.core?.invoke){
+    void invoke('shelf_close_task_add_form_window').catch(()=>{});
+  }
+}
+
+let shelfNativeVaultFormBridgeInited=false;
+function shelfInitNativeVaultFormWindowBridge(){
+  if(shelfNativeVaultFormBridgeInited) return;
+  const ev=window.__TAURI__?.event;
+  if(!ev?.listen) return;
+  shelfNativeVaultFormBridgeInited=true;
+  ev.listen('shelf-vault-form-window-done', async e=>{
+    const p=e?.payload;
+    if(!p||p.cancelled===true) return;
+    const sid=p.savedItemId!=null?Number(p.savedItemId):null;
+    try{
+      await loadAndRenderVaultItems('cp-vault-list');
+      await loadAndRenderVaultItems('ex-vault-list-items');
+      showToast('보안 항목이 저장됐어요');
+      if(sid!=null&&Number.isFinite(sid)){
+        if(cpVaultCurrentId===sid) await cpVaultShowDetail(sid);
+        const exUnlocked=document.getElementById('ex-vault-unlocked');
+        if(exUnlocked&&exUnlocked.style.display!=='none') await showVaultDetail(sid);
+      }
+    }catch(err){
+      console.error(err);
+    }
+  }).catch(()=>{});
+}
+
+let shelfNativeMemoFormBridgeInited=false;
+function shelfInitNativeMemoFormWindowBridge(){
+  if(shelfNativeMemoFormBridgeInited) return;
+  const ev=window.__TAURI__?.event;
+  if(!ev?.listen) return;
+  shelfNativeMemoFormBridgeInited=true;
+  ev.listen('shelf-memo-form-window-done', async e=>{
+    const p=e?.payload;
+    if(!p||p.cancelled===true) return;
+    const mid=p.savedMemoId!=null?Number(p.savedMemoId):null;
+    try{
+      await shelfMemoLoadSummaries();
+      await shelfMemoUpdateHeaderCount();
+      if(mid!=null&&Number.isFinite(mid)){
+        memoSelectedId=mid;
+        await shelfMemoFillEditorsFromId(mid);
+      }
+      const z=shelfMemoNativeFormLaunchZone==='ex'?'ex':'cp';
+      if(z==='cp'){
+        const lv=document.getElementById('cp-memo-list-view');
+        const dv=document.getElementById('cp-memo-detail-view');
+        if(lv) lv.style.display='none';
+        if(dv) dv.style.display='flex';
+      }
+      shelfMemoRenderLists();
+      showToast('메모를 저장했어요');
+    }catch(err){
+      console.error(err);
+    }
+  }).catch(()=>{});
+}
+
 async function shelfOpenSettingsDomModalFallback(){
   await shelfEnsureShellLogicalWidthForSettingsModal();
   shelfThemeModalBaselineToken=shelfGetUiThemeToken();
@@ -1312,6 +1554,7 @@ function shelfPreviewUiThemeInSettings(themeToken){
   shelfSyncSettingsThemeCardSelection();
 }
 async function shelfSettingsDismiss(){
+  shelfUiTrace('settings.dom.dismiss.click',{});
   document.getElementById('modal-shelf-settings').classList.remove('show');
   await shelfRestoreShellLogicalWidthAfterSettingsModal();
   shelfApplyUiThemeToken(shelfThemeModalBaselineToken);
@@ -1321,21 +1564,24 @@ async function shelfSettingsDismiss(){
   shelfPanelFillModalChoiceOpacity=shelfPanelFillModalBaselineOpacity;
   shelfApplyPanelFillOpacityToDom(shelfPanelFillModalBaselineTranslucent, shelfPanelFillModalBaselineOpacity);
   shelfSyncSettingsPanelFillControls();
+  shelfUiTrace('settings.dom.dismiss.done',{});
 }
 async function shelfSettingsConfirm(){
+  shelfUiTrace('settings.dom.confirm.click',{ theme: shelfThemeModalChoiceToken });
   const token=shelfThemeModalChoiceToken;
-  try{ await invoke('set_setting',{key:'theme',value:token}); }catch(e){ console.error(e); }
+  try{ await invoke('set_setting',{key:'theme',value:token}); }catch(e){ shelfUiTrace('settings.dom.confirm.error', 'theme:'+String(e)); console.error(e); }
   shelfThemeModalBaselineToken=token;
   try{
     await invoke('set_setting',{key:SHELF_SETTINGS_KEY_PANEL_TRANSLUCENT,value:shelfPanelFillModalChoiceTranslucent?'1':'0'});
     await invoke('set_setting',{key:SHELF_SETTINGS_KEY_PANEL_FILL_OPACITY,value:String(shelfPanelFillModalChoiceOpacity)});
-  }catch(e){ console.error(e); }
+  }catch(e){ shelfUiTrace('settings.dom.confirm.error', 'panel:'+String(e)); console.error(e); }
   shelfAppliedPanelTranslucent=shelfPanelFillModalChoiceTranslucent;
   shelfAppliedPanelFillOpacity=shelfPanelFillModalChoiceOpacity;
   shelfPanelFillModalBaselineTranslucent=shelfPanelFillModalChoiceTranslucent;
   shelfPanelFillModalBaselineOpacity=shelfPanelFillModalChoiceOpacity;
   document.getElementById('modal-shelf-settings').classList.remove('show');
   await shelfRestoreShellLogicalWidthAfterSettingsModal();
+  shelfUiTrace('settings.dom.confirm.done',{});
 }
 async function shelfRestorePanelFillFromDb(){
   let translucent=false;
@@ -1533,6 +1779,138 @@ function shelfInitSettingsModalInteraction(){
   window.addEventListener('resize', shelfReclampSettingsModalOriginIfOpen, { passive: true });
 }
 
+/** 태스크·Vault·프로젝트 폼 모달 — `position:fixed` 후 뷰포트 중앙(설정 모달과 동일 클램프) */
+function shelfLayoutFloatingFormModalCenteredInViewport(overlayId){
+  const overlay=document.getElementById(overlayId);
+  if(!overlay) return;
+  const modal=overlay.querySelector('.modal');
+  if(!modal) return;
+  modal.style.position='fixed';
+  const rect=modal.getBoundingClientRect();
+  const w=Math.round(rect.width);
+  const h=Math.round(rect.height);
+  if(w<2||h<2) return;
+  const left=Math.round((window.innerWidth-w)/2);
+  const top=Math.round((window.innerHeight-h)/2);
+  const c=shelfClampSettingsModalOriginPx(left, top, w, h);
+  modal.style.left=c.left+'px';
+  modal.style.top=c.top+'px';
+}
+
+function shelfScheduleFloatingFormModalLayout(overlayId){
+  requestAnimationFrame(()=>{
+    requestAnimationFrame(()=>void shelfLayoutFloatingFormModalCenteredInViewport(overlayId));
+  });
+}
+
+function shelfResetFloatingFormModalLayout(overlayId){
+  const overlay=document.getElementById(overlayId);
+  const modal=overlay?.querySelector('.modal');
+  if(!modal) return;
+  modal.style.left='';
+  modal.style.top='';
+}
+
+let shelfFormModalDragActivePointerId=null;
+let shelfFormModalDragBaseline=null;
+let shelfFormModalDragOverlayId=null;
+
+function shelfFormModalOnDragPointerMove(ev){
+  if(shelfFormModalDragActivePointerId!==ev.pointerId||!shelfFormModalDragBaseline||!shelfFormModalDragOverlayId) return;
+  const modal=document.querySelector('#'+shelfFormModalDragOverlayId+' .modal');
+  if(!modal) return;
+  const dX=ev.clientX-shelfFormModalDragBaseline.startClientX;
+  const dY=ev.clientY-shelfFormModalDragBaseline.startClientY;
+  const nextL=shelfFormModalDragBaseline.originLeftPx+dX;
+  const nextT=shelfFormModalDragBaseline.originTopPx+dY;
+  const rect=modal.getBoundingClientRect();
+  const c=shelfClampSettingsModalOriginPx(nextL, nextT, rect.width, rect.height);
+  modal.style.left=c.left+'px';
+  modal.style.top=c.top+'px';
+}
+
+function shelfFormModalOnDragPointerEnd(ev){
+  if(shelfFormModalDragActivePointerId!==ev.pointerId) return;
+  const overlayId=shelfFormModalDragOverlayId;
+  const handle=overlayId?document.querySelector('#'+overlayId+' .shelf-form-modal-drag-handle'):null;
+  if(handle){
+    try{ handle.releasePointerCapture(ev.pointerId); }catch(_){}
+    handle.style.cursor='';
+  }
+  shelfFormModalDragActivePointerId=null;
+  shelfFormModalDragBaseline=null;
+  shelfFormModalDragOverlayId=null;
+  window.removeEventListener('pointermove', shelfFormModalOnDragPointerMove);
+  window.removeEventListener('pointerup', shelfFormModalOnDragPointerEnd);
+  window.removeEventListener('pointercancel', shelfFormModalOnDragPointerEnd);
+}
+
+function shelfFormModalOnDragHandlePointerDown(ev){
+  if(ev.button!==0) return;
+  const handle=ev.currentTarget;
+  const overlay=handle.closest('.modal-overlay');
+  const overlayId=overlay&&overlay.id;
+  const modal=overlay&&overlay.querySelector('.modal');
+  if(!modal||!overlayId||shelfFormModalDragActivePointerId!==null) return;
+  shelfFormModalDragActivePointerId=ev.pointerId;
+  shelfFormModalDragOverlayId=overlayId;
+  try{ handle.setPointerCapture(ev.pointerId); }catch(_){}
+  const rect=modal.getBoundingClientRect();
+  shelfFormModalDragBaseline={
+    startClientX: ev.clientX,
+    startClientY: ev.clientY,
+    originLeftPx: rect.left,
+    originTopPx: rect.top,
+  };
+  handle.style.cursor='grabbing';
+  window.addEventListener('pointermove', shelfFormModalOnDragPointerMove);
+  window.addEventListener('pointerup', shelfFormModalOnDragPointerEnd);
+  window.addEventListener('pointercancel', shelfFormModalOnDragPointerEnd);
+}
+
+const SHELF_FORM_MODAL_OVERLAY_IDS=['modal-task','modal-task-detail','modal-vault','modal-project'];
+const SHELF_FORM_AND_DELETE_MODAL_OVERLAY_IDS=[...SHELF_FORM_MODAL_OVERLAY_IDS,'modal-project-delete'];
+
+/** 폼·삭제 확인 오버레이를 `document.body` 맨 뒤로 옮겨 #app·형제 레이어 밑에 깔리지 않게 함 */
+function shelfEnsureFormModalOverlaysOnDocumentBody(){
+  for(const id of SHELF_FORM_AND_DELETE_MODAL_OVERLAY_IDS){
+    const el=document.getElementById(id);
+    if(el&&el.parentElement!==document.body) document.body.appendChild(el);
+  }
+}
+
+function shelfReclampOpenFormModalsToViewport(){
+  for(const id of SHELF_FORM_MODAL_OVERLAY_IDS){
+    const overlay=document.getElementById(id);
+    if(!overlay?.classList.contains('show')) continue;
+    const modal=overlay.querySelector('.modal');
+    if(!modal) continue;
+    const l=parseFloat(modal.style.left);
+    const t=parseFloat(modal.style.top);
+    if(!Number.isFinite(l)||!Number.isFinite(t)) continue;
+    const rect=modal.getBoundingClientRect();
+    const c=shelfClampSettingsModalOriginPx(l, t, rect.width, rect.height);
+    modal.style.left=c.left+'px';
+    modal.style.top=c.top+'px';
+  }
+}
+
+let shelfFormModalInteractionInited=false;
+function shelfInitFormModalInteractions(){
+  if(shelfFormModalInteractionInited) return;
+  shelfFormModalInteractionInited=true;
+  shelfEnsureFormModalOverlaysOnDocumentBody();
+  SHELF_FORM_MODAL_OVERLAY_IDS.forEach(id=>{
+    const overlay=document.getElementById(id);
+    const handle=overlay?.querySelector('.shelf-form-modal-drag-handle');
+    if(handle&&!handle.dataset.shelfFormModalDragBound){
+      handle.dataset.shelfFormModalDragBound='1';
+      handle.addEventListener('pointerdown', shelfFormModalOnDragHandlePointerDown);
+    }
+  });
+  window.addEventListener('resize', shelfReclampOpenFormModalsToViewport, { passive: true });
+}
+
 /** 필 레일 물리 높이(px) — `.pill` 의 `height`·`--shelf-pill-fixed-height` 와 반드시 동일 */
 const SHELF_PILL_FIXED_LOGICAL_HEIGHT_PX = 320;
 /** 필이 잘리지 않도록 panel·expanded 시 #app 논리 높이 하한 (= 필 높이 + 상·하 10px 여백) */
@@ -1680,6 +2058,7 @@ async function setState(s){
   const cp=document.getElementById('cpanel'), ex=document.getElementById('expanel');
   const fa=document.getElementById('fold-arrow');
   if(s==='pill'){
+    shelfDismissTaskAddUiWhenLeavingTodoSurface();
     cp.classList.remove('open'); ex.classList.remove('open');
     cp.classList.remove('cp-shell-memo-list','cp-body-scroll-capped');
     SHELF_SHELL_TAB_IDS.forEach(k=>document.getElementById('ico-'+k).classList.remove('active'));
@@ -1707,6 +2086,7 @@ async function setState(s){
 async function showExpandSub(ctx){
   const prevTab=curTab;
   curTab=ctx;
+  if(ctx!=='todo') shelfDismissTaskAddUiWhenLeavingTodoSurface();
   SHELF_SHELL_TAB_IDS.forEach(k=>{
     document.getElementById('ex-sub-'+k).classList.toggle('active',k===ctx);
     document.getElementById('ico-'+k).classList.toggle('active',k===ctx);
@@ -1751,6 +2131,21 @@ const CP_TITLES={todo:'📋 할 일',cal:'📅 캘린더',vault:'🔐 Vault',mem
 
 /** 메모: SQLite 다건 + 검색(제목·본문) — 목록은 제목·미리보기 */
 let memoSummaries=[], memoSelectedId=null, memoSearchDebounceTimer=null;
+/** 네이티브 메모 창을 연 존(`cp`|`ex`) — 완료 후 패널 전환에 사용 */
+let shelfMemoNativeFormLaunchZone='cp';
+
+async function shelfMemoTryOpenMemoNativeCreate(zone){
+  const z=zone==='ex'?'ex':'cp';
+  if(!window.__TAURI__?.core?.invoke) return false;
+  try{
+    shelfMemoNativeFormLaunchZone=z;
+    await invoke('shelf_open_memo_form_window',{ bootstrap:{ mode:'create', launchZone:z } });
+    return true;
+  }catch(e){
+    console.error(e);
+    return false;
+  }
+}
 
 async function shelfMemoMigrateFromLocalStorageOnce(){
   try{
@@ -1800,7 +2195,10 @@ function shelfMemoRenderOneList(hostId, clickFn){
   const host=document.getElementById(hostId);
   if(!host) return;
   if(memoSummaries.length===0){
-    host.innerHTML='<div style="text-align:center;color:var(--panel-text-sub);font-size:11px;padding:14px 4px">메모가 없어요<br><span style="font-size:10px">＋ 새 메모로 추가</span></div>';
+    const emptyHint=hostId==='cp-memo-list'
+      ? '<span style="font-size:10px">패널 헤더 ＋로 새 메모</span>'
+      : '<span style="font-size:10px">＋ 새 메모로 추가</span>';
+    host.innerHTML=`<div style="text-align:center;color:var(--panel-text-sub);font-size:11px;padding:14px 4px">메모가 없어요<br>${emptyHint}</div>`;
     return;
   }
   host.innerHTML=memoSummaries.map(m=>{
@@ -1843,6 +2241,7 @@ async function shelfMemoRowClickCp(id){ await shelfMemoSelect(id,{openCpDetail:t
 async function shelfMemoRowClickEx(id){ await shelfMemoSelect(id,{openCpDetail:false}); }
 
 async function shelfMemoStartNew(zone){
+  if(await shelfMemoTryOpenMemoNativeCreate(zone)) return;
   memoSelectedId=null;
   ['cp','ex'].forEach(prefix=>{
     const t=document.getElementById(prefix+'-memo-title');
@@ -1905,6 +2304,7 @@ function shelfMemoNormalizeCreatedId(raw){
 }
 
 async function shelfMemoSave(zone){
+  shelfUiTrace('memo.inline.save.click',{ zone });
   if(!window.__TAURI__?.core?.invoke){
     showToast('앱 연결이 없어 저장할 수 없어요');
     return;
@@ -1994,6 +2394,7 @@ function shelfMemoBindToolbar(){
 
 /** 아이콘·cp-* 표시·제목만 전환 (expand→panel 시에도 동일 탭 유지에 사용) */
 function shelfApplyCompactTab(id){
+  if(id!=='todo') shelfDismissTaskAddUiWhenLeavingTodoSurface();
   curTab=id;
   SHELF_SHELL_TAB_IDS.forEach(k=>{
     const cpEl=document.getElementById('cp-'+k);
@@ -2001,7 +2402,20 @@ function shelfApplyCompactTab(id){
     document.getElementById('ico-'+k).classList.toggle('active',k===id);
   });
   document.getElementById('cp-title').textContent=CP_TITLES[id];
-  document.getElementById('cp-add-btn').style.display=id==='todo'?'flex':'none';
+  const cpHdrAdd=document.getElementById('cp-add-btn');
+  if(id==='todo'){
+    cpHdrAdd.style.display='flex';
+    cpHdrAdd.onclick=()=>openTaskModal(null);
+    cpHdrAdd.title='할 일 추가';
+  }else if(id==='memo'){
+    cpHdrAdd.style.display='flex';
+    cpHdrAdd.onclick=()=>{ void shelfMemoStartNew('cp'); };
+    cpHdrAdd.title='새 메모';
+  }else{
+    cpHdrAdd.style.display='none';
+    cpHdrAdd.onclick=null;
+    cpHdrAdd.title='추가';
+  }
   document.getElementById('cpanel').classList.toggle('cp-shell-memo-list', id==='memo');
   document.getElementById('cpanel').classList.toggle('cp-body-scroll-capped', id==='todo');
   if(id==='cal') renderCpCal();
@@ -2494,7 +2908,8 @@ function buildCal(y,m,gridId,chipsId,dowCls,ddCls,dnCls,pbarCls,selectedYmd,calK
   h+='</div>';
   weeks.forEach(week=>{
     const stripInner=shelfWeekProjectStripInnerHtml(week.map(s=>s.date));
-    h+=`<div class="cgrid-week"><div class="cal-week-strip-host">${stripInner}</div><div class="cgrid-row">`;
+    let stripOverlay='';
+    let rowInner='';
     week.forEach(slot=>{
       const dt=slot.date;
       const dayDateStr=shelfLocalYmdFromDate(dt);
@@ -2502,13 +2917,14 @@ function buildCal(y,m,gridId,chipsId,dowCls,ddCls,dnCls,pbarCls,selectedYmd,calK
       const sun=dt.getDay()===0;
       const td=shelfLocalYmdFromDate(today)===dayDateStr;
       const isSel=selectedYmd&&dayDateStr===selectedYmd;
+      stripOverlay+=`<div class="cal-strip-col${isSel?' cal-strip-col-selected':''}" aria-hidden="true"></div>`;
       const bars=shelfCalDayBarsHtml(dayDateStr,pbarCls,calKind);
       const ddClsUse=inMonth?ddCls:`${ddCls} other`;
       const pick=`onclick="shelfCalPickDay('${calKind}','${dayDateStr}')"`;
       const dn=dt.getDate();
-      h+=`<div class="${ddClsUse}${sun?' sun':''}${td?' today':''}${isSel?' cal-selected':''}" ${pick} role="button" tabindex="0"><div class="${dnCls}">${dn}</div>${bars}</div>`;
+      rowInner+=`<div class="${ddClsUse}${sun?' sun':''}${td?' today':''}${isSel?' cal-selected':''}" ${pick} role="button" tabindex="0"><div class="${dnCls}">${dn}</div>${bars}</div>`;
     });
-    h+='</div></div>';
+    h+=`<div class="cgrid-week"><div class="cal-week-strip-host"><div class="cal-strip-selection-overlay">${stripOverlay}</div>${stripInner}</div><div class="cgrid-row">${rowInner}</div></div>`;
   });
   h+='</div>';
   document.getElementById(gridId).innerHTML=h;
@@ -2837,7 +3253,7 @@ function shelfSetVaultTypeToggleDisabled(disabled){
   });
 }
 
-function openVaultAddModal(){
+function shelfVaultOpenDomModalCreate(){
   vaultModalEditId=null;
   const titleEl=document.getElementById('vault-modal-title');
   if(titleEl) titleEl.textContent='🔐 새 보안 항목';
@@ -2847,7 +3263,21 @@ function openVaultAddModal(){
   document.getElementById('vault-title').value='';
   selectVaultType('idpw');
   document.getElementById('modal-vault').classList.add('show');
+  shelfScheduleFloatingFormModalLayout('modal-vault');
   setTimeout(()=>document.getElementById('vault-title').focus(),100);
+}
+
+async function openVaultAddModal(){
+  shelfUiTrace('vault.modal.open',{ mode:'create', surface:'native-or-dom' });
+  if(window.__TAURI__?.core?.invoke){
+    try{
+      await invoke('shelf_open_vault_form_window',{ bootstrap:{ mode:'create' } });
+      return;
+    }catch(e){
+      console.error(e);
+    }
+  }
+  shelfVaultOpenDomModalCreate();
 }
 
 function shelfPopulateVaultFormFromData(type, data){
@@ -2870,7 +3300,7 @@ function shelfPopulateVaultFormFromData(type, data){
   }
 }
 
-async function openVaultEditModal(id){
+async function shelfVaultOpenDomModalEdit(id){
   const item=vaultItems.find(v=>v.id===id);
   if(!item) return;
   let data;
@@ -2891,7 +3321,30 @@ async function openVaultEditModal(id){
   selectVaultType(currentVaultType);
   shelfPopulateVaultFormFromData(currentVaultType, data);
   document.getElementById('modal-vault').classList.add('show');
+  shelfScheduleFloatingFormModalLayout('modal-vault');
   setTimeout(()=>document.getElementById('vault-title').focus(),80);
+}
+
+async function openVaultEditModal(id){
+  const item=vaultItems.find(v=>v.id===id);
+  if(!item) return;
+  shelfUiTrace('vault.modal.open',{ mode:'edit', id, surface:'native-or-dom' });
+  if(window.__TAURI__?.core?.invoke){
+    try{
+      await invoke('shelf_open_vault_form_window',{
+        bootstrap:{
+          mode:'edit',
+          itemId:id,
+          title:item.title||'',
+          itemType:item.item_type||'memo',
+        },
+      });
+      return;
+    }catch(e){
+      console.error(e);
+    }
+  }
+  await shelfVaultOpenDomModalEdit(id);
 }
 
 async function cpVaultOpenEditModal(){
@@ -2956,10 +3409,17 @@ function formatVaultForCopy(type,data){
 }
 
 async function submitVaultItem(){
+  shelfUiTrace('vault.submit.click',{ edit: vaultModalEditId!=null });
   const title=document.getElementById('vault-title').value.trim();
-  if(!title){ document.getElementById('vault-title').focus(); return; }
+  if(!title){
+    shelfUiTrace('vault.submit.validation','empty-title');
+    document.getElementById('vault-title').focus(); return;
+  }
   const data=collectVaultData(currentVaultType);
-  if(!validateVaultData(currentVaultType,data)){ showToast('필수 항목을 입력해주세요'); return; }
+  if(!validateVaultData(currentVaultType,data)){
+    shelfUiTrace('vault.submit.validation','missing-fields');
+    showToast('필수 항목을 입력해주세요'); return;
+  }
   const content=JSON.stringify(data);
   const btn=document.getElementById('vault-submit-btn');
   const isEdit=vaultModalEditId!=null;
@@ -2971,6 +3431,7 @@ async function submitVaultItem(){
     }else{
       await invoke('create_vault_item',{ title, content, item_type: currentVaultType });
     }
+    shelfUiTrace('vault.submit.invoke.ok',{ isEdit });
     closeModal('vault');
     await loadAndRenderVaultItems('cp-vault-list');
     await loadAndRenderVaultItems('ex-vault-list-items');
@@ -2981,6 +3442,7 @@ async function submitVaultItem(){
       if(exUnlocked&&exUnlocked.style.display!=='none') await showVaultDetail(editedId);
     }
   }catch(e){
+    shelfUiTrace('vault.submit.error', String(e));
     alert((isEdit?'수정':'저장')+' 실패: '+e);
   }finally{
     btn.textContent=isEdit?'수정 반영':'저장'; btn.disabled=false;
@@ -2988,7 +3450,30 @@ async function submitVaultItem(){
 }
 
 // ── 태스크 모달 ──
-function openTaskModal(ctx){
+async function shelfOpenTaskModalInNativeWindow(ctx){
+  try{
+    const list=projects.filter(p=>!p.archived);
+    const projectsPayload=list.map(p=>({ id:p.id, name:p.name, color:p.color }));
+    let selectedProjectId=null;
+    if(ctx==='current'&&selectedProjId!=null){
+      if(list.some(p=>p.id===selectedProjId)) selectedProjectId=selectedProjId;
+    }
+    if(selectedProjectId==null&&list.length>0) selectedProjectId=list[0].id;
+    await invoke('shelf_open_task_add_form_window',{
+      bootstrap:{
+        ctx:String(ctx||''),
+        projects:projectsPayload,
+        selectedProjectId,
+      },
+    });
+  }catch(e){
+    console.error(e);
+    shelfOpenTaskModalDomFallback(ctx);
+  }
+}
+
+function shelfOpenTaskModalDomFallback(ctx){
+  shelfUiTrace('task-add.modal.open',{ ctx: ctx||null, surface:'dom-overlay' });
   // 프로젝트 칩 렌더
   const chips=document.getElementById('task-proj-chips');
   chips.innerHTML=projects.filter(p=>!p.archived).map((p,i)=>`
@@ -3015,7 +3500,16 @@ function openTaskModal(ctx){
     b.style.borderColor=on?U.border:'#eee';
   });
   document.getElementById('modal-task').classList.add('show');
+  shelfScheduleFloatingFormModalLayout('modal-task');
   setTimeout(()=>document.getElementById('task-title-input').focus(),50);
+}
+
+function openTaskModal(ctx){
+  if(window.__TAURI__?.core?.invoke){
+    void shelfOpenTaskModalInNativeWindow(ctx);
+    return;
+  }
+  shelfOpenTaskModalDomFallback(ctx);
 }
 function openTaskDetailModal(id){
   const todo=todos.find(t=>t.id===id); if(!todo) return;
@@ -3061,6 +3555,7 @@ function openTaskDetailModal(id){
     b.style.borderColor=on?U.border:'#eee';
   });
   document.getElementById('modal-task-detail').classList.add('show');
+  shelfScheduleFloatingFormModalLayout('modal-task-detail');
 }
 async function saveTaskDetail(){
   if(!currentDetailTodoId) return;
@@ -3098,8 +3593,12 @@ async function deleteFromDetail(){
   closeModal('task-detail');
 }
 async function submitTask(){
+  shelfUiTrace('task-add.submit.click',{});
   const title=document.getElementById('task-title-input').value.trim();
-  if(!title) return;
+  if(!title){
+    shelfUiTrace('task-add.submit.validation','empty-title');
+    return;
+  }
   const projChip=document.querySelector('#task-proj-chips .proj-chip.sel:not(.proj-chip-new)');
   const project_id=projChip?parseInt(projChip.dataset.projId):0; // 0 = 미부여
   const prio=document.querySelector('#modal-task .prio-btn.sel');
@@ -3110,13 +3609,17 @@ async function submitTask(){
   if(dateText!=='날짜 선택'){ due_date=dateText.replace(/\./g,'-')+(time?'T'+time:'T00:00'); }
   try{
     const id=await invoke('create_todo',{title,note:'',due_date,recurrence:'none',category:'작업',priority,project_id});
+    shelfUiTrace('task-add.submit.invoke.ok',{ id });
     // 로컬 상태에는 null/숫자로 저장 (0 = 미부여)
     const localProjId = project_id > 0 ? project_id : null;
     todos.push({id,title,note:'',done:false,due_date,recurrence:'none',recurrence_next:null,project_id:localProjId,category:'작업',priority,created_at:new Date().toISOString(),completed_at:null});
     renderCpTodos(); renderExTasks(); renderCpStats();
     renderExProjects();
     shelfRefreshCalendars();
-  }catch(e){ console.error(e); }
+  }catch(e){
+    shelfUiTrace('task-add.submit.error', String(e));
+    console.error(e);
+  }
   closeModal('task');
 }
 function selTaskProj(el){
@@ -3147,7 +3650,13 @@ function selDetailProj(el){
 }
 function switchToProjectModal(){ closeModal('task'); openProjectModal(); }
 function closeModal(type){
+  if(type==='task'||type==='task-detail'||type==='vault'||type==='project'||type==='project-delete'){
+    shelfUiTrace('modal.close',{ type });
+  }
   document.getElementById('modal-'+type).classList.remove('show');
+  if(type==='task'||type==='task-detail'||type==='vault'||type==='project'){
+    shelfResetFloatingFormModalLayout('modal-'+type);
+  }
   if(type==='project') editingProjectId=null;
   if(type==='project-delete') pendingDeleteProjectId=null;
   if(type==='vault'){
@@ -3167,6 +3676,7 @@ function syncProjectModalSwatchSelection(hex){
 }
 
 function openProjectModal(){
+  shelfUiTrace('project.modal.open',{ mode:'create' });
   editingProjectId=null;
   document.getElementById('modal-project-title').textContent='새 프로젝트';
   document.getElementById('proj-submit-btn').textContent='만들기';
@@ -3182,6 +3692,7 @@ function openProjectModal(){
   dpState['proj-start-dp']={...dpStateInit()};
   dpState['proj-end-dp']={...dpStateInit()};
   document.getElementById('modal-project').classList.add('show');
+  shelfScheduleFloatingFormModalLayout('modal-project');
   setTimeout(()=>document.getElementById('proj-name-input').focus(),50);
 }
 
@@ -3249,10 +3760,12 @@ function openEditProjectModal(projectId){
     dpState['proj-end-dp']={...dpStateInit()};
   }
   document.getElementById('modal-project').classList.add('show');
+  shelfScheduleFloatingFormModalLayout('modal-project');
   setTimeout(()=>document.getElementById('proj-name-input').focus(),50);
 }
 
 async function submitProject(){
+  shelfUiTrace('project.submit.click',{ edit: editingProjectId!=null });
   const name=document.getElementById('proj-name-input').value.trim();
   if(!name) return;
   const startText=document.getElementById('proj-start-text').textContent;
@@ -3276,7 +3789,10 @@ async function submitProject(){
     }
     renderExProjects(); renderCpStats(); renderCpTodos();
     shelfRefreshCalendars();
-  }catch(e){ console.error(e); }
+  }catch(e){
+    shelfUiTrace('project.submit.error', String(e));
+    console.error(e);
+  }
   closeModal('project');
 }
 function selColor(el){
@@ -3603,7 +4119,11 @@ function waitAndInit(retries){
   }
 }
 shelfInitNativeSettingsWindowBridge();
+shelfInitNativeTaskAddFormWindowBridge();
+shelfInitNativeVaultFormWindowBridge();
+shelfInitNativeMemoFormWindowBridge();
 shelfInitSettingsModalInteraction();
+shelfInitFormModalInteractions();
 waitAndInit(10);
 </script>
 </body>

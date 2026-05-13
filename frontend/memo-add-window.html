@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>메모</title>
+<style>
+:root{ --shelf-panel-fill-opacity:1; }
+:root,[data-theme="dark"]{
+  --panel-bg:#16161F;
+  --panel-border:rgba(255,255,255,0.08);
+  --panel-text:#F0F0F0;
+  --panel-text-sub:rgba(255,255,255,0.45);
+  --accent:#AAED3A;
+  --accent-fg:#111;
+  --input-bg:rgba(255,255,255,0.07);
+  --input-border:rgba(255,255,255,0.12);
+  --panel-item-hover:rgba(255,255,255,0.06);
+}
+[data-theme="soft"]{
+  --panel-bg:#FFFFFF;
+  --panel-border:#EBEBEB;
+  --panel-text:#111111;
+  --panel-text-sub:#888888;
+  --accent:#6C63FF;
+  --accent-fg:#FFFFFF;
+  --input-bg:#F7F7F7;
+  --input-border:#E0E0E0;
+  --panel-item-hover:#F5F5FF;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:transparent;font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px;color:var(--panel-text);-webkit-app-region:no-drag}
+body{padding:14px 16px 16px;overflow:auto}
+.card{
+  border-radius:16px;
+  border:.5px solid var(--panel-border);
+  box-shadow:0 2px 24px rgba(0,0,0,.35),0 0 0 1px rgba(255,255,255,.06);
+  padding:18px 18px 16px;
+  max-width:100%;
+}
+[data-theme="dark"] .card{
+  background:rgb(22 22 31 / var(--shelf-panel-fill-opacity,1));
+}
+[data-theme="soft"] .card{
+  background:rgb(255 255 255 / var(--shelf-panel-fill-opacity,1));
+}
+.grab-bar{
+  cursor:grab;
+  user-select:none;
+  touch-action:none;
+  padding:12px 4px 12px;
+  margin:-18px -18px 12px -18px;
+  border-radius:16px 16px 0 0;
+}
+.grab-bar:active{cursor:grabbing}
+.grab-title{font-size:15px;font-weight:700;padding:0 2px}
+.lbl{font-size:10px;font-weight:600;color:var(--panel-text-sub);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px}
+.inp{
+  width:100%;border:1px solid var(--input-border);border-radius:8px;padding:9px 11px;font-size:13px;
+  outline:none;background:var(--input-bg);color:var(--panel-text);font-family:inherit;
+}
+.inp:focus{border-color:var(--accent);background:var(--panel-bg)}
+.memo-body{
+  width:100%;min-height:220px;border:1px solid var(--input-border);border-radius:8px;padding:10px 11px;font-size:13px;
+  outline:none;background:var(--input-bg);color:var(--panel-text);font-family:inherit;line-height:1.5;resize:vertical;
+}
+.memo-body:focus{border-color:var(--accent);background:var(--panel-bg)}
+.field{margin-bottom:13px}
+.footer{display:flex;gap:8px;margin-top:16px;-webkit-app-region:no-drag}
+.btn{flex:1;padding:8px;border-radius:8px;border:1px solid var(--input-border);background:var(--input-bg);font-size:12px;font-weight:500;cursor:pointer;color:var(--panel-text);-webkit-app-region:no-drag}
+.btn:hover{background:var(--panel-item-hover)}
+.btn-primary{border:none;background:var(--accent);color:var(--accent-fg);font-weight:600}
+.btn-primary:hover{filter:brightness(1.05)}
+.btn-primary:disabled{opacity:.55;cursor:not-allowed}
+.err{font-size:12px;color:#F87171;line-height:1.45;margin-bottom:10px}
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="grab-bar" data-tauri-drag-region>
+      <div class="grab-title" id="memo-win-title">📝 새 메모</div>
+    </div>
+    <div id="boot-err" class="err" style="display:none"></div>
+    <div id="form-root" style="display:none">
+      <div class="field">
+        <div class="lbl">제목</div>
+        <input type="text" class="inp" id="memo-form-title" placeholder="제목" autocomplete="off">
+      </div>
+      <div class="field">
+        <div class="lbl">내용</div>
+        <textarea class="memo-body" id="memo-form-body" placeholder="내용" spellcheck="false" autocomplete="off"></textarea>
+      </div>
+      <div class="footer">
+        <button type="button" class="btn" id="btn-cancel">취소</button>
+        <button type="button" class="btn btn-primary" id="btn-save">저장</button>
+      </div>
+    </div>
+  </div>
+<script>
+const THEME_DARK='dark';
+const THEME_SOFT='soft';
+const KEY_THEME='theme';
+const KEY_TR='ui.panelTranslucent';
+const KEY_OP='ui.panelFillOpacity';
+const OP_MIN=0.55;
+const OP_MAX=1;
+
+function invoke(cmd, args){
+  const core=window.__TAURI__?.core;
+  if(!core?.invoke) return Promise.reject(new Error('Tauri 없음'));
+  return core.invoke(cmd, args);
+}
+function finish(payload){
+  return invoke('shelf_finish_memo_form_window', payload);
+}
+
+function coerceOpacity(raw){
+  if(raw==null||raw==='') return OP_MAX;
+  const n=Number.parseFloat(String(raw).trim());
+  if(!Number.isFinite(n)) return OP_MAX;
+  return Math.min(OP_MAX, Math.max(OP_MIN, n));
+}
+function applyLocalPanelFillOpacity(translucent, opacity01){
+  const eff=translucent ? Math.min(OP_MAX, Math.max(OP_MIN, opacity01)) : 1;
+  document.documentElement.style.setProperty('--shelf-panel-fill-opacity', String(eff));
+}
+
+let editMemoId=null;
+
+function normalizeMemoId(raw){
+  if(raw==null||raw==='') return null;
+  if(typeof raw==='bigint') return Number(raw);
+  const n=Number(raw);
+  return Number.isFinite(n)?n:null;
+}
+
+document.getElementById('btn-cancel').addEventListener('click',()=>{
+  void finish({ cancelled: true, savedMemoId: null });
+});
+
+document.getElementById('btn-save').addEventListener('click', async ()=>{
+  const title=((document.getElementById('memo-form-title').value)||'').trim()||'제목 없음';
+  const body=document.getElementById('memo-form-body').value||'';
+  const btn=document.getElementById('btn-save');
+  const isEdit=editMemoId!=null;
+  btn.disabled=true;
+  btn.textContent=isEdit?'저장 중…':'추가 중…';
+  try{
+    let savedId=null;
+    if(isEdit){
+      await invoke('update_memo',{ id: editMemoId, title, body });
+      savedId=editMemoId;
+    }else{
+      const rawId=await invoke('create_memo',{ title, body });
+      savedId=normalizeMemoId(rawId);
+      if(savedId==null){
+        alert('저장 응답이 비정상입니다.');
+        return;
+      }
+    }
+    await finish({ cancelled: false, savedMemoId: savedId });
+  }catch(e){
+    alert('저장 실패: '+e);
+  }finally{
+    btn.disabled=false;
+    btn.textContent='저장';
+  }
+});
+
+(async function init(){
+  try{
+    const savedTheme=await invoke('get_setting',{ key: KEY_THEME });
+    const token=savedTheme===THEME_SOFT?THEME_SOFT:THEME_DARK;
+    document.documentElement.setAttribute('data-theme', token);
+    const trRaw=await invoke('get_setting',{ key: KEY_TR });
+    const translucent=trRaw==='1'||trRaw===1||trRaw===true||trRaw==='true';
+    const opRaw=await invoke('get_setting',{ key: KEY_OP });
+    applyLocalPanelFillOpacity(translucent, coerceOpacity(opRaw));
+  }catch(_){}
+
+  let boot=null;
+  try{
+    boot=await invoke('shelf_consume_memo_form_bootstrap');
+  }catch(e){
+    console.error(e);
+  }
+  if(!boot||typeof boot!=='object'){
+    document.getElementById('boot-err').style.display='block';
+    document.getElementById('boot-err').textContent='창 데이터를 불러오지 못했습니다. 닫고 다시 열어 주세요.';
+    return;
+  }
+
+  const mode=boot.mode==='edit'?'edit':'create';
+  if(mode==='edit'){
+    const mid=boot.memoId!=null?Number(boot.memoId):null;
+    if(mid==null||!Number.isFinite(mid)){
+      document.getElementById('boot-err').style.display='block';
+      document.getElementById('boot-err').textContent='메모 ID가 없습니다.';
+      return;
+    }
+    editMemoId=mid;
+    document.getElementById('memo-win-title').textContent='📝 메모 수정';
+    try{
+      const m=await invoke('get_memo',{ id: mid });
+      document.getElementById('memo-form-title').value=m.title!=null?String(m.title):'';
+      document.getElementById('memo-form-body').value=m.body!=null?String(m.body):'';
+    }catch(e){
+      document.getElementById('boot-err').style.display='block';
+      document.getElementById('boot-err').textContent='메모를 불러오지 못했습니다: '+e;
+      return;
+    }
+  }else{
+    editMemoId=null;
+    document.getElementById('memo-form-title').value='';
+    document.getElementById('memo-form-body').value='';
+  }
+
+  document.getElementById('form-root').style.display='block';
+  setTimeout(()=>{
+    const el=document.getElementById(mode==='edit'?'memo-form-body':'memo-form-title');
+    el&&el.focus();
+  },60);
+})();
+</script>
+</body>
+</html>

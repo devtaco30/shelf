@@ -28,7 +28,7 @@
   --panel-item-hover:#F5F5FF;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-html,body{height:100%;background:transparent;font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px;color:var(--panel-text)}
+html,body{height:100%;background:transparent;font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px;color:var(--panel-text);-webkit-app-region:no-drag}
 body{padding:14px 16px 16px}
 .settings-card{
   border-radius:16px;
@@ -54,24 +54,40 @@ body{padding:14px 16px 16px}
 .settings-drag:active{cursor:grabbing}
 .lbl{font-size:10px;font-weight:600;color:var(--panel-text-sub);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px}
 .theme-cards{display:flex;flex-direction:column;gap:8px;margin-bottom:4px}
+/* 테마 카드 = 미리보기 스와치 — 글로벌 data-theme와 무관하게 대비·테두리 유지 */
 .theme-btn{
-  display:block;width:100%;text-align:left;padding:10px 12px;border-radius:10px;border:1.5px solid var(--input-border);
-  background:var(--input-bg);cursor:pointer;font:inherit;color:var(--panel-text);
+  display:block;width:100%;text-align:left;padding:10px 12px;border-radius:10px;border:1.5px solid transparent;
+  cursor:pointer;font:inherit;
+  -webkit-app-region:no-drag;
 }
-.theme-btn:hover{border-color:var(--accent);background:var(--panel-item-hover)}
-.theme-btn.sel{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
 .theme-btn .t{font-size:12px;font-weight:700}
-.theme-btn .s{font-size:10px;color:var(--panel-text-sub);margin-top:3px;line-height:1.35}
+.theme-btn .s{font-size:10px;margin-top:3px;line-height:1.35}
+.theme-btn[data-theme="dark"]{
+  background:rgba(28,28,38,.94);
+  border-color:rgba(255,255,255,.24);
+  color:#ECECEC;
+}
+.theme-btn[data-theme="dark"] .s{color:rgba(255,255,255,.55)}
+.theme-btn[data-theme="soft"]{
+  background:#ECECF2;
+  border-color:#B8B4CE;
+  color:#111;
+}
+.theme-btn[data-theme="soft"] .s{color:#5C5C66}
+.theme-btn[data-theme="dark"]:hover{border-color:#AAED3A;background:rgba(36,36,48,.96)}
+.theme-btn[data-theme="soft"]:hover{border-color:#6C63FF;background:#E4E2F5}
+.theme-btn.sel[data-theme="dark"]{border-color:#AAED3A;box-shadow:0 0 0 1px #AAED3A}
+.theme-btn.sel[data-theme="soft"]{border-color:#6C63FF;box-shadow:0 0 0 1px #6C63FF}
 .fill-block{margin-top:10px}
-.fill-label{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;cursor:pointer;user-select:none}
+.fill-label{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;cursor:pointer;user-select:none;-webkit-app-region:no-drag}
 .fill-label input{accent-color:var(--accent)}
-.fill-row{margin-top:10px;display:flex;align-items:center;gap:10px}
+.fill-row{margin-top:10px;display:flex;align-items:center;gap:10px;-webkit-app-region:no-drag}
 .fill-row span{font-size:11px;color:var(--panel-text-sub);flex-shrink:0;width:42px}
 .fill-row input[type=range]{flex:1;min-width:0}
 .fill-row input[type=range]:disabled{opacity:.45}
 .fill-hint{margin-top:6px;font-size:10px;color:var(--panel-text-sub);line-height:1.35}
-.footer{display:flex;gap:8px;margin-top:16px}
-.btn{flex:1;padding:8px;border-radius:8px;border:1px solid var(--input-border);background:var(--input-bg);font-size:12px;font-weight:500;cursor:pointer;color:var(--panel-text)}
+.footer{display:flex;gap:8px;margin-top:16px;-webkit-app-region:no-drag}
+.btn{flex:1;padding:8px;border-radius:8px;border:1px solid var(--input-border);background:var(--input-bg);font-size:12px;font-weight:500;cursor:pointer;color:var(--panel-text);-webkit-app-region:no-drag}
 .btn:hover{background:var(--panel-item-hover)}
 .btn-primary{border:none;background:var(--accent);color:#111;font-weight:600}
 .btn-primary:hover{filter:brightness(1.05)}
@@ -128,6 +144,14 @@ body{padding:14px 16px 16px}
   }
   function finish(payload){
     return invoke('shelf_finish_settings_window', payload);
+  }
+
+  function shelfSettingsWinTrace(tag, detail){
+    let extra='';
+    if(detail!==undefined&&detail!==null){
+      extra=typeof detail==='object'?JSON.stringify(detail):String(detail);
+    }
+    console.info('[ShelfSettingsWin]', tag, extra);
   }
 
   function applyDataTheme(token){
@@ -192,9 +216,16 @@ body{padding:14px 16px 16px}
   rngOp.addEventListener('input', pushPanelPreview);
 
   document.getElementById('btn-cancel').addEventListener('click',()=>{
-    void finish({ confirmed: false });
+    shelfSettingsWinTrace('cancel.click',{});
+    finish({ confirmed: false })
+      .then(()=>shelfSettingsWinTrace('cancel.finish.ok',{}))
+      .catch(e=>{
+        shelfSettingsWinTrace('cancel.finish.error', String(e));
+        alert('취소 처리에 실패했습니다: '+e);
+      });
   });
   document.getElementById('btn-apply').addEventListener('click',async()=>{
+    shelfSettingsWinTrace('apply.click',{});
     const tr=!!cbTr.checked;
     const op=coerceOpacity(rngOp.value);
     try{
@@ -207,8 +238,11 @@ body{padding:14px 16px 16px}
         translucent: tr,
         opacity: op,
       });
+      shelfSettingsWinTrace('apply.finish.ok',{ theme: choiceTheme });
     }catch(e){
+      shelfSettingsWinTrace('apply.error', String(e));
       console.error(e);
+      alert('적용 실패: '+(e&&e.message?e.message:String(e)));
     }
   });
 

@@ -1,0 +1,62 @@
+{
+  "default": null,
+  "permission": [
+    {
+      "identifier": "shelf-app-invoke",
+      "description": "Shelf 커스텀 invoke_handler 에 등록된 모든 커맨드 (메인·보조 웹뷰 공통)",
+      "commands": {
+        "allow": [
+          "get_todos",
+          "create_todo",
+          "update_todo",
+          "set_todo_project",
+          "toggle_todo",
+          "delete_todo",
+          "get_events",
+          "create_event",
+          "delete_event",
+          "setup_vault",
+          "unlock_vault",
+          "lock_vault",
+          "get_vault_items",
+          "create_vault_item",
+          "update_vault_item",
+          "get_vault_content",
+          "delete_vault_item",
+          "is_vault_unlocked",
+          "vault_initialized",
+          "get_projects",
+          "create_project",
+          "update_project",
+          "delete_project",
+          "archive_project",
+          "get_settings",
+          "get_setting",
+          "set_setting",
+          "get_memos",
+          "get_memo",
+          "get_memo_count",
+          "create_memo",
+          "update_memo",
+          "delete_memo",
+          "get_platform",
+          "shelf_open_settings_window",
+          "shelf_emit_to_main_window",
+          "shelf_finish_settings_window",
+          "shelf_consume_task_add_bootstrap",
+          "shelf_open_task_add_form_window",
+          "shelf_close_task_add_form_window",
+          "shelf_create_task_from_add_window",
+          "shelf_finish_task_add_form_window",
+          "shelf_consume_vault_form_bootstrap",
+          "shelf_open_vault_form_window",
+          "shelf_finish_vault_form_window",
+          "shelf_consume_memo_form_bootstrap",
+          "shelf_open_memo_form_window",
+          "shelf_finish_memo_form_window"
+        ],
+        "deny": []
+      }
+    }
+  ]
+}

@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>보안 항목</title>
+<style>
+:root{ --shelf-panel-fill-opacity:1; }
+:root,[data-theme="dark"]{
+  --panel-bg:#16161F;
+  --panel-border:rgba(255,255,255,0.08);
+  --panel-text:#F0F0F0;
+  --panel-text-sub:rgba(255,255,255,0.45);
+  --accent:#AAED3A;
+  --accent-fg:#111;
+  --input-bg:rgba(255,255,255,0.07);
+  --input-border:rgba(255,255,255,0.12);
+  --panel-item-hover:rgba(255,255,255,0.06);
+  --panel-item-sel:rgba(170,237,58,0.15);
+  --panel-elev:rgba(255,255,255,0.04);
+  --modal-shadow:0 2px 24px rgba(0,0,0,.45),0 0 0 1px rgba(255,255,255,.06);
+}
+[data-theme="soft"]{
+  --panel-bg:#FFFFFF;
+  --panel-border:#EBEBEB;
+  --panel-text:#111111;
+  --panel-text-sub:#888888;
+  --accent:#6C63FF;
+  --accent-fg:#FFFFFF;
+  --input-bg:#F7F7F7;
+  --input-border:#E0E0E0;
+  --panel-item-hover:#F5F5FF;
+  --panel-item-sel:#EDE9FF;
+  --panel-elev:#FAFAFA;
+  --modal-shadow:0 2px 24px rgba(0,0,0,.14),0 0 0 1px rgba(0,0,0,.07);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:transparent;font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px;color:var(--panel-text);-webkit-app-region:no-drag}
+body{padding:14px 16px 16px;overflow:auto}
+.card{
+  border-radius:16px;
+  border:.5px solid var(--panel-border);
+  box-shadow:0 2px 24px rgba(0,0,0,.35),0 0 0 1px rgba(255,255,255,.06);
+  padding:18px 18px 16px;
+  max-width:100%;
+}
+[data-theme="dark"] .card{
+  background:rgb(22 22 31 / var(--shelf-panel-fill-opacity,1));
+}
+[data-theme="soft"] .card{
+  background:rgb(255 255 255 / var(--shelf-panel-fill-opacity,1));
+}
+.grab-bar{
+  cursor:grab;
+  user-select:none;
+  touch-action:none;
+  padding:12px 4px 12px;
+  margin:-18px -18px 12px -18px;
+  border-radius:16px 16px 0 0;
+}
+.grab-bar:active{cursor:grabbing}
+.grab-title{font-size:15px;font-weight:700;padding:0 2px}
+.lbl{font-size:10px;font-weight:600;color:var(--panel-text-sub);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px}
+.inp,.modal-input{
+  width:100%;border:1px solid var(--input-border);border-radius:8px;padding:9px 11px;font-size:13px;
+  outline:none;background:var(--input-bg);color:var(--panel-text);font-family:inherit;
+}
+.inp:focus,.modal-input:focus{border-color:var(--accent);background:var(--panel-bg)}
+.field,.modal-field{margin-bottom:13px}
+.modal-label{font-size:10px;font-weight:600;color:var(--panel-text-sub);text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px}
+.type-toggle{display:flex;background:var(--input-bg);border-radius:8px;padding:3px;gap:3px;border:.5px solid var(--input-border)}
+.type-btn{flex:1;padding:5px;border:none;border-radius:6px;font-size:11px;font-weight:500;cursor:pointer;background:none;color:var(--panel-text-sub);transition:.15s}
+.type-btn.sel{background:var(--panel-bg);color:var(--panel-text);box-shadow:0 1px 4px rgba(0,0,0,.12)}
+.type-btn:disabled{opacity:.45;cursor:default;pointer-events:none}
+.vf-pw-wrap{position:relative;display:flex;align-items:center}
+.vf-pw-wrap .modal-input{flex:1;padding-right:52px}
+.vf-pw-toggle{position:absolute;right:8px;background:none;border:.5px solid var(--input-border);border-radius:5px;padding:2px 8px;font-size:10px;cursor:pointer;color:var(--panel-text-sub);white-space:nowrap}
+.vf-row{display:flex;gap:8px}
+.vf-row .modal-field{flex:1}
+.footer{display:flex;gap:8px;margin-top:16px;-webkit-app-region:no-drag}
+.btn{flex:1;padding:8px;border-radius:8px;border:1px solid var(--input-border);background:var(--input-bg);font-size:12px;font-weight:500;cursor:pointer;color:var(--panel-text);-webkit-app-region:no-drag}
+.btn:hover{background:var(--panel-item-hover)}
+.btn-primary{border:none;background:var(--accent);color:var(--accent-fg);font-weight:600}
+.btn-primary:hover{filter:brightness(1.05)}
+.btn-primary:disabled{opacity:.55;cursor:not-allowed}
+.err{font-size:12px;color:#F87171;line-height:1.45;margin-bottom:10px}
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="grab-bar" data-tauri-drag-region>
+      <div class="grab-title" id="vault-win-title">🔐 새 보안 항목</div>
+    </div>
+    <div id="boot-err" class="err" style="display:none"></div>
+    <div id="form-root" style="display:none">
+      <div class="field">
+        <div class="lbl">유형</div>
+        <div class="type-toggle" id="vault-type-toggle">
+          <button type="button" class="type-btn sel" data-type="idpw" id="vt-idpw">🔑 ID/PW</button>
+          <button type="button" class="type-btn" data-type="mnemonic" id="vt-mnemonic">🔐 니모닉</button>
+          <button type="button" class="type-btn" data-type="card" id="vt-card">💳 카드</button>
+          <button type="button" class="type-btn" data-type="memo" id="vt-memo">📝 메모</button>
+        </div>
+      </div>
+      <div class="field">
+        <div class="lbl">제목</div>
+        <input type="text" class="inp" id="vault-title" placeholder="예: Gmail, 비트코인 지갑..." autocapitalize="none" autocorrect="off" spellcheck="false">
+      </div>
+      <div id="vault-fields"></div>
+      <div class="footer">
+        <button type="button" class="btn" id="btn-cancel">취소</button>
+        <button type="button" class="btn btn-primary" id="btn-save">저장</button>
+      </div>
+    </div>
+  </div>
+<script>
+const THEME_DARK='dark';
+const THEME_SOFT='soft';
+const KEY_THEME='theme';
+const KEY_TR='ui.panelTranslucent';
+const KEY_OP='ui.panelFillOpacity';
+const OP_MIN=0.55;
+const OP_MAX=1;
+
+function invoke(cmd, args){
+  const core=window.__TAURI__?.core;
+  if(!core?.invoke) return Promise.reject(new Error('Tauri 없음'));
+  return core.invoke(cmd, args);
+}
+function finish(payload){
+  return invoke('shelf_finish_vault_form_window', payload);
+}
+function trace(tag, detail){
+  console.info('[ShelfVaultWin]', tag, detail!==undefined?detail:'');
+}
+
+function coerceOpacity(raw){
+  if(raw==null||raw==='') return OP_MAX;
+  const n=Number.parseFloat(String(raw).trim());
+  if(!Number.isFinite(n)) return OP_MAX;
+  return Math.min(OP_MAX, Math.max(OP_MIN, n));
+}
+function applyLocalPanelFillOpacity(translucent, opacity01){
+  const eff=translucent ? Math.min(OP_MAX, Math.max(OP_MIN, opacity01)) : 1;
+  document.documentElement.style.setProperty('--shelf-panel-fill-opacity', String(eff));
+}
+
+let currentVaultType='idpw';
+let editItemId=null;
+
+function setVaultTypeToggleDisabled(disabled){
+  document.querySelectorAll('#vault-type-toggle .type-btn').forEach(b=>{
+    b.disabled=!!disabled;
+  });
+}
+
+function toggleVfPw(inputId, btn){
+  const inp=document.getElementById(inputId);
+  if(!inp) return;
+  if(inp.type==='password'){ inp.type='text'; btn.textContent='숨김'; }
+  else { inp.type='password'; btn.textContent='보기'; }
+}
+
+function selectVaultType(type){
+  currentVaultType=type;
+  document.querySelectorAll('#vault-type-toggle .type-btn').forEach(b=>{
+    b.classList.toggle('sel', b.dataset.type===type);
+  });
+  const f=document.getElementById('vault-fields');
+  const inp=(id,label,ph,opts='')=>`<div class="modal-field"><div class="modal-label">${label}</div><input class="modal-input" id="${id}" placeholder="${ph}" autocapitalize="none" autocorrect="off" spellcheck="false" ${opts}></div>`;
+  const ta=(id,label,ph,rows=3)=>`<div class="modal-field"><div class="modal-label">${label}</div><textarea class="modal-input" id="${id}" rows="${rows}" placeholder="${ph}" autocapitalize="none" autocorrect="off" spellcheck="false" style="resize:vertical;line-height:1.6"></textarea></div>`;
+  const opt=(id,label,ph)=>inp(id,`${label} <span style="color:var(--panel-text-sub);font-weight:400">(선택)</span>`,ph);
+  if(type==='idpw'){
+    f.innerHTML=
+      inp('vf-username','아이디 / 이메일','username@example.com')+
+      `<div class="modal-field"><div class="modal-label">비밀번호</div><div class="vf-pw-wrap"><input class="modal-input" id="vf-password" type="password" placeholder="비밀번호..." autocapitalize="none" autocorrect="off" spellcheck="false"><button type="button" class="vf-pw-toggle" id="vf-pw-btn">보기</button></div></div>`+
+      opt('vf-memo','메모','추가 메모...');
+    document.getElementById('vf-pw-btn').addEventListener('click',function(){ toggleVfPw('vf-password', this); });
+  } else if(type==='mnemonic'){
+    f.innerHTML=
+      ta('vf-phrase','니모닉 구문 (시드)','단어1 단어2 단어3 단어4 ...',3)+
+      opt('vf-memo','메모','예: 메인 ETH 지갑');
+  } else if(type==='card'){
+    f.innerHTML=
+      inp('vf-number','카드 번호','1234-5678-9012-3456','inputmode="numeric"')+
+      `<div class="vf-row"><div class="modal-field" style="flex:1"><div class="modal-label">유효기간</div><input class="modal-input" id="vf-expiry" placeholder="MM/YY" autocapitalize="none" autocorrect="off" spellcheck="false" inputmode="numeric"></div><div class="modal-field" style="flex:1"><div class="modal-label">CVV</div><div class="vf-pw-wrap"><input class="modal-input" id="vf-cvv" type="password" placeholder="123" autocapitalize="none" autocorrect="off" spellcheck="false" inputmode="numeric"><button type="button" class="vf-pw-toggle" id="vf-cvv-btn">보기</button></div></div></div>`+
+      opt('vf-holder','카드 명의','홍 길동');
+    document.getElementById('vf-cvv-btn').addEventListener('click',function(){ toggleVfPw('vf-cvv', this); });
+  } else {
+    f.innerHTML=ta('vf-content','내용','자유롭게 입력하세요...',4);
+  }
+}
+
+document.getElementById('vault-type-toggle').addEventListener('click', ev=>{
+  const btn=ev.target.closest('.type-btn');
+  if(!btn||btn.disabled) return;
+  selectVaultType(btn.dataset.type);
+});
+
+function populateFromData(type, data){
+  const d=data&&typeof data==='object'?data:{};
+  const set=(id,v)=>{const el=document.getElementById(id); if(el) el.value=v!=null?String(v):'';};
+  if(type==='idpw'){
+    set('vf-username', d.username);
+    set('vf-password', d.password);
+    set('vf-memo', d.memo);
+  }else if(type==='mnemonic'){
+    set('vf-phrase', d.phrase);
+    set('vf-memo', d.memo);
+  }else if(type==='card'){
+    set('vf-number', d.number);
+    set('vf-expiry', d.expiry);
+    set('vf-cvv', d.cvv);
+    set('vf-holder', d.holder);
+  }else{
+    set('vf-content', d.content);
+  }
+}
+
+function collectVaultData(type){
+  const g=id=>{const el=document.getElementById(id);return el?el.value.trim():''};
+  if(type==='idpw') return{username:g('vf-username'),password:g('vf-password'),memo:g('vf-memo')};
+  if(type==='mnemonic') return{phrase:g('vf-phrase'),memo:g('vf-memo')};
+  if(type==='card') return{number:g('vf-number'),expiry:g('vf-expiry'),cvv:g('vf-cvv'),holder:g('vf-holder')};
+  return{content:g('vf-content')};
+}
+
+function validateVaultData(type,data){
+  if(type==='idpw') return !!(data.username||data.password);
+  if(type==='mnemonic') return !!data.phrase;
+  if(type==='card') return !!data.number;
+  return !!data.content;
+}
+
+document.getElementById('btn-cancel').addEventListener('click',()=>{
+  trace('cancel');
+  void finish({ cancelled: true, savedItemId: null });
+});
+
+document.getElementById('btn-save').addEventListener('click', async ()=>{
+  const title=(document.getElementById('vault-title').value||'').trim();
+  if(!title){
+    document.getElementById('vault-title').focus();
+    return;
+  }
+  const data=collectVaultData(currentVaultType);
+  if(!validateVaultData(currentVaultType,data)){
+    alert('필수 항목을 입력해주세요');
+    return;
+  }
+  const content=JSON.stringify(data);
+  const btn=document.getElementById('btn-save');
+  const isEdit=editItemId!=null;
+  btn.disabled=true;
+  btn.textContent=isEdit?'반영 중…':'저장 중…';
+  try{
+    let savedId=null;
+    if(isEdit){
+      await invoke('update_vault_item',{ id: editItemId, title, content });
+      savedId=editItemId;
+      trace('save.ok',{ edit:true, id:savedId });
+    }else{
+      savedId=await invoke('create_vault_item',{ title, content, item_type: currentVaultType });
+      trace('save.ok',{ edit:false, id:savedId });
+    }
+    await finish({ cancelled: false, savedItemId: savedId });
+  }catch(e){
+    trace('save.error', String(e));
+    alert((isEdit?'수정':'저장')+' 실패: '+e);
+  }finally{
+    btn.disabled=false;
+    btn.textContent=isEdit?'수정 반영':'저장';
+  }
+});
+
+(async function init(){
+  try{
+    const savedTheme=await invoke('get_setting',{ key: KEY_THEME });
+    const token=savedTheme===THEME_SOFT?THEME_SOFT:THEME_DARK;
+    document.documentElement.setAttribute('data-theme', token);
+    const trRaw=await invoke('get_setting',{ key: KEY_TR });
+    const translucent=trRaw==='1'||trRaw===1||trRaw===true||trRaw==='true';
+    const opRaw=await invoke('get_setting',{ key: KEY_OP });
+    applyLocalPanelFillOpacity(translucent, coerceOpacity(opRaw));
+  }catch(_){}
+
+  let boot=null;
+  try{
+    boot=await invoke('shelf_consume_vault_form_bootstrap');
+  }catch(e){
+    console.error(e);
+  }
+  if(!boot||typeof boot!=='object'){
+    document.getElementById('boot-err').style.display='block';
+    document.getElementById('boot-err').textContent='창 데이터를 불러오지 못했습니다. 닫고 다시 열어 주세요.';
+    return;
+  }
+
+  const mode=boot.mode==='edit'?'edit':'create';
+  if(mode==='edit'){
+    editItemId=boot.itemId!=null?Number(boot.itemId):null;
+    if(editItemId==null||!Number.isFinite(editItemId)){
+      document.getElementById('boot-err').style.display='block';
+      document.getElementById('boot-err').textContent='수정 대상 ID가 없습니다.';
+      return;
+    }
+    document.getElementById('vault-win-title').textContent='🔐 보안 항목 수정';
+    document.getElementById('btn-save').textContent='수정 반영';
+    document.getElementById('vault-title').value=boot.title!=null?String(boot.title):'';
+    const it=(boot.itemType!=null?String(boot.itemType):'memo').trim()||'memo';
+    currentVaultType=['idpw','mnemonic','card','memo'].includes(it)?it:'memo';
+    setVaultTypeToggleDisabled(true);
+    selectVaultType(currentVaultType);
+    try{
+      const raw=await invoke('get_vault_content',{ id: editItemId });
+      let parsed;
+      try{ parsed=JSON.parse(raw); }catch(_){ parsed={ content: raw }; }
+      populateFromData(currentVaultType, parsed);
+    }catch(e){
+      document.getElementById('boot-err').style.display='block';
+      document.getElementById('boot-err').textContent='내용을 불러오지 못했습니다: '+e;
+      return;
+    }
+  }else{
+    editItemId=null;
+    currentVaultType='idpw';
+    setVaultTypeToggleDisabled(false);
+    selectVaultType('idpw');
+    document.getElementById('vault-title').value='';
+  }
+
+  document.getElementById('form-root').style.display='block';
+  setTimeout(()=>document.getElementById('vault-title').focus(),60);
+})();
+</script>
+</body>
+</html>

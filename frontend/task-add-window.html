@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>새 태스크</title>
+<style>
+:root{ --shelf-panel-fill-opacity:1; }
+:root,[data-theme="dark"]{
+  --panel-bg:#16161F;
+  --panel-border:rgba(255,255,255,0.08);
+  --panel-text:#F0F0F0;
+  --panel-text-sub:rgba(255,255,255,0.45);
+  --accent:#AAED3A;
+  --accent-fg:#111;
+  --input-bg:rgba(255,255,255,0.07);
+  --input-border:rgba(255,255,255,0.12);
+  --panel-item-hover:rgba(255,255,255,0.06);
+  --panel-item-sel:rgba(170,237,58,0.15);
+  --panel-elev:rgba(255,255,255,0.04);
+  --modal-shadow:0 2px 24px rgba(0,0,0,.45),0 0 0 1px rgba(255,255,255,.06);
+  --picker-bg:#1E1E28;
+}
+[data-theme="soft"]{
+  --panel-bg:#FFFFFF;
+  --panel-border:#EBEBEB;
+  --panel-text:#111111;
+  --panel-text-sub:#888888;
+  --accent:#6C63FF;
+  --accent-fg:#FFFFFF;
+  --input-bg:#F7F7F7;
+  --input-border:#E0E0E0;
+  --panel-item-hover:#F5F5FF;
+  --panel-item-sel:#EDE9FF;
+  --panel-elev:#FAFAFA;
+  --modal-shadow:0 2px 24px rgba(0,0,0,.14),0 0 0 1px rgba(0,0,0,.07);
+  --picker-bg:#fff;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:transparent;font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px;color:var(--panel-text);-webkit-app-region:no-drag}
+body{padding:14px 16px 16px}
+.card{
+  border-radius:16px;
+  border:.5px solid var(--panel-border);
+  box-shadow:0 2px 24px rgba(0,0,0,.35),0 0 0 1px rgba(255,255,255,.06);
+  padding:18px 18px 16px;
+  max-width:100%;
+  -webkit-app-region:no-drag;
+}
+.backdrop-hit{
+  position:fixed;
+  inset:0;
+  z-index:0;
+  -webkit-app-region:no-drag;
+}
+.card{ position:relative; z-index:1; }
+.grab-drag[data-tauri-drag-region]{
+  -webkit-app-region:drag;
+}
+[data-theme="dark"] .card{
+  background:rgb(22 22 31 / var(--shelf-panel-fill-opacity,1));
+}
+[data-theme="soft"] .card{
+  background:rgb(255 255 255 / var(--shelf-panel-fill-opacity,1));
+}
+/* 제목 줄만 드래그 — 왼쪽 닫기 점은 클릭 가능해야 함 */
+.grab-row{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin:-18px -18px 12px -18px;
+  padding:12px 14px 10px;
+  border-radius:16px 16px 0 0;
+}
+.traffic-close{
+  width:12px;height:12px;border-radius:50%;
+  border:none;
+  background:#FF5F57;
+  cursor:pointer;
+  flex-shrink:0;
+  padding:0;
+  -webkit-app-region:no-drag;
+  box-shadow:inset 0 0 0 0.5px rgba(0,0,0,0.15);
+}
+.traffic-close:hover{ filter:brightness(1.08); }
+.grab-drag{
+  flex:1;
+  min-width:0;
+  cursor:grab;
+  user-select:none;
+  touch-action:none;
+  padding:4px 2px;
+  display:flex;
+  align-items:center;
+}
+.grab-drag:active{ cursor:grabbing; }
+.grab-title{font-size:15px;font-weight:700;padding:0 2px}
+.lbl{font-size:10px;font-weight:600;color:var(--panel-text-sub);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px}
+.inp{
+  width:100%;border:1px solid var(--input-border);border-radius:8px;padding:9px 11px;font-size:13px;
+  outline:none;background:var(--input-bg);color:var(--panel-text);font-family:inherit;
+}
+.inp:focus{border-color:var(--accent);background:var(--panel-bg)}
+.field{margin-bottom:13px}
+.proj-chips{display:flex;flex-wrap:wrap;gap:5px}
+.proj-chip{
+  display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:500;
+  cursor:pointer;border:1.5px solid transparent;background:var(--input-bg);color:var(--panel-text);
+}
+.proj-chip.sel{border-color:currentColor}
+.proj-chip-dot{width:7px;height:7px;border-radius:50%}
+.prio-btns{display:flex;gap:6px}
+.prio-btn{
+  flex:1;padding:6px;border-radius:8px;border:1.5px solid var(--input-border);background:var(--panel-elev);
+  font-size:11px;font-weight:600;cursor:pointer;text-align:center;color:var(--panel-text);
+}
+.prio-btn.sel{border-width:2px}
+.footer{display:flex;gap:8px;margin-top:16px;-webkit-app-region:no-drag}
+.btn{flex:1;padding:8px;border-radius:8px;border:1px solid var(--input-border);background:var(--input-bg);font-size:12px;font-weight:500;cursor:pointer;color:var(--panel-text);-webkit-app-region:no-drag}
+.btn:hover{background:var(--panel-item-hover)}
+.btn-primary{border:none;background:var(--accent);color:var(--accent-fg);font-weight:600}
+.btn-primary:hover{filter:brightness(1.05)}
+.err{font-size:12px;color:#F87171;line-height:1.45;margin-bottom:10px}
+
+/* 메인 index.html 과 동일 — 커스텀 날짜·시간 피커 */
+.date-picker-wrap{position:relative}
+.date-display{width:100%;border:1px solid var(--input-border);border-radius:8px;padding:8px 11px;font-size:12px;background:var(--input-bg);color:var(--panel-text);cursor:pointer;display:flex;align-items:center;justify-content:space-between;user-select:none}
+.date-display:hover{border-color:var(--accent)}
+.date-picker-pop{position:fixed;background:var(--picker-bg);color:var(--panel-text);border:.5px solid var(--panel-border);border-radius:12px;box-shadow:var(--modal-shadow);padding:10px;width:220px;z-index:400;display:none}
+.date-picker-pop.open{display:block}
+.time-picker-pop{position:fixed;background:var(--picker-bg);color:var(--panel-text);border:.5px solid var(--panel-border);border-radius:12px;box-shadow:var(--modal-shadow);padding:10px;width:160px;z-index:400;display:none}
+.time-picker-pop.open{display:flex;gap:4px}
+.tp-col{flex:1;display:flex;flex-direction:column;gap:1px;max-height:180px;overflow-y:auto;scrollbar-width:none}
+.tp-col::-webkit-scrollbar{display:none}
+.tp-col-lbl{font-size:9px;color:var(--panel-text-sub);text-align:center;padding-bottom:4px;font-weight:600;letter-spacing:.3px;position:sticky;top:0;background:var(--picker-bg)}
+.tp-item{text-align:center;padding:5px 4px;border-radius:6px;cursor:pointer;font-size:11px;color:var(--panel-text)}
+.tp-item:hover{background:var(--panel-item-sel);color:var(--accent)}
+.tp-item.sel{background:var(--accent);color:var(--accent-fg)}
+.dp-hdr{display:flex;align-items:center;gap:4px;margin-bottom:8px}
+.dp-hdr .m{flex:1;font-size:12px;font-weight:600;text-align:center;color:var(--panel-text)}
+.dp-nav{background:none;border:none;cursor:pointer;color:var(--panel-text-sub);font-size:12px;padding:2px 5px;border-radius:4px}
+.dp-nav:hover{background:var(--panel-item-hover);color:var(--panel-text)}
+.dp-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;font-size:10px}
+.dp-dow{text-align:center;color:var(--panel-text-sub);padding:2px 0;font-size:9px}
+.dp-dow:first-child{color:#E53935}
+.dp-day{text-align:center;padding:4px 2px;border-radius:4px;cursor:pointer;font-size:10px;color:var(--panel-text)}
+.dp-day:hover{background:var(--panel-item-sel)}
+.dp-day.today{font-weight:700}
+.dp-day.sel{background:#7C3AED;color:#fff;border-radius:50%}
+.dp-day.other{color:var(--panel-text-sub)}
+.dp-day.sun{color:#E53935}
+.dp-day.sel.sun{color:#fff}
+</style>
+</head>
+<body>
+  <div class="backdrop-hit" id="backdrop-hit" aria-hidden="true"></div>
+  <div class="card">
+    <div class="grab-row">
+      <button type="button" class="traffic-close" id="btn-close-window" title="닫기" aria-label="창 닫기"></button>
+      <div class="grab-drag" data-tauri-drag-region>
+        <span class="grab-title">새 태스크</span>
+      </div>
+    </div>
+    <div id="boot-err" class="err" style="display:none"></div>
+    <div id="form-root" style="display:none">
+      <div class="field">
+        <input type="text" class="inp" id="task-title" placeholder="태스크 제목…" autocomplete="off">
+      </div>
+      <div class="field">
+        <div class="lbl">프로젝트</div>
+        <div class="proj-chips" id="proj-chips"></div>
+      </div>
+      <div class="field">
+        <div class="lbl">우선순위</div>
+        <div class="prio-btns" id="prio-btns">
+          <div class="prio-btn sel" data-prio="2" id="prio-2">🔴 높음</div>
+          <div class="prio-btn" data-prio="1" id="prio-1">🟡 중간</div>
+          <div class="prio-btn" data-prio="0" id="prio-0">🟢 낮음</div>
+        </div>
+      </div>
+      <div class="field">
+        <div class="lbl">마감일 / 시간 (선택)</div>
+        <div style="display:flex;gap:6px;align-items:flex-start">
+          <div class="date-picker-wrap" style="flex:1">
+            <div class="date-display" id="add-task-dp-trigger" onclick="toggleDatePicker('add-task-dp')">
+              <span id="add-task-date-text" style="color:var(--panel-text-sub);font-size:11px">날짜 선택</span>
+              <span style="color:var(--panel-text-sub);font-size:10px">▾</span>
+            </div>
+            <div class="date-picker-pop" id="add-task-dp">
+              <div class="dp-hdr"><button type="button" class="dp-nav" onclick="dpNav('add-task-dp',-1)">◀</button><span class="m" id="add-task-dp-lbl"></span><button type="button" class="dp-nav" onclick="dpNav('add-task-dp',1)">▶</button></div>
+              <div class="dp-grid" id="add-task-dp-grid"></div>
+            </div>
+          </div>
+          <div class="date-picker-wrap" style="flex:1">
+            <div class="date-display" id="add-task-tp-trigger" onclick="toggleTimePicker('add-task-tp')">
+              <span id="add-task-time-text" style="color:var(--panel-text-sub);font-size:11px">시간 선택</span>
+              <span style="color:var(--panel-text-sub);font-size:10px">▾</span>
+            </div>
+            <div class="time-picker-pop" id="add-task-tp"></div>
+          </div>
+        </div>
+      </div>
+      <div class="footer">
+        <button type="button" class="btn" id="btn-cancel">취소</button>
+        <button type="button" class="btn btn-primary" id="btn-add">추가하기</button>
+      </div>
+    </div>
+  </div>
+<script>
+const THEME_DARK='dark';
+const THEME_SOFT='soft';
+const KEY_THEME='theme';
+const KEY_TR='ui.panelTranslucent';
+const KEY_OP='ui.panelFillOpacity';
+const OP_MIN=0.55;
+const OP_MAX=1;
+
+function shelfTaskAddTrace(step, detail){
+  const tail=detail!==undefined?' '+JSON.stringify(detail):'';
+  console.info('[ShelfTaskAddWin] '+step+tail);
+}
+function shelfCloseTaskAddWindowFallback(reason){
+  shelfTaskAddTrace('nativeWindow.closeFallback',{ reason:String(reason||'') });
+  try{
+    const gw=window.__TAURI__?.window?.getCurrentWindow?.();
+    if(gw) return gw.close();
+  }catch(e){
+    shelfTaskAddTrace('nativeWindow.closeFallback.err',{ message:String(e&&e.message?e.message:e) });
+  }
+  return Promise.resolve();
+}
+function invoke(cmd, args){
+  const core=window.__TAURI__?.core;
+  if(!core?.invoke){
+    shelfTaskAddTrace('invoke.skip',{ cmd, reason:'no Tauri core.invoke' });
+    return Promise.reject(new Error('Tauri 없음'));
+  }
+  shelfTaskAddTrace('invoke→',{ cmd });
+  return core.invoke(cmd, args).then(
+    out=>{ shelfTaskAddTrace('invoke✓',{ cmd }); return out; },
+    err=>{
+      shelfTaskAddTrace('invoke✗',{ cmd, message:String(err&&err.message?err.message:err) });
+      return Promise.reject(err);
+    }
+  );
+}
+function finish(payload){
+  return invoke('shelf_finish_task_add_form_window', payload);
+}
+async function dismissTaskAddWindowCancelled(){
+  shelfTaskAddTrace('userAction.dismiss');
+  try{
+    await finish({ cancelled: true, createdId: null });
+    shelfTaskAddTrace('finish.dismiss.ok');
+  }catch(e){
+    shelfTaskAddTrace('finish.dismiss.fail',{ message:String(e&&e.message?e.message:e) });
+    await shelfCloseTaskAddWindowFallback('finish_cancel_failed');
+  }
+}
+/** `create_todo` 등 SQLite rowid(i64) — JS에서 BigInt일 때 IPC 페이로드 직렬화 실패 방지 */
+function normalizeSqliteRowId(raw){
+  if(raw==null) return null;
+  if(typeof raw==='bigint') return Number(raw);
+  const n=Number(raw);
+  return Number.isFinite(n)?n:null;
+}
+function coerceOpacity(raw){
+  if(raw==null||raw==='') return OP_MAX;
+  const n=Number.parseFloat(String(raw).trim());
+  if(!Number.isFinite(n)) return OP_MAX;
+  return Math.min(OP_MAX, Math.max(OP_MIN, n));
+}
+function applyLocalPanelFillOpacity(translucent, opacity01){
+  const eff=translucent ? Math.min(OP_MAX, Math.max(OP_MIN, opacity01)) : 1;
+  document.documentElement.style.setProperty('--shelf-panel-fill-opacity', String(eff));
+}
+
+const PRIO_UI={
+  0:{ fill:'#2563EB', bg:'#EFF6FF', border:'#BFDBFE' },
+  1:{ fill:'#D97706', bg:'#FFFBEB', border:'#FDE68A' },
+  2:{ fill:'#DC2626', bg:'#FEF2F2', border:'#FECACA' },
+};
+function syncPrioUi(){
+  document.querySelectorAll('#prio-btns .prio-btn').forEach(b=>{
+    const p=parseInt(b.dataset.prio,10);
+    const U=PRIO_UI[p];
+    const on=b.classList.contains('sel');
+    b.style.color=U.fill;
+    b.style.background=on?U.bg:'#fafafa';
+    b.style.borderColor=on?U.border:'#eee';
+  });
+}
+function escHtml(s){
+  return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+let selectedProjectId=null;
+
+/* ── 메인 index.html 과 동일한 날짜·시간 피커 (id 만 add-task-* 로 분리) ── */
+const dpState={};
+function dpStateInit(){ const n=new Date(); return {y:n.getFullYear(),m:n.getMonth()+1,sel:null}; }
+const DP_TEXT_MAP={'add-task-dp':'add-task-date-text'};
+const DP_TRIGGER_MAP={'add-task-dp':'add-task-dp-trigger'};
+function closeAllPickers(exceptId){
+  document.querySelectorAll('.date-picker-pop.open,.time-picker-pop.open').forEach(p=>{if(p.id!==exceptId)p.classList.remove('open');});
+}
+function positionPop(pop, triggerId){
+  const trigger=document.getElementById(triggerId);
+  if(!trigger) return;
+  const rect=trigger.getBoundingClientRect();
+  pop.style.top=(rect.bottom+4)+'px';
+  pop.style.left=rect.left+'px';
+  const pw=parseInt(String(pop.style.width||pop.offsetWidth||220),10)||220;
+  if(rect.left+pw>window.innerWidth) pop.style.left=(window.innerWidth-pw-8)+'px';
+}
+function toggleDatePicker(id){
+  if(!dpState[id]) dpState[id]=dpStateInit();
+  closeAllPickers(id);
+  const pop=document.getElementById(id);
+  if(!pop.classList.contains('open')){
+    renderDp(id);
+    positionPop(pop, DP_TRIGGER_MAP[id]||id.replace('-dp','-dp-trigger'));
+    pop.classList.add('open');
+  } else pop.classList.remove('open');
+}
+const tpState={};
+const TP_TEXT_MAP={'add-task-tp':'add-task-time-text'};
+function renderTp(id){
+  if(!tpState[id]) tpState[id]={h:null,m:null};
+  const s=tpState[id];
+  const pop=document.getElementById(id);
+  const hours=Array.from({length:24},(_,i)=>i);
+  const mins=[0,5,10,15,20,25,30,35,40,45,50,55];
+  pop.innerHTML=`
+    <div class="tp-col">
+      <div class="tp-col-lbl">시</div>
+      ${hours.map(h=>`<div class="tp-item${s.h===h?' sel':''}" onclick="selectHour('${id}',${h})">${String(h).padStart(2,'0')}</div>`).join('')}
+    </div>
+    <div class="tp-col">
+      <div class="tp-col-lbl">분</div>
+      ${mins.map(m=>`<div class="tp-item${s.m===m?' sel':''}" onclick="selectMinute('${id}',${m})">${String(m).padStart(2,'0')}</div>`).join('')}
+    </div>`;
+  setTimeout(()=>{
+    const cols=pop.querySelectorAll('.tp-col');
+    cols.forEach(col=>{const sel=col.querySelector('.sel');if(sel)sel.scrollIntoView({block:'center',behavior:'smooth'});});
+  },50);
+}
+function toggleTimePicker(id){
+  closeAllPickers(id);
+  const pop=document.getElementById(id);
+  if(!pop.classList.contains('open')){
+    renderTp(id);
+    positionPop(pop, id+'-trigger');
+    pop.classList.add('open');
+  } else pop.classList.remove('open');
+}
+function selectHour(id,h){
+  if(!tpState[id]) tpState[id]={h:null,m:null};
+  tpState[id].h=h;
+  renderTp(id);
+  updateTimeDisplay(id);
+}
+function selectMinute(id,m){
+  if(!tpState[id]) tpState[id]={h:null,m:null};
+  tpState[id].m=m;
+  renderTp(id);
+  updateTimeDisplay(id);
+  if(tpState[id].h!==null) setTimeout(()=>document.getElementById(id)?.classList.remove('open'),150);
+}
+function updateTimeDisplay(id){
+  const s=tpState[id]; if(!s) return;
+  const textEl=document.getElementById(TP_TEXT_MAP[id]); if(!textEl) return;
+  if(s.h!==null&&s.m!==null){
+    textEl.textContent=`${String(s.h).padStart(2,'0')}:${String(s.m).padStart(2,'0')}`;
+    textEl.style.color='var(--panel-text)';
+  } else if(s.h!==null){
+    textEl.textContent=`${String(s.h).padStart(2,'0')}:--`;
+    textEl.style.color='var(--panel-text-sub)';
+  }
+}
+function getTimeValue(tpId){
+  const s=tpState[tpId];
+  if(s&&s.h!==null&&s.m!==null) return `${String(s.h).padStart(2,'0')}:${String(s.m).padStart(2,'0')}`;
+  return null;
+}
+function dpNav(id,dir){
+  if(!dpState[id]) dpState[id]=dpStateInit();
+  dpState[id].m+=dir;
+  if(dpState[id].m>12){dpState[id].m=1;dpState[id].y++;}
+  if(dpState[id].m<1){dpState[id].m=12;dpState[id].y--;}
+  renderDp(id);
+}
+function renderDp(id){
+  const s=dpState[id]; const lbl=document.getElementById(id+'-lbl'); const grid=document.getElementById(id+'-grid');
+  if(lbl) lbl.textContent=`${s.y}년 ${s.m}월`;
+  const days=new Date(s.y,s.m,0).getDate(), dow=new Date(s.y,s.m-1,1).getDay(), today=new Date();
+  let h=['일','월','화','수','목','금','토'].map(d=>`<div class="dp-dow">${d}</div>`).join('');
+  const prev=new Date(s.y,s.m-1,0).getDate();
+  for(let i=0;i<dow;i++) h+=`<div class="dp-day other">${prev-(dow-1-i)}</div>`;
+  for(let d=1;d<=days;d++){
+    const isT=today.getFullYear()===s.y&&today.getMonth()+1===s.m&&d===today.getDate();
+    const sun=(dow+d-1)%7===0;
+    h+=`<div class="dp-day${isT?' today':''}${s.sel===d?' sel':''}${sun?' sun':''}" onclick="selectDay('${id}',${d})">${d}</div>`;
+  }
+  if(grid) grid.innerHTML=h;
+}
+function selectDay(id,d){
+  if(!dpState[id]) dpState[id]=dpStateInit();
+  dpState[id].sel=d;
+  const {y,m}=dpState[id];
+  const str=`${y}.${String(m).padStart(2,'0')}.${String(d).padStart(2,'0')}`;
+  const textEl=document.getElementById(DP_TEXT_MAP[id]);
+  if(textEl){textEl.textContent=str;textEl.style.color='var(--panel-text)';}
+  renderDp(id);
+  setTimeout(()=>document.getElementById(id)?.classList.remove('open'),150);
+}
+document.addEventListener('click',e=>{
+  if(!e.target.closest('.date-picker-wrap'))
+    document.querySelectorAll('.date-picker-pop.open,.time-picker-pop.open').forEach(p=>p.classList.remove('open'));
+});
+
+document.getElementById('prio-btns').addEventListener('click', ev=>{
+  const btn=ev.target.closest('.prio-btn');
+  if(!btn) return;
+  document.querySelectorAll('#prio-btns .prio-btn').forEach(b=>b.classList.remove('sel'));
+  btn.classList.add('sel');
+  syncPrioUi();
+});
+
+document.getElementById('backdrop-hit').addEventListener('click',()=>{ void dismissTaskAddWindowCancelled(); });
+document.getElementById('btn-close-window').addEventListener('click',()=>{ void dismissTaskAddWindowCancelled(); });
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){
+    e.preventDefault();
+    void dismissTaskAddWindowCancelled();
+  }
+});
+document.getElementById('btn-cancel').addEventListener('click',()=>{
+  shelfTaskAddTrace('userAction.cancelButton');
+  void dismissTaskAddWindowCancelled();
+});
+
+document.getElementById('btn-add').addEventListener('click', async ()=>{
+  shelfTaskAddTrace('userAction.addButton');
+  const title=document.getElementById('task-title').value.trim();
+  if(!title){
+    document.getElementById('task-title').focus();
+    return;
+  }
+  const prioEl=document.querySelector('#prio-btns .prio-btn.sel');
+  const priority=prioEl?parseInt(prioEl.dataset.prio,10):1;
+  const time=getTimeValue('add-task-tp');
+  const dateText=document.getElementById('add-task-date-text').textContent;
+  let due_date=null;
+  if(dateText!=='날짜 선택'){ due_date=dateText.replace(/\./g,'-')+(time?'T'+time:'T00:00'); }
+  const project_id=selectedProjectId!=null&&selectedProjectId>0?selectedProjectId:0;
+  const createPayload={
+    title,
+    note:'',
+    due_date,
+    recurrence:'none',
+    category:'작업',
+    priority,
+    project_id,
+  };
+  shelfTaskAddTrace('submit→shelf_create_task_from_add_window (단일 IPC: DB+emit+창닫기)', createPayload);
+  const addBtn=document.getElementById('btn-add');
+  addBtn.disabled=true;
+  addBtn.textContent='추가 중…';
+  try{
+    const rawRowId=await invoke('shelf_create_task_from_add_window', createPayload);
+    shelfTaskAddTrace('shelf_create_task_from_add_window←rawRowId',{ rawRowId, type: typeof rawRowId });
+    const createdRowId=normalizeSqliteRowId(rawRowId);
+    if(createdRowId==null) throw new Error('태스크 ID를 받지 못했습니다');
+    shelfTaskAddTrace('task_add.success',{ createdRowId, note:'Rust에서 emit·창닫기까지 처리' });
+  }catch(e){
+    shelfTaskAddTrace('submit.chain.fail',{ message:String(e&&e.message?e.message:e) });
+    alert('저장 실패: '+e);
+    await shelfCloseTaskAddWindowFallback('submit_failed');
+  }finally{
+    addBtn.disabled=false;
+    addBtn.textContent='추가하기';
+  }
+});
+
+(async function init(){
+  shelfTaskAddTrace('init.start',{ href:String(location.href||'') });
+  try{
+    const savedTheme=await invoke('get_setting',{ key: KEY_THEME });
+    const token=savedTheme===THEME_SOFT?THEME_SOFT:THEME_DARK;
+    document.documentElement.setAttribute('data-theme', token);
+    const trRaw=await invoke('get_setting',{ key: KEY_TR });
+    const translucent=trRaw==='1'||trRaw===1||trRaw===true||trRaw==='true';
+    const opRaw=await invoke('get_setting',{ key: KEY_OP });
+    applyLocalPanelFillOpacity(translucent, coerceOpacity(opRaw));
+  }catch(e){ shelfTaskAddTrace('init.theme.fail',{ message:String(e&&e.message?e.message:e) }); }
+
+  let boot=null;
+  try{
+    boot=await invoke('shelf_consume_task_add_bootstrap');
+  }catch(e){
+    shelfTaskAddTrace('bootstrap.consume.fail',{ message:String(e&&e.message?e.message:e) });
+  }
+  if(!boot||typeof boot!=='object'){
+    document.getElementById('boot-err').style.display='block';
+    document.getElementById('boot-err').textContent='창 데이터를 불러오지 못했습니다. 닫고 다시 열어 주세요.';
+    return;
+  }
+  const projects=Array.isArray(boot.projects)?boot.projects:[];
+  const selId=boot.selectedProjectId!=null?Number(boot.selectedProjectId):null;
+  selectedProjectId=null;
+  if(selId!=null&&projects.some(p=>p.id===selId)) selectedProjectId=selId;
+  else if(projects.length>0) selectedProjectId=projects[0].id;
+
+  const chips=document.getElementById('proj-chips');
+  chips.innerHTML=projects.map(p=>{
+    const on=p.id===selectedProjectId;
+    return `<button type="button" class="proj-chip${on?' sel':''}" data-proj-id="${p.id}" style="color:${escHtml(p.color)}">
+      <span class="proj-chip-dot" style="background:${escHtml(p.color)}"></span>${escHtml(p.name)}
+    </button>`;
+  }).join('');
+  chips.addEventListener('click', ev=>{
+    const b=ev.target.closest('.proj-chip');
+    if(!b) return;
+    const id=parseInt(b.dataset.projId,10);
+    if(!Number.isFinite(id)) return;
+    selectedProjectId=id;
+    chips.querySelectorAll('.proj-chip').forEach(x=>{
+      x.classList.toggle('sel', parseInt(x.dataset.projId,10)===id);
+    });
+  });
+
+  dpState['add-task-dp']={...dpStateInit()};
+  tpState['add-task-tp']={h:null,m:null};
+  document.getElementById('add-task-date-text').textContent='날짜 선택';
+  document.getElementById('add-task-date-text').style.color='var(--panel-text-sub)';
+  document.getElementById('add-task-time-text').textContent='시간 선택';
+  document.getElementById('add-task-time-text').style.color='var(--panel-text-sub)';
+
+  document.getElementById('form-root').style.display='block';
+  syncPrioUi();
+  setTimeout(()=>document.getElementById('task-title').focus(),60);
+})();
+</script>
+</body>
+</html>

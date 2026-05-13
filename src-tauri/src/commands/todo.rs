@@ -43,9 +43,18 @@ pub fn create_todo(
     priority: i64,
     project_id: i64, // 0 = 미부여, 양수 = 프로젝트 ID
 ) -> Result<i64, String> {
+    eprintln!(
+        "[Shelf][create_todo] IPC 수신 title_len={} project_id={} priority={} due_date={:?}",
+        title.len(),
+        project_id,
+        priority,
+        due_date
+    );
     let proj = if project_id > 0 { Some(project_id) } else { None };
-    todos::create(&title, &note, due_date.as_deref(), &recurrence, &category, priority, proj)
-        .map_err(|e| e.to_string())
+    let id = todos::create(&title, &note, due_date.as_deref(), &recurrence, &category, priority, proj)
+        .map_err(|e| e.to_string())?;
+    eprintln!("[Shelf][create_todo] DB INSERT 완료 last_insert_rowid={id}");
+    Ok(id)
 }
 
 #[tauri::command(rename_all = "snake_case")]

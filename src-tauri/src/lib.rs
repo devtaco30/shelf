@@ -53,6 +53,16 @@ pub fn run() {
             std::fs::create_dir_all(&app_dir).ok();
             db::init(&app_dir).expect("DB 초기화 실패");
 
+            app.manage(commands::task_add_window::ShelfTaskAddBootstrap(std::sync::Mutex::new(
+                None,
+            )));
+            app.manage(commands::vault_add_window::ShelfVaultFormBootstrap(
+                std::sync::Mutex::new(None),
+            ));
+            app.manage(commands::memo_add_window::ShelfMemoFormBootstrap(std::sync::Mutex::new(
+                None,
+            )));
+
             #[cfg(target_os = "macos")]
             if let Err(e) = shelf_macos_append_settings_menu_item(app.handle()) {
                 eprintln!("[Shelf] 앱 메뉴(설정…) 추가 실패: {}", e);
@@ -126,6 +136,17 @@ pub fn run() {
             commands::settings_window::shelf_open_settings_window,
             commands::settings_window::shelf_emit_to_main_window,
             commands::settings_window::shelf_finish_settings_window,
+            commands::task_add_window::shelf_consume_task_add_bootstrap,
+            commands::task_add_window::shelf_open_task_add_form_window,
+            commands::task_add_window::shelf_close_task_add_form_window,
+            commands::task_add_window::shelf_create_task_from_add_window,
+            commands::task_add_window::shelf_finish_task_add_form_window,
+            commands::vault_add_window::shelf_consume_vault_form_bootstrap,
+            commands::vault_add_window::shelf_open_vault_form_window,
+            commands::vault_add_window::shelf_finish_vault_form_window,
+            commands::memo_add_window::shelf_consume_memo_form_bootstrap,
+            commands::memo_add_window::shelf_open_memo_form_window,
+            commands::memo_add_window::shelf_finish_memo_form_window,
         ])
         .run(tauri::generate_context!())
         .expect("Tauri 실행 오류");
