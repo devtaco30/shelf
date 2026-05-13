@@ -1,52 +1,94 @@
-# Shelf
+<div align="center">
 
-macOS용 데스크톱 앱입니다. [Tauri 2](https://v2.tauri.app/) 기반이며, UI는 `frontend/` 정적 자산(단일 `index.html` 중심), 데이터·IPC·창 제어는 `src-tauri/` Rust입니다. 로컬에는 SQLite를 사용합니다.
+# 🧲 Shelf
 
-## 요구 사항
+**A minimal floating workspace for macOS**
 
-- **Node.js** 18 이상(권장 LTS)
-- **Rust** toolchain (`rustup` 권장)
-- **macOS** — 현재 구성·Vault 등은 macOS 전제에 가깝습니다.
+Always on top. Always out of the way.
 
-## 클론 후 설치
+[![Release](https://img.shields.io/github/v/release/devtaco30/shelf?style=flat-square&color=lime)](https://github.com/devtaco30/shelf/releases/latest)
+[![macOS](https://img.shields.io/badge/macOS-12%2B-black?style=flat-square&logo=apple)](https://github.com/devtaco30/shelf/releases/latest)
+[![License](https://img.shields.io/badge/license-MIT-lime?style=flat-square)](LICENSE)
+
+[한국어](README.ko.md)
+
+<br/>
+
+<img src="assets/screenshot-todo-exp.png" width="80%">
+
+<br/>
+
+<img src="assets/screenshot-cal-exp.png" width="32%">
+<img src="assets/screenshot-vault-locked.png" width="32%">
+<img src="assets/screenshot-memo-exp.png" width="32%">
+
+</div>
+
+---
+
+## What is Shelf?
+
+Shelf is a floating sidebar that lives on the edge of your screen. It stays on top of every window without getting in the way — a compact pill that expands into a full panel when you need it.
+
+Tasks, calendar, encrypted vault, and memos. Everything in one place, always one click away.
+
+---
+
+## Features
+
+**Tasks** — Create tasks with projects, priorities, and due dates. Organize everything into projects with color labels and track progress at a glance.
+
+**Calendar** — View and create events in a clean monthly grid. Supports recurring schedules.
+
+**Vault** — Encrypted storage for passwords and card information. Protected by AES-256 encryption and Touch ID. Your data never leaves your device.
+
+**Memo** — A fast scratchpad for quick notes. No friction, no extra windows.
+
+**Themes** — Dark Glass (dark panel, lime accent) and Soft Color (light panel, violet accent). Adjustable panel transparency.
+
+---
+
+## Download
+
+→ **[Download the latest release](https://github.com/devtaco30/shelf/releases/latest)**
+
+Download `Shelf_x.x.x_aarch64.dmg` (Apple Silicon) or `Shelf_x.x.x_x64.dmg` (Intel), open the DMG, and drag Shelf to your Applications folder.
+
+> **First launch:** macOS may show a security warning since the app is not notarized.
+> Right-click the app → **Open** → **Open** to allow it.
+
+---
+
+## Build from Source
+
+**Requirements:** Node.js 18+, Rust (stable), macOS 12+
 
 ```bash
-git clone git@github.com:devtaco30/shelf.git
+git clone https://github.com/devtaco30/shelf.git
 cd shelf
 npm ci
-```
-
-## 개발
-
-| 명령 | 설명 |
-|------|------|
-| `npm run dev` | `frontend`만 **1420** 포트로 서빙 (Tauri 없음). |
-| **`npm run tauri:dev`** | **권장.** browser-sync로 프론트 핫리로드 + `tauri dev`를 한 터미널에서 실행합니다. |
-| `npm run tauri -- dev` | `beforeDevCommand`가 비어 있으므로, 별도로 1420 서버가 떠 있어야 합니다. **`tauri:dev` 사용을 권장**합니다. |
-
-Rust 로그는 `tauri:dev` 경로에서 기본 `RUST_LOG=info`입니다.
-
-## 빌드
-
-```bash
 npm run tauri build
 ```
 
-`tauri.conf.json`의 `frontendDist`는 `../frontend`입니다.
+The built `.dmg` will be at `src-tauri/target/release/bundle/dmg/`.
 
-## 기능 개요(코드 기준)
+**Development:**
+```bash
+npm run tauri:dev
+```
 
-- 할 일·이벤트(반복 규칙)·캘린더 뷰
-- 메모(SQLite `memos` + IPC)
-- Vault(암호화·macOS 인증 연동)
-- 프로젝트·설정 IPC
+---
 
-자세한 디렉터리 맵·창 상태(`pill` / `panel` / `expanded`)·디버깅 메모는 [`docs/project-structure.md`](docs/project-structure.md)를 참고하세요.
+## Tech Stack
 
-## 창 레이아웃 디버그(선택)
+- [Tauri 2](https://v2.tauri.app/) — Rust + WebView
+- Vanilla JS / HTML / CSS — zero frontend framework
+- SQLite — local data storage
+- AES-256-GCM — vault encryption
+- macOS Keychain + Touch ID — key management
 
-Web Inspector에서 `http://localhost:1420/?debugWindow=1` 로 열거나, `localStorage.setItem('shelfDebugWindow','1')` 후 새로고침하면 창·레이아웃 관련 로그를 볼 수 있습니다.
+---
 
-## 라이선스
+## License
 
-MIT (`package.json` 기준).
+MIT
