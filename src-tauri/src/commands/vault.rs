@@ -122,12 +122,28 @@ pub fn unlock_vault(password: Option<String>) -> Result<(), String> {
     let key_bytes = derive_raw_key(&pw, &salt);
     let key = make_crypto_key(&key_bytes)?;
 
-    // 비밀번호 검증: 아이템이 있으면 복호화 테스트
-    if let Ok(items) = vault::get_all() {
-        if let Some(item) = items.first() {
-            let content = vault::get_content(item.id).map_err(|e| e.to_string())?;
-            decrypt(&key, &content)?; // 틀린 비밀번호 → 여기서 에러 반환
+    // 비밀번호 검증
+    // 현재 vault: Keychain 저장 키와 직접 비교 → 빈 vault에서도 우회 불가
+    // 레거시 vault: Keychain에 키가 없으므로 아이템 복호화로 검증 (비어있으면 거부)
+    let is_password_valid = if !is_legacy {
+        match provider.load_key() {
+            Ok(stored) => stored.as_slice() == key_bytes.as_slice(),
+            Err(_) => false,
         }
+    } else {
+        match vault::get_all() {
+            Ok(items) => match items.first() {
+                Some(item) => match vault::get_content(item.id) {
+                    Ok(content) => decrypt(&key, &content).is_ok(),
+                    Err(_) => false,
+                },
+                None => false, // 빈 레거시 vault → 알 수 없는 비밀번호 거부
+            },
+            Err(_) => false,
+        }
+    };
+    if !is_password_valid {
+        return Err("비밀번호가 올바르지 않습니다".to_string());
     }
 
     // 레거시 vault: 자동 마이그레이션 (새 랜덤 salt + 전체 재암호화)
@@ -181,6 +197,7 @@ pub fn update_vault_item(id: i64, title: String, content: String) -> Result<(), 
 
 #[tauri::command]
 pub fn delete_vault_item(id: i64) -> Result<(), String> {
+    get_session_key()?;
     vault::delete(id).map_err(|e| e.to_string())
 }
 
