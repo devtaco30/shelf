@@ -4,7 +4,9 @@ use super::AuthProvider;
 use block::ConcreteBlock;
 use objc::runtime::Object;
 use objc::{class, msg_send, sel, sel_impl};
-use security_framework::passwords::get_generic_password;
+use security_framework::passwords::{
+    delete_generic_password, get_generic_password, set_generic_password,
+};
 use std::sync::{Arc, Mutex};
 
 const SERVICE: &str = "com.shelf.app";
@@ -20,7 +22,7 @@ impl AuthProvider for MacOSAuthProvider {
     }
 
     fn store_key(&self, key: &[u8]) -> Result<(), String> {
-        unsafe { store_unrestricted(KEY_ACCOUNT, key) }
+        store_secure(KEY_ACCOUNT, key)
     }
 
     fn load_key(&self) -> Result<Vec<u8>, String> {
@@ -28,7 +30,7 @@ impl AuthProvider for MacOSAuthProvider {
     }
 
     fn store_salt(&self, salt: &[u8]) -> Result<(), String> {
-        unsafe { store_unrestricted(SALT_ACCOUNT, salt) }
+        store_secure(SALT_ACCOUNT, salt)
     }
 
     fn load_salt(&self) -> Result<Vec<u8>, String> {
@@ -36,7 +38,7 @@ impl AuthProvider for MacOSAuthProvider {
     }
 
     fn store_db_key(&self, key: &[u8]) -> Result<(), String> {
-        unsafe { store_unrestricted(DB_KEY_ACCOUNT, key) }
+        store_secure(DB_KEY_ACCOUNT, key)
     }
 
     fn load_db_key(&self) -> Result<Vec<u8>, String> {
@@ -44,97 +46,11 @@ impl AuthProvider for MacOSAuthProvider {
     }
 }
 
-/// 키체인 아이템을 "모든 앱 허용, 확인 없음" ACL로 저장한다.
-unsafe fn store_unrestricted(account: &str, data: &[u8]) -> Result<(), String> {
-    use std::{ffi::c_void, ptr};
-
-    type Cf = *const c_void;
-
-    #[link(name = "Security", kind = "framework")]
-    extern "C" {
-        static kSecClass: Cf;
-        static kSecClassGenericPassword: Cf;
-        static kSecAttrService: Cf;
-        static kSecAttrAccount: Cf;
-        static kSecValueData: Cf;
-        static kSecAttrAccess: Cf;
-
-        fn SecAccessCreate(desc: Cf, trusted_list: Cf, out: *mut Cf) -> i32;
-        fn SecItemDelete(query: Cf) -> i32;
-        fn SecItemAdd(attrs: Cf, result: *mut Cf) -> i32;
-    }
-
-    #[link(name = "CoreFoundation", kind = "framework")]
-    extern "C" {
-        fn CFStringCreateWithBytes(
-            alloc: Cf,
-            bytes: *const u8,
-            len: isize,
-            encoding: u32,
-            is_external: u8,
-        ) -> Cf;
-        fn CFDataCreate(alloc: Cf, bytes: *const u8, len: isize) -> Cf;
-        fn CFDictionaryCreate(
-            alloc: Cf,
-            keys: *const Cf,
-            values: *const Cf,
-            num: isize,
-            key_cbs: *const c_void,
-            val_cbs: *const c_void,
-        ) -> Cf;
-        fn CFRelease(cf: Cf);
-        static kCFTypeDictionaryKeyCallBacks: [u8; 56];
-        static kCFTypeDictionaryValueCallBacks: [u8; 56];
-    }
-
-    const UTF8_ENCODING: u32 = 0x08000100;
-
-    let make_cfstr = |s: &[u8]| -> Cf {
-        CFStringCreateWithBytes(ptr::null(), s.as_ptr(), s.len() as isize, UTF8_ENCODING, 0)
-    };
-
-    let cf_service = make_cfstr(SERVICE.as_bytes());
-    let cf_account = make_cfstr(account.as_bytes());
-    let cf_desc = make_cfstr(b"Shelf Vault");
-
-    let mut access: Cf = ptr::null();
-    let status = SecAccessCreate(cf_desc, ptr::null(), &mut access);
-    CFRelease(cf_desc);
-    if status != 0 {
-        CFRelease(cf_service);
-        CFRelease(cf_account);
-        return Err(format!("SecAccessCreate 실패: {status}"));
-    }
-
-    let kcb = &kCFTypeDictionaryKeyCallBacks as *const _ as *const c_void;
-    let vcb = &kCFTypeDictionaryValueCallBacks as *const _ as *const c_void;
-
-    // 기존 아이템 삭제
-    {
-        let keys = [kSecClass, kSecAttrService, kSecAttrAccount];
-        let vals = [kSecClassGenericPassword, cf_service, cf_account];
-        let query = CFDictionaryCreate(ptr::null(), keys.as_ptr(), vals.as_ptr(), 3, kcb, vcb);
-        SecItemDelete(query);
-        CFRelease(query);
-    }
-
-    let cf_data = CFDataCreate(ptr::null(), data.as_ptr(), data.len() as isize);
-    let keys = [kSecClass, kSecAttrService, kSecAttrAccount, kSecValueData, kSecAttrAccess];
-    let vals = [kSecClassGenericPassword, cf_service, cf_account, cf_data, access];
-    let attrs = CFDictionaryCreate(ptr::null(), keys.as_ptr(), vals.as_ptr(), 5, kcb, vcb);
-    let status = SecItemAdd(attrs, ptr::null_mut());
-
-    CFRelease(attrs);
-    CFRelease(cf_data);
-    CFRelease(cf_service);
-    CFRelease(cf_account);
-    CFRelease(access);
-
-    if status == 0 {
-        Ok(())
-    } else {
-        Err(format!("SecItemAdd 실패: {status}"))
-    }
+/// 키체인 아이템을 생성 앱 전용 ACL로 저장한다.
+/// SecItemUpdate는 기존 ACL을 유지하므로 삭제 후 재생성해야 ACL이 갱신된다.
+fn store_secure(account: &str, data: &[u8]) -> Result<(), String> {
+    let _ = delete_generic_password(SERVICE, account); // 기존 아이템(구 ACL 포함) 제거
+    set_generic_password(SERVICE, account, data).map_err(|e| e.to_string())
 }
 
 fn authenticate_touch_id(reason: &str) -> Result<bool, String> {
